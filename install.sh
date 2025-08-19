@@ -7,7 +7,7 @@ set -euo pipefail
 # Configuration
 INSTALL_DIR="/usr/local/bin"
 SCRIPT_NAME="hype"
-REPO_URL="https://raw.githubusercontent.com/foontype/try-helmfile/main/src/hype"
+REPO_URL="https://raw.githubusercontent.com/foontype/hype/main/src/hype"
 
 # Colors for output
 RED='\033[0;31m'
