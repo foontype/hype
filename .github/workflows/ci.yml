@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install ShellCheck
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+        
+    - name: Run ShellCheck
+      run: |
+        shellcheck src/hype
+        shellcheck install.sh
+        shellcheck .devcontainer/post-create-command.sh
+        
+    - name: Test hype functionality
+      run: |
+        chmod +x src/hype
+        
+        # Test default command
+        output=$(./src/hype)
+        if [ "$output" != "Hello, World!" ]; then
+          echo "Default command failed. Expected 'Hello, World!', got '$output'"
+          exit 1
+        fi
+        
+        # Test hello command
+        output=$(./src/hype hello)
+        if [ "$output" != "Hello!" ]; then
+          echo "Hello command failed. Expected 'Hello!', got '$output'"
+          exit 1
+        fi
+        
+        # Test version command
+        output=$(./src/hype --version)
+        if [[ ! "$output" =~ ^hype\ [0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "Version command failed. Got '$output'"
+          exit 1
+        fi
+        
+        echo "All tests passed!"

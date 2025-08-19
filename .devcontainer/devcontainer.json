@@ -1,0 +1,44 @@
+{
+  "name": "HYPE Development",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "runArgs": ["--env-file", ".devcontainer/.env"],
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true,
+      "username": "vscode",
+      "userUid": "automatic",
+      "userGid": "automatic"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
+    "ghcr.io/edouard-lopez/devcontainer-features/bats:0": {}
+  },
+  "postCreateCommand": ".devcontainer/post-create-command.sh",
+  "remoteUser": "vscode",
+  "remoteEnv": {
+    "PATH": "/workspaces/hype/src:${containerEnv:PATH}"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "timonwong.shellcheck",
+        "ms-vscode.vscode-json",
+        "PKief.material-icon-theme",
+        "foxundermoon.shell-format",
+        "mads-hartmann.bash-ide-vscode",
+        "esbenp.prettier-vscode",
+        "streetsidesoftware.code-spell-checker",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "workbench.tree.indent": 20,
+        "workbench.iconTheme": "material-icon-theme",
+        "explorer.compactFolders": false
+      }
+    }
+  }
+}
