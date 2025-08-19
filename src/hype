@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# HYPE CLI Tool
+# A simple CLI tool for demonstration
+# shellcheck disable=SC2317
+
+HYPE_VERSION="0.1.0"
+
+# Logging utilities
+log() {
+    local level="$1"
+    shift
+    echo "[$level] $*" >&2
+}
+
+error() {
+    log "ERROR" "$@"
+    exit 1
+}
+
+info() {
+    log "INFO" "$@"
+}
+
+debug() {
+    [[ "${DEBUG:-0}" -eq 1 ]] && log "DEBUG" "$@"
+}
+
+# Help message
+show_help() {
+    cat <<'EOF'
+HYPE CLI Tool v0.1.0
+
+A simple demonstration CLI tool.
+
+USAGE:
+    hype [OPTIONS] [SUBCOMMAND]
+
+OPTIONS:
+    -h, --help      Show this help message
+    -v, --version   Show version information
+    -d, --debug     Enable debug mode
+
+SUBCOMMANDS:
+    hello    Say hello (default)
+    world    Say hello world
+
+EXAMPLES:
+    hype             # Outputs "Hello, World!"
+    hype hello       # Outputs "Hello!"
+    hype world       # Outputs "Hello, World!"
+
+EOF
+}
+
+# Version information
+show_version() {
+    echo "hype $HYPE_VERSION"
+}
+
+# Hello command
+cmd_hello() {
+    echo "Hello!"
+}
+
+# World command (default hello world)
+cmd_world() {
+    echo "Hello, World!"
+}
+
+# Default hello world
+cmd_default() {
+    echo "Hello, World!"
+}
+
+# Main entry point
+main() {
+    # Parse command line arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -h | --help)
+                show_help
+                return 0
+                ;;
+            -v | --version)
+                show_version
+                return 0
+                ;;
+            -d | --debug)
+                export DEBUG=1
+                debug "Debug mode enabled"
+                shift
+                ;;
+            hello)
+                cmd_hello
+                return 0
+                ;;
+            world)
+                cmd_world
+                return 0
+                ;;
+            *)
+                error "Unknown option: $1. Use --help for usage information."
+                ;;
+        esac
+    done
+
+    # If no arguments provided, run default command
+    cmd_default
+    return 0
+}
+
+# Execute main function if script is run directly
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+    exit $?
+fi
