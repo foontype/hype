@@ -13,7 +13,9 @@ echo "Setting up HYPE development environment..."
 chmod +x src/hype
 
 # Add src directory to PATH for current session
+# shellcheck disable=SC2016
 echo 'export PATH="/workspaces/hype/src:$PATH"' >> ~/.bashrc
+# shellcheck disable=SC2016
 echo 'export PATH="/workspaces/hype/src:$PATH"' >> ~/.zshrc
 
 # Test installation
