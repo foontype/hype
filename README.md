@@ -7,14 +7,14 @@ A simple command-line tool that says hello to the world!
 ### Quick Install (Recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/foontype/try-helmfile/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | bash
 ```
 
 ### Manual Installation
 
 1. Download the `hype` script:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/foontype/try-helmfile/main/src/hype -o hype
+   curl -fsSL https://raw.githubusercontent.com/foontype/hype/main/src/hype -o hype
    ```
 
 2. Make it executable:
@@ -59,8 +59,8 @@ hype --help
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/foontype/try-helmfile.git
-   cd try-helmfile
+   git clone https://github.com/foontype/hype.git
+   cd hype
    ```
 
 2. Open in dev container (if using VS Code):
