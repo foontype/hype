@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install ShellCheck
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+        
+    - name: Run tests
+      run: |
+        shellcheck src/hype
+        shellcheck install.sh
+        shellcheck .devcontainer/post-create-command.sh
+        
+        chmod +x src/hype
+        
+        # Test commands
+        ./src/hype
+        ./src/hype hello
+        ./src/hype --version
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          Release ${{ github.ref }}
+          
+          ## Installation
+          
+          ```bash
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+          ```
+          
+          ## Changes
+          
+          See the [commit history](https://github.com/${{ github.repository }}/commits/${{ github.ref }}) for details.
+        draft: false
+        prerelease: false
+        
+    - name: Upload hype binary
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./src/hype
+        asset_name: hype
+        asset_content_type: application/octet-stream
