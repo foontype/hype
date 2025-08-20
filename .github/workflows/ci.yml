@@ -14,47 +14,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Install ShellCheck
+    - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y shellcheck
+        sudo apt-get install -y shellcheck bats
         
-    - name: Run ShellCheck
+    - name: Run tests
       run: |
-        shellcheck src/hype
-        shellcheck install.sh
-        shellcheck .devcontainer/post-create-command.sh
-        
-    - name: Test hype functionality
-      run: |
-        chmod +x src/hype
-        
-        # Test default command (should show helmfile guidance)
-        output=$(./src/hype)
-        if [[ ! "$output" =~ "HYPE CLI Tool - Helmfile Helper" ]]; then
-          echo "Default command failed. Expected helmfile guidance, got '$output'"
-          exit 1
-        fi
-        
-        # Test helmfile help command
-        output=$(./src/hype helmfile)
-        if [[ ! "$output" =~ "HYPE Helmfile Command" ]]; then
-          echo "Helmfile help command failed. Got '$output'"
-          exit 1
-        fi
-        
-        # Test version command
-        output=$(./src/hype --version)
-        if [[ ! "$output" =~ ^hype\ [0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          echo "Version command failed. Got '$output'"
-          exit 1
-        fi
-        
-        # Test help command
-        output=$(./src/hype --help)
-        if [[ ! "$output" =~ "helmfile" ]]; then
-          echo "Help command should mention helmfile. Got '$output'"
-          exit 1
-        fi
-        
-        echo "All tests passed!"
+        bats tests/
