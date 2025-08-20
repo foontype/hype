@@ -1,7 +1,8 @@
 templates:
   hype-name: "{{ .Environment.Name }}"
-  hype-configmap:
-    hoge: fuga
+  hype-configmap: &configmap-ports
+    ports:
+      http: 80
   hype-secrets:
     hoge: fuga
 
@@ -17,8 +18,7 @@ releases:
     values:
       - service:
           type: ClusterIP
-          ports:
-            http: 80
+          <<: *configmap-ports
       - replicaCount: 1
       - resources:
           limits:
