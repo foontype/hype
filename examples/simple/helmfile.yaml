@@ -1,5 +1,7 @@
 templates:
   hype-name: "{{ .Environment.Name }}"
+  hype-configmap:
+    hoge: fuga
 
 repositories:
   - name: bitnami
