@@ -29,17 +29,17 @@ jobs:
       run: |
         chmod +x src/hype
         
-        # Test default command
+        # Test default command (should show helmfile guidance)
         output=$(./src/hype)
-        if [ "$output" != "Hello, World!" ]; then
-          echo "Default command failed. Expected 'Hello, World!', got '$output'"
+        if [[ ! "$output" =~ "HYPE CLI Tool - Helmfile Helper" ]]; then
+          echo "Default command failed. Expected helmfile guidance, got '$output'"
           exit 1
         fi
         
-        # Test hello command
-        output=$(./src/hype hello)
-        if [ "$output" != "Hello!" ]; then
-          echo "Hello command failed. Expected 'Hello!', got '$output'"
+        # Test helmfile help command
+        output=$(./src/hype helmfile)
+        if [[ ! "$output" =~ "HYPE Helmfile Command" ]]; then
+          echo "Helmfile help command failed. Got '$output'"
           exit 1
         fi
         
@@ -47,6 +47,13 @@ jobs:
         output=$(./src/hype --version)
         if [[ ! "$output" =~ ^hype\ [0-9]+\.[0-9]+\.[0-9]+$ ]]; then
           echo "Version command failed. Got '$output'"
+          exit 1
+        fi
+        
+        # Test help command
+        output=$(./src/hype --help)
+        if [[ ! "$output" =~ "helmfile" ]]; then
+          echo "Help command should mention helmfile. Got '$output'"
           exit 1
         fi
         
