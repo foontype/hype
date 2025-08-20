@@ -1,1 +1,405 @@
 #!/bin/bash
+
+set -euo pipefail
+
+HYPE_VERSION="0.2.0"
+HYPE_DEBUG="${HYPE_DEBUG:-false}"
+
+# Debug logging function
+debug() {
+    if [[ "$HYPE_DEBUG" == "true" ]]; then
+        echo "[DEBUG] $*" >&2
+    fi
+}
+
+# Error logging function
+error() {
+    echo "[ERROR] $*" >&2
+}
+
+# Info logging function
+info() {
+    echo "[INFO] $*" >&2
+}
+
+# Show version information
+show_version() {
+    echo "HYPE v${HYPE_VERSION}"
+    echo "A helmfile wrapper with ConfigMap management"
+}
+
+# Show help information
+show_help() {
+    cat << EOF
+HYPE v${HYPE_VERSION} - A helmfile wrapper with ConfigMap management
+
+USAGE:
+    hype <COMMAND> [OPTIONS...]
+
+COMMANDS:
+    helmfile [OPTIONS...]    Run helmfile with ConfigMap management
+    --version, -v           Show version information
+    --help, -h              Show this help message
+
+HELMFILE COMMAND:
+    hype helmfile [HELMFILE_OPTIONS...]
+    
+    This command wraps helmfile execution with automatic ConfigMap management.
+    It extracts 'templates.hype' objects from helmfile template output,
+    creates corresponding ConfigMaps, and injects their values back into
+    the helmfile execution.
+
+ENVIRONMENT VARIABLES:
+    HYPE_DEBUG              Set to 'true' to enable debug logging
+
+EXAMPLES:
+    hype helmfile apply
+    hype helmfile diff
+    HYPE_DEBUG=true hype helmfile template
+
+For more information about helmfile options, run: helmfile --help
+EOF
+}
+
+# Validate required dependencies
+validate_dependencies() {
+    local missing_deps=()
+    
+    if ! command -v kubectl >/dev/null 2>&1; then
+        missing_deps+=("kubectl")
+    fi
+    
+    if ! command -v helmfile >/dev/null 2>&1; then
+        missing_deps+=("helmfile")
+    fi
+    
+    if ! command -v yq >/dev/null 2>&1; then
+        missing_deps+=("yq")
+    fi
+    
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        error "Missing required dependencies: ${missing_deps[*]}"
+        error "Please install the missing dependencies and try again."
+        exit 1
+    fi
+    
+    debug "All dependencies validated successfully"
+}
+
+# Generate helmfile template and capture output
+generate_template() {
+    local args=("$@")
+    debug "Generating helmfile template with args: ${args[*]}"
+    
+    # Run helmfile template command and capture output
+    local template_output
+    if ! template_output=$(helmfile "${args[@]}" template 2>/dev/null); then
+        error "Failed to generate helmfile template"
+        return 1
+    fi
+    
+    debug "Template generation successful"
+    echo "$template_output"
+}
+
+# Parse templates.hype objects from YAML output
+parse_hype_objects() {
+    local yaml_content="$1"
+    debug "Parsing YAML content for templates.hype objects"
+    
+    # Use yq to extract templates.hype objects
+    # Look for objects with templates.hype annotation
+    local hype_objects
+    if ! hype_objects=$(echo "$yaml_content" | yq eval '. | select(.metadata.annotations."templates.hype" != null)' -); then
+        debug "No templates.hype objects found or yq parsing failed"
+        return 1
+    fi
+    
+    if [[ -z "$hype_objects" || "$hype_objects" == "null" ]]; then
+        debug "No templates.hype objects found in template output"
+        return 1
+    fi
+    
+    debug "Found templates.hype objects"
+    echo "$hype_objects"
+}
+
+# Extract ConfigMap specifications from template output
+extract_configmap_specs() {
+    local hype_objects="$1"
+    debug "Extracting ConfigMap specifications from templates.hype objects"
+    
+    # Extract ConfigMap names and their corresponding values
+    local configmap_specs
+    if ! configmap_specs=$(echo "$hype_objects" | yq eval '.metadata.annotations."templates.hype" | fromjson' -); then
+        error "Failed to parse templates.hype annotation as JSON"
+        return 1
+    fi
+    
+    debug "ConfigMap specifications extracted successfully"
+    echo "$configmap_specs"
+}
+
+# Check if a ConfigMap exists in the current kubectl context
+check_configmap_exists() {
+    local configmap_name="$1"
+    local namespace="${2:-default}"
+    debug "Checking if ConfigMap '$configmap_name' exists in namespace '$namespace'"
+    
+    if kubectl get configmap "$configmap_name" -n "$namespace" >/dev/null 2>&1; then
+        debug "ConfigMap '$configmap_name' exists"
+        return 0
+    else
+        debug "ConfigMap '$configmap_name' does not exist"
+        return 1
+    fi
+}
+
+# Create a ConfigMap with the specified data
+create_configmap() {
+    local configmap_name="$1"
+    local namespace="$2"
+    local values_json="$3"
+    debug "Creating ConfigMap '$configmap_name' in namespace '$namespace'"
+    
+    # Convert JSON values to key-value pairs for kubectl
+    local kubectl_args=()
+    while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            kubectl_args+=("--from-literal=$line")
+        fi
+    done < <(echo "$values_json" | yq eval 'to_entries | .[] | .key + "=" + (.value | tostring)' -)
+    
+    if [[ ${#kubectl_args[@]} -eq 0 ]]; then
+        error "No data found to create ConfigMap '$configmap_name'"
+        return 1
+    fi
+    
+    debug "Creating ConfigMap with args: kubectl create configmap $configmap_name -n $namespace ${kubectl_args[*]}"
+    
+    if kubectl create configmap "$configmap_name" -n "$namespace" "${kubectl_args[@]}" >/dev/null 2>&1; then
+        info "Created ConfigMap '$configmap_name' in namespace '$namespace'"
+        return 0
+    else
+        error "Failed to create ConfigMap '$configmap_name'"
+        return 1
+    fi
+}
+
+# Manage ConfigMaps based on specifications
+manage_configmaps() {
+    local configmap_specs="$1"
+    debug "Managing ConfigMaps based on specifications"
+    
+    # Process each ConfigMap specification
+    echo "$configmap_specs" | yq eval '. | to_entries | .[]' - | while IFS= read -r spec; do
+        local configmap_name
+        local namespace
+        local values
+        
+        configmap_name=$(echo "$spec" | yq eval '.key' -)
+        values=$(echo "$spec" | yq eval '.value' -)
+        
+        # Extract namespace from values if specified, otherwise use default
+        namespace=$(echo "$values" | yq eval '.namespace // "default"' -)
+        
+        debug "Processing ConfigMap: $configmap_name in namespace: $namespace"
+        
+        # Check if ConfigMap already exists
+        if check_configmap_exists "$configmap_name" "$namespace"; then
+            info "ConfigMap '$configmap_name' already exists in namespace '$namespace', skipping creation"
+        else
+            # Create the ConfigMap
+            if ! create_configmap "$configmap_name" "$namespace" "$values"; then
+                error "Failed to create ConfigMap '$configmap_name'"
+                return 1
+            fi
+        fi
+    done
+    
+    debug "ConfigMap management completed successfully"
+}
+
+# Extract values from ConfigMap to temporary file
+extract_values_from_configmap() {
+    local configmap_name="$1"
+    local namespace="${2:-default}"
+    local temp_file="$3"
+    debug "Extracting values from ConfigMap '$configmap_name' to file '$temp_file'"
+    
+    # Get ConfigMap data and convert to YAML format
+    if ! kubectl get configmap "$configmap_name" -n "$namespace" -o yaml | yq eval '.data' - > "$temp_file"; then
+        error "Failed to extract values from ConfigMap '$configmap_name'"
+        return 1
+    fi
+    
+    debug "Values extracted to '$temp_file'"
+}
+
+# Generate temporary value files from ConfigMaps
+generate_value_files() {
+    local configmap_specs="$1"
+    local temp_dir="$2"
+    debug "Generating temporary value files in '$temp_dir'"
+    
+    local value_files=()
+    
+    # Process each ConfigMap specification
+    while IFS= read -r spec; do
+        if [[ -z "$spec" || "$spec" == "null" ]]; then
+            continue
+        fi
+        
+        local configmap_name
+        local namespace
+        
+        configmap_name=$(echo "$spec" | yq eval '.key' -)
+        namespace=$(echo "$spec" | yq eval '.value.namespace // "default"' -)
+        
+        local temp_file="$temp_dir/${configmap_name}.yaml"
+        
+        if extract_values_from_configmap "$configmap_name" "$namespace" "$temp_file"; then
+            value_files+=("$temp_file")
+            debug "Added value file: $temp_file"
+        else
+            error "Failed to generate value file for ConfigMap '$configmap_name'"
+            return 1
+        fi
+    done < <(echo "$configmap_specs" | yq eval '. | to_entries | .[]' -)
+    
+    # Return the list of generated files
+    printf '%s\n' "${value_files[@]}"
+}
+
+# Cleanup temporary files and directory
+cleanup_temp_files() {
+    local temp_dir="$1"
+    debug "Cleaning up temporary directory: $temp_dir"
+    
+    if [[ -n "$temp_dir" && -d "$temp_dir" ]]; then
+        rm -rf "$temp_dir"
+        debug "Temporary directory cleaned up"
+    fi
+}
+
+# Execute helmfile with generated value files
+execute_helmfile_with_values() {
+    local original_args=("$@")
+    
+    # Last argument contains the value files (newline separated)
+    local value_files_str="${original_args[-1]}"
+    original_args=("${original_args[@]:0:${#original_args[@]}-1}")
+    
+    debug "Executing helmfile with value files"
+    
+    # Build helmfile command with --state-values-file options
+    local helmfile_cmd=("helmfile")
+    
+    # Add original arguments
+    helmfile_cmd+=("${original_args[@]}")
+    
+    # Add value files as --state-values-file options
+    while IFS= read -r value_file; do
+        if [[ -n "$value_file" ]]; then
+            helmfile_cmd+=("--state-values-file" "$value_file")
+            debug "Added value file: $value_file"
+        fi
+    done <<< "$value_files_str"
+    
+    info "Executing: ${helmfile_cmd[*]}"
+    exec "${helmfile_cmd[@]}"
+}
+
+# Main helmfile command handler
+cmd_helmfile() {
+    debug "Starting helmfile command with args: $*"
+    
+    # Validate dependencies first
+    validate_dependencies
+    
+    # Store original arguments for final execution
+    local original_args=("$@")
+    
+    # Create temporary directory for value files
+    local temp_dir
+    temp_dir=$(mktemp -d -t hype-XXXXXX)
+    debug "Created temporary directory: $temp_dir"
+    
+    # Ensure cleanup on exit
+    trap 'cleanup_temp_files "$temp_dir"' EXIT
+    
+    # Generate helmfile template to find templates.hype objects
+    info "Generating helmfile template to discover ConfigMap requirements..."
+    local template_output
+    if ! template_output=$(generate_template "${original_args[@]}"); then
+        error "Failed to generate template, falling back to direct helmfile execution"
+        exec helmfile "${original_args[@]}"
+    fi
+    
+    # Parse templates.hype objects from the template output
+    local hype_objects
+    if ! hype_objects=$(parse_hype_objects "$template_output"); then
+        info "No templates.hype objects found, executing helmfile directly"
+        exec helmfile "${original_args[@]}"
+    fi
+    
+    # Extract ConfigMap specifications
+    local configmap_specs
+    if ! configmap_specs=$(extract_configmap_specs "$hype_objects"); then
+        error "Failed to extract ConfigMap specifications, executing helmfile directly"
+        exec helmfile "${original_args[@]}"
+    fi
+    
+    debug "ConfigMap specifications: $configmap_specs"
+    
+    # Manage ConfigMaps (create if they don't exist)
+    info "Managing ConfigMaps..."
+    if ! manage_configmaps "$configmap_specs"; then
+        error "Failed to manage ConfigMaps, executing helmfile directly"
+        exec helmfile "${original_args[@]}"
+    fi
+    
+    # Generate temporary value files from ConfigMaps
+    info "Generating value files from ConfigMaps..."
+    local value_files
+    if ! value_files=$(generate_value_files "$configmap_specs" "$temp_dir"); then
+        error "Failed to generate value files, executing helmfile directly"
+        exec helmfile "${original_args[@]}"
+    fi
+    
+    debug "Generated value files: $value_files"
+    
+    # Execute helmfile with the generated value files
+    info "Executing helmfile with ConfigMap values..."
+    execute_helmfile_with_values "${original_args[@]}" "$value_files"
+}
+
+# Main function
+main() {
+    if [[ $# -eq 0 ]]; then
+        show_help
+        exit 0
+    fi
+    
+    case "${1:-}" in
+        helmfile)
+            shift
+            cmd_helmfile "$@"
+            ;;
+        --version|-v)
+            show_version
+            ;;
+        --help|-h)
+            show_help
+            ;;
+        *)
+            error "Unknown command: ${1:-}"
+            echo ""
+            show_help
+            exit 1
+            ;;
+    esac
+}
+
+# Run main function with all arguments
+main "$@"
