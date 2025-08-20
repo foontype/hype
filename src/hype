@@ -42,14 +42,12 @@ OPTIONS:
     -d, --debug     Enable debug mode
 
 SUBCOMMANDS:
-    hello      Say hello (default)
-    world      Say hello world
     helmfile   Execute helmfile with ConfigMap/Secret auto-creation and caching
 
 EXAMPLES:
-    hype             # Outputs "Hello, World!"
-    hype hello       # Outputs "Hello!"
-    hype world       # Outputs "Hello, World!"
+    hype helmfile sync
+    hype helmfile -f my-helmfile.yaml diff
+    hype helmfile apply --wait
 
 EOF
 }
@@ -59,19 +57,12 @@ show_version() {
     echo "hype $HYPE_VERSION"
 }
 
-# Hello command
-cmd_hello() {
-    echo "Hello!"
-}
-
-# World command (default hello world)
-cmd_world() {
-    echo "Hello, World!"
-}
-
-# Default hello world
+# Default command - show help for helmfile
 cmd_default() {
-    echo "Hello, World!"
+    echo "HYPE CLI Tool - Helmfile Helper"
+    echo ""
+    echo "Use 'hype helmfile --help' or 'hype helmfile' for usage information."
+    echo "Use 'hype --help' for general help."
 }
 
 # Check dependencies
@@ -354,14 +345,6 @@ main() {
                 export DEBUG=1
                 debug "Debug mode enabled"
                 shift
-                ;;
-            hello)
-                cmd_hello
-                return 0
-                ;;
-            world)
-                cmd_world
-                return 0
                 ;;
             helmfile)
                 shift
