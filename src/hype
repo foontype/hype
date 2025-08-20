@@ -42,8 +42,9 @@ OPTIONS:
     -d, --debug     Enable debug mode
 
 SUBCOMMANDS:
-    hello    Say hello (default)
-    world    Say hello world
+    hello      Say hello (default)
+    world      Say hello world
+    helmfile   Execute helmfile with ConfigMap/Secret auto-creation and caching
 
 EXAMPLES:
     hype             # Outputs "Hello, World!"
@@ -73,6 +74,269 @@ cmd_default() {
     echo "Hello, World!"
 }
 
+# Check dependencies
+check_dependencies() {
+    local missing_deps=()
+    
+    if ! command -v helmfile >/dev/null 2>&1; then
+        missing_deps+=("helmfile")
+    fi
+    
+    if ! command -v kubectl >/dev/null 2>&1; then
+        missing_deps+=("kubectl")
+    fi
+    
+    if ! command -v yq >/dev/null 2>&1; then
+        missing_deps+=("yq")
+    fi
+    
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        error "Missing required dependencies: ${missing_deps[*]}"
+        exit 2
+    fi
+}
+
+# Parse helmfile arguments
+parse_helmfile_args() {
+    local args=("$@")
+    local pre_options=()
+    local execution_mode=""
+    local post_options=()
+    local parsing_pre=true
+    
+    debug "Parsing helmfile arguments: ${args[*]}"
+    
+    for arg in "${args[@]}"; do
+        if [[ "$parsing_pre" == true ]]; then
+            case "$arg" in
+                sync|apply|diff|template|destroy|delete|status|list|deps|test)
+                    execution_mode="$arg"
+                    parsing_pre=false
+                    ;;
+                *)
+                    pre_options+=("$arg")
+                    ;;
+            esac
+        else
+            post_options+=("$arg")
+        fi
+    done
+    
+    if [[ -z "$execution_mode" ]]; then
+        error "No execution mode specified for helmfile command"
+        exit 1
+    fi
+    
+    # Export parsed arguments
+    export HYPE_PRE_OPTIONS="${pre_options[*]}"
+    export HYPE_EXECUTION_MODE="$execution_mode"
+    export HYPE_POST_OPTIONS="${post_options[*]}"
+    
+    debug "Pre-options: ${pre_options[*]}"
+    debug "Execution mode: $execution_mode"
+    debug "Post-options: ${post_options[*]}"
+}
+
+# Process templates
+process_templates() {
+    local pre_options_str="$1"
+    
+    info "Generating templates with helmfile"
+    
+    # Generate templates
+    local template_cmd="helmfile"
+    if [[ -n "$pre_options_str" ]]; then
+        template_cmd="$template_cmd $pre_options_str"
+    fi
+    template_cmd="$template_cmd template"
+    
+    debug "Running template command: $template_cmd"
+    
+    local template_output
+    if ! template_output=$(eval "$template_cmd" 2>&1); then
+        error "Failed to generate templates: $template_output"
+        exit 1
+    fi
+    
+    # Save template output to temporary file for processing
+    local temp_file
+    temp_file=$(mktemp)
+    echo "$template_output" > "$temp_file"
+    
+    echo "$temp_file"
+}
+
+# Handle ConfigMap operations
+handle_configmap() {
+    local template_file="$1"
+    
+    # Extract hype-name from templates
+    local hype_name
+    if ! hype_name=$(yq eval '.metadata.annotations."templates.hype-name" // empty' "$template_file" | head -n1); then
+        error "Failed to extract hype-name from templates"
+        exit 4
+    fi
+    
+    if [[ -z "$hype_name" ]]; then
+        error "templates.hype-name annotation is required but not found"
+        exit 4
+    fi
+    
+    debug "Found hype-name: $hype_name"
+    
+    # Check if ConfigMap exists
+    local configmap_exists=false
+    if kubectl get configmap "$hype_name" >/dev/null 2>&1; then
+        configmap_exists=true
+        info "ConfigMap '$hype_name' exists, reading current data"
+    else
+        info "ConfigMap '$hype_name' does not exist"
+    fi
+    
+    # Handle ConfigMap creation/reading
+    if [[ "$configmap_exists" == false ]]; then
+        # Create ConfigMap from template
+        local configmap_data
+        if ! configmap_data=$(yq eval '.metadata.annotations."templates.hype-configmap" // "{}"' "$template_file"); then
+            error "Failed to extract configmap data from templates"
+            exit 5
+        fi
+        
+        if [[ "$configmap_data" != "{}" && "$configmap_data" != "null" ]]; then
+            info "Creating ConfigMap '$hype_name' with template data"
+            echo "$configmap_data" | kubectl create configmap "$hype_name" --from-file=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -
+        fi
+    else
+        # Read existing ConfigMap and update template
+        local existing_data
+        if ! existing_data=$(kubectl get configmap "$hype_name" -o jsonpath='{.data}'); then
+            error "Failed to read existing ConfigMap data"
+            exit 3
+        fi
+        
+        # Update template with existing ConfigMap data
+        yq eval ".metadata.annotations.\"templates.hype-configmap\" = \"$existing_data\"" -i "$template_file"
+        debug "Updated template with existing ConfigMap data"
+    fi
+    
+    echo "$hype_name"
+}
+
+# Handle Secrets operations
+handle_secrets() {
+    local hype_name="$1"
+    local template_file="$2"
+    
+    local secret_name="${hype_name}-secrets"
+    
+    # Check if Secret exists
+    if ! kubectl get secret "$secret_name" >/dev/null 2>&1; then
+        info "Secret '$secret_name' does not exist"
+        
+        # Create Secret from template
+        local secret_data
+        if ! secret_data=$(yq eval '.metadata.annotations."templates.hype-secrets" // "{}"' "$template_file"); then
+            error "Failed to extract secret data from templates"
+            exit 5
+        fi
+        
+        if [[ "$secret_data" != "{}" && "$secret_data" != "null" ]]; then
+            info "Creating Secret '$secret_name' with template data"
+            echo "$secret_data" | kubectl create secret generic "$secret_name" --from-file=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -
+        fi
+    else
+        debug "Secret '$secret_name' already exists"
+    fi
+}
+
+# Execute final helmfile command
+execute_helmfile() {
+    local hype_name="$1"
+    local execution_mode="$2"
+    local post_options_str="$3"
+    
+    local cache_file=".cache/${hype_name}.helmfile.yaml"
+    
+    # Ensure cache directory exists
+    mkdir -p .cache
+    
+    info "Executing final helmfile command"
+    
+    local final_cmd="helmfile -f $cache_file $execution_mode"
+    if [[ -n "$post_options_str" ]]; then
+        final_cmd="$final_cmd $post_options_str"
+    fi
+    
+    debug "Running final command: $final_cmd"
+    
+    eval "$final_cmd"
+}
+
+# Helmfile command
+cmd_helmfile() {
+    if [[ $# -eq 0 ]]; then
+        cat <<'EOF'
+HYPE Helmfile Command
+
+USAGE:
+    hype helmfile [pre-options] <execution-mode> [post-options]
+
+EXECUTION MODES:
+    sync        Synchronize releases
+    apply       Apply releases
+    diff        Show differences
+    template    Generate templates
+    destroy     Destroy releases
+    delete      Delete releases
+    status      Show release status
+    list        List releases
+    deps        Update dependencies
+    test        Test releases
+
+PRE-OPTIONS:
+    Options passed to helmfile before execution mode (e.g., -f helmfile.yaml)
+
+POST-OPTIONS:
+    Options passed to helmfile after execution mode
+
+EXAMPLES:
+    hype helmfile sync
+    hype helmfile -f my-helmfile.yaml diff
+    hype helmfile apply --wait
+
+EOF
+        return 0
+    fi
+    
+    # Check dependencies
+    check_dependencies
+    
+    # Parse arguments
+    parse_helmfile_args "$@"
+    
+    # Process templates
+    local template_file
+    template_file=$(process_templates "$HYPE_PRE_OPTIONS")
+    
+    # Handle ConfigMap
+    local hype_name
+    hype_name=$(handle_configmap "$template_file")
+    
+    # Handle Secrets
+    handle_secrets "$hype_name" "$template_file"
+    
+    # Write modified template to cache
+    local cache_file=".cache/${hype_name}.helmfile.yaml"
+    mkdir -p .cache
+    cp "$template_file" "$cache_file"
+    
+    # Clean up temporary file
+    rm -f "$template_file"
+    
+    # Execute final helmfile command
+    execute_helmfile "$hype_name" "$HYPE_EXECUTION_MODE" "$HYPE_POST_OPTIONS"
+}
+
 # Main entry point
 main() {
     # Parse command line arguments
@@ -98,6 +362,11 @@ main() {
             world)
                 cmd_world
                 return 0
+                ;;
+            helmfile)
+                shift
+                cmd_helmfile "$@"
+                return $?
                 ;;
             *)
                 error "Unknown option: $1. Use --help for usage information."
