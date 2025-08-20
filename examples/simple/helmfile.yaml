@@ -1,3 +1,6 @@
+templates:
+  hype-name: "{{ .Environment.Name }}"
+
 repositories:
   - name: bitnami
     url: https://charts.bitnami.com/bitnami
