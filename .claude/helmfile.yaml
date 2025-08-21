@@ -1,12 +1,12 @@
 
 templates:
   hype:
-    - name: {{ .Environments.name }}-configmap
+    - name: {{ .Environments.Name }}-configmap
       type: state-value-file
       values:
         hoge: 12345
 
-    - name: {{ .Environment.name }}-secrets
+    - name: {{ .Environment.Name }}-secrets
       type: secrets-default
       values:
         fuga: 23456
