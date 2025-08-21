@@ -87,8 +87,8 @@ templates:
 - Values are extracted and passed as `--state-value-file` to helmfile
 
 #### secrets-default
-- Creates ConfigMap for secrets management
-- Values are processed similarly to state-value-file but marked for sensitive data handling
+- Creates ConfigMap with default values for kubectl secrets
+- Values are processed similarly to state-value-file but used as default values for secret management
 
 ## Implementation Requirements
 
