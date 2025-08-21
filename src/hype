@@ -25,7 +25,7 @@ info() {
 # Show version information
 show_version() {
     echo "HYPE v${HYPE_VERSION}"
-    echo "A helmfile wrapper with ConfigMap management"
+    echo "A helmfile wrapper with ConfigMap and Secret management"
 }
 
 # Show help information
@@ -37,17 +37,21 @@ USAGE:
     hype <COMMAND> [OPTIONS...]
 
 COMMANDS:
-    helmfile [OPTIONS...]    Run helmfile with ConfigMap management
+    helmfile [OPTIONS...]    Run helmfile with ConfigMap and Secret management
     --version, -v           Show version information
     --help, -h              Show this help message
 
 HELMFILE COMMAND:
     hype helmfile [HELMFILE_OPTIONS...]
     
-    This command wraps helmfile execution with automatic ConfigMap management.
+    This command wraps helmfile execution with automatic ConfigMap and Secret management.
     It extracts 'templates.hype' objects from helmfile template output,
-    creates corresponding ConfigMaps, and injects their values back into
-    the helmfile execution.
+    creates corresponding ConfigMaps or Secrets based on their type, and injects
+    ConfigMap values back into the helmfile execution.
+    
+    Supported template types:
+    - state-value-file: Creates ConfigMaps and injects values (default)
+    - secret-defaults: Creates Secrets if they don't exist (no injection)
 
 ENVIRONMENT VARIABLES:
     HYPE_DEBUG              Set to 'true' to enable debug logging
@@ -124,20 +128,20 @@ parse_hype_objects() {
     echo "$hype_objects"
 }
 
-# Extract ConfigMap specifications from template output
-extract_configmap_specs() {
+# Extract template specifications from template output
+extract_template_specs() {
     local hype_objects="$1"
-    debug "Extracting ConfigMap specifications from templates.hype objects"
+    debug "Extracting template specifications from templates.hype objects"
     
-    # Extract ConfigMap names and their corresponding values
-    local configmap_specs
-    if ! configmap_specs=$(echo "$hype_objects" | yq eval '.metadata.annotations."templates.hype" | fromjson' -); then
+    # Extract template names, types, and their corresponding values
+    local template_specs
+    if ! template_specs=$(echo "$hype_objects" | yq eval '.metadata.annotations."templates.hype" | fromjson' -); then
         error "Failed to parse templates.hype annotation as JSON"
         return 1
     fi
     
-    debug "ConfigMap specifications extracted successfully"
-    echo "$configmap_specs"
+    debug "Template specifications extracted successfully"
+    echo "$template_specs"
 }
 
 # Check if a ConfigMap exists in the current kubectl context
@@ -151,6 +155,58 @@ check_configmap_exists() {
         return 0
     else
         debug "ConfigMap '$configmap_name' does not exist"
+        return 1
+    fi
+}
+
+# Check if a Secret exists in the current kubectl context
+check_secret_exists() {
+    local secret_name="$1"
+    local namespace="${2:-default}"
+    debug "Checking if Secret '$secret_name' exists in namespace '$namespace'"
+    
+    if kubectl get secret "$secret_name" -n "$namespace" >/dev/null 2>&1; then
+        debug "Secret '$secret_name' exists"
+        return 0
+    else
+        debug "Secret '$secret_name' does not exist"
+        return 1
+    fi
+}
+
+# Create a Secret with the specified data if it doesn't exist
+create_secret_if_not_exists() {
+    local secret_name="$1"
+    local namespace="$2"
+    local values_json="$3"
+    debug "Creating Secret '$secret_name' in namespace '$namespace' if it doesn't exist"
+    
+    # Check if Secret already exists
+    if check_secret_exists "$secret_name" "$namespace"; then
+        info "Secret '$secret_name' already exists in namespace '$namespace', skipping creation"
+        return 0
+    fi
+    
+    # Convert JSON values to key-value pairs for kubectl
+    local kubectl_args=()
+    while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            kubectl_args+=("--from-literal=$line")
+        fi
+    done < <(echo "$values_json" | yq eval 'to_entries | .[] | .key + "=" + (.value | tostring)' -)
+    
+    if [[ ${#kubectl_args[@]} -eq 0 ]]; then
+        error "No data found to create Secret '$secret_name'"
+        return 1
+    fi
+    
+    debug "Creating Secret with args: kubectl create secret generic $secret_name -n $namespace ${kubectl_args[*]}"
+    
+    if kubectl create secret generic "$secret_name" -n "$namespace" "${kubectl_args[@]}" >/dev/null 2>&1; then
+        info "Created Secret '$secret_name' in namespace '$namespace'"
+        return 0
+    else
+        error "Failed to create Secret '$secret_name'"
         return 1
     fi
 }
@@ -186,38 +242,70 @@ create_configmap() {
     fi
 }
 
-# Manage ConfigMaps based on specifications
-manage_configmaps() {
-    local configmap_specs="$1"
-    debug "Managing ConfigMaps based on specifications"
+# Manage templates based on specifications (ConfigMaps and Secrets)
+manage_templates() {
+    local template_specs="$1"
+    debug "Managing templates based on specifications"
     
-    # Process each ConfigMap specification
-    echo "$configmap_specs" | yq eval '. | to_entries | .[]' - | while IFS= read -r spec; do
-        local configmap_name
+    # Process each template specification
+    echo "$template_specs" | yq eval '. | to_entries | .[]' - | while IFS= read -r spec; do
+        local template_name
         local namespace
         local values
+        local template_type
         
-        configmap_name=$(echo "$spec" | yq eval '.key' -)
+        template_name=$(echo "$spec" | yq eval '.key' -)
         values=$(echo "$spec" | yq eval '.value' -)
         
         # Extract namespace from values if specified, otherwise use default
         namespace=$(echo "$values" | yq eval '.namespace // "default"' -)
         
-        debug "Processing ConfigMap: $configmap_name in namespace: $namespace"
+        # Extract type from values, default to "state-value-file" for backward compatibility
+        template_type=$(echo "$values" | yq eval '.type // "state-value-file"' -)
         
-        # Check if ConfigMap already exists
-        if check_configmap_exists "$configmap_name" "$namespace"; then
-            info "ConfigMap '$configmap_name' already exists in namespace '$namespace', skipping creation"
-        else
-            # Create the ConfigMap
-            if ! create_configmap "$configmap_name" "$namespace" "$values"; then
-                error "Failed to create ConfigMap '$configmap_name'"
-                return 1
-            fi
-        fi
+        debug "Processing template: $template_name (type: $template_type) in namespace: $namespace"
+        
+        case "$template_type" in
+            "state-value-file")
+                # Handle ConfigMap creation (existing behavior)
+                if check_configmap_exists "$template_name" "$namespace"; then
+                    info "ConfigMap '$template_name' already exists in namespace '$namespace', skipping creation"
+                else
+                    # Remove type and namespace from values before creating ConfigMap
+                    local configmap_values
+                    configmap_values=$(echo "$values" | yq eval 'del(.type) | del(.namespace)' -)
+                    if ! create_configmap "$template_name" "$namespace" "$configmap_values"; then
+                        error "Failed to create ConfigMap '$template_name'"
+                        return 1
+                    fi
+                fi
+                ;;
+            "secret-defaults")
+                # Handle Secret creation (new behavior)
+                # Remove type and namespace from values before creating Secret
+                local secret_values
+                secret_values=$(echo "$values" | yq eval 'del(.type) | del(.namespace)' -)
+                if ! create_secret_if_not_exists "$template_name" "$namespace" "$secret_values"; then
+                    error "Failed to create Secret '$template_name'"
+                    return 1
+                fi
+                ;;
+            *)
+                error "Unknown template type '$template_type' for template '$template_name', skipping"
+                ;;
+        esac
     done
     
-    debug "ConfigMap management completed successfully"
+    debug "Template management completed successfully"
+}
+
+# Manage ConfigMaps based on specifications (kept for backward compatibility)
+manage_configmaps() {
+    local configmap_specs="$1"
+    debug "Managing ConfigMaps based on specifications (legacy function)"
+    
+    # Delegate to the new manage_templates function
+    manage_templates "$configmap_specs"
 }
 
 # Extract values from ConfigMap to temporary file
@@ -236,36 +324,43 @@ extract_values_from_configmap() {
     debug "Values extracted to '$temp_file'"
 }
 
-# Generate temporary value files from ConfigMaps
+# Generate temporary value files from ConfigMaps (only for state-value-file type)
 generate_value_files() {
-    local configmap_specs="$1"
+    local template_specs="$1"
     local temp_dir="$2"
     debug "Generating temporary value files in '$temp_dir'"
     
     local value_files=()
     
-    # Process each ConfigMap specification
+    # Process each template specification
     while IFS= read -r spec; do
         if [[ -z "$spec" || "$spec" == "null" ]]; then
             continue
         fi
         
-        local configmap_name
+        local template_name
         local namespace
+        local template_type
         
-        configmap_name=$(echo "$spec" | yq eval '.key' -)
+        template_name=$(echo "$spec" | yq eval '.key' -)
         namespace=$(echo "$spec" | yq eval '.value.namespace // "default"' -)
+        template_type=$(echo "$spec" | yq eval '.value.type // "state-value-file"' -)
         
-        local temp_file="$temp_dir/${configmap_name}.yaml"
-        
-        if extract_values_from_configmap "$configmap_name" "$namespace" "$temp_file"; then
-            value_files+=("$temp_file")
-            debug "Added value file: $temp_file"
+        # Only generate value files for state-value-file type (ConfigMaps)
+        if [[ "$template_type" == "state-value-file" ]]; then
+            local temp_file="$temp_dir/${template_name}.yaml"
+            
+            if extract_values_from_configmap "$template_name" "$namespace" "$temp_file"; then
+                value_files+=("$temp_file")
+                debug "Added value file: $temp_file"
+            else
+                error "Failed to generate value file for ConfigMap '$template_name'"
+                return 1
+            fi
         else
-            error "Failed to generate value file for ConfigMap '$configmap_name'"
-            return 1
+            debug "Skipping value file generation for template '$template_name' (type: $template_type)"
         fi
-    done < <(echo "$configmap_specs" | yq eval '. | to_entries | .[]' -)
+    done < <(echo "$template_specs" | yq eval '. | to_entries | .[]' -)
     
     # Return the list of generated files
     printf '%s\n' "${value_files[@]}"
@@ -343,26 +438,26 @@ cmd_helmfile() {
         exec helmfile "${original_args[@]}"
     fi
     
-    # Extract ConfigMap specifications
-    local configmap_specs
-    if ! configmap_specs=$(extract_configmap_specs "$hype_objects"); then
-        error "Failed to extract ConfigMap specifications, executing helmfile directly"
+    # Extract template specifications
+    local template_specs
+    if ! template_specs=$(extract_template_specs "$hype_objects"); then
+        error "Failed to extract template specifications, executing helmfile directly"
         exec helmfile "${original_args[@]}"
     fi
     
-    debug "ConfigMap specifications: $configmap_specs"
+    debug "Template specifications: $template_specs"
     
-    # Manage ConfigMaps (create if they don't exist)
-    info "Managing ConfigMaps..."
-    if ! manage_configmaps "$configmap_specs"; then
-        error "Failed to manage ConfigMaps, executing helmfile directly"
+    # Manage templates (create ConfigMaps and Secrets if they don't exist)
+    info "Managing templates (ConfigMaps and Secrets)..."
+    if ! manage_templates "$template_specs"; then
+        error "Failed to manage templates, executing helmfile directly"
         exec helmfile "${original_args[@]}"
     fi
     
-    # Generate temporary value files from ConfigMaps
+    # Generate temporary value files from ConfigMaps (only for state-value-file type)
     info "Generating value files from ConfigMaps..."
     local value_files
-    if ! value_files=$(generate_value_files "$configmap_specs" "$temp_dir"); then
+    if ! value_files=$(generate_value_files "$template_specs" "$temp_dir"); then
         error "Failed to generate value files, executing helmfile directly"
         exec helmfile "${original_args[@]}"
     fi
