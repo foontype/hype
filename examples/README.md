@@ -5,8 +5,8 @@ This directory contains practical examples demonstrating HYPE CLI's helmfile wra
 ## nginx Example
 
 ### Files
-- `nginx-helmfile.yaml` - Complete helmfile configuration with HYPE templates
-- `run-nginx-example.sh` - Demonstration script showing HYPE CLI usage
+- `nginx/helmfile.yaml` - Complete helmfile configuration with HYPE templates
+- `nginx/run-example.sh` - Demonstration script showing HYPE CLI usage
 
 ### Features Demonstrated
 
@@ -24,21 +24,21 @@ This directory contains practical examples demonstrating HYPE CLI's helmfile wra
 ### Usage
 
 ```bash
-cd examples
+cd examples/nginx
 
 # Run the demonstration script
-./run-nginx-example.sh
+./run-example.sh
 
 # Or run commands directly:
 
 # 1. Generate template to see HYPE processing
-DEBUG=1 ../src/hype helmfile -f nginx-helmfile.yaml -e dev template
+DEBUG=1 ../../src/hype helmfile -f helmfile.yaml -e dev template
 
 # 2. Show diff (creates ConfigMaps, shows what would deploy)
-../src/hype helmfile -f nginx-helmfile.yaml -e dev diff
+../../src/hype helmfile -f helmfile.yaml -e dev diff
 
 # 3. Deploy nginx (creates ConfigMaps and deploys)
-../src/hype helmfile -f nginx-helmfile.yaml -e dev apply
+../../src/hype helmfile -f helmfile.yaml -e dev apply
 ```
 
 ### What Happens
