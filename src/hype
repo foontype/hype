@@ -1,1 +1,375 @@
 #!/bin/bash
+
+set -euo pipefail
+
+HYPE_VERSION="0.2.0"
+
+# Debug mode flag
+DEBUG=${DEBUG:-0}
+
+# Temporary files array for cleanup
+declare -a TEMP_FILES=()
+
+# Trap to ensure cleanup on exit
+cleanup_temp_files() {
+    for temp_file in "${TEMP_FILES[@]:-}"; do
+        if [[ -f "$temp_file" ]]; then
+            rm -f "$temp_file"
+        fi
+    done
+}
+trap cleanup_temp_files EXIT
+
+debug_log() {
+    if [[ "$DEBUG" -eq 1 ]]; then
+        echo "[DEBUG] $*" >&2
+    fi
+}
+
+show_help() {
+    echo "HYPE CLI - Helmfile wrapper and utility tool"
+    echo ""
+    echo "Usage:"
+    echo "  hype <command> [options]"
+    echo ""
+    echo "Commands:"
+    echo "  hello                    Say hello"
+    echo "  world                    Say world"
+    echo "  helmfile <args>          Execute helmfile with HYPE processing"
+    echo ""
+    echo "Options:"
+    echo "  --help                   Show this help"
+    echo "  --version                Show version"
+    echo ""
+    echo "Environment Variables:"
+    echo "  DEBUG=1                  Enable debug logging"
+    echo ""
+    echo "Examples:"
+    echo "  hype hello"
+    echo "  hype helmfile apply"
+    echo "  DEBUG=1 hype helmfile diff"
+}
+
+show_version() {
+    echo "HYPE CLI v$HYPE_VERSION"
+}
+
+cmd_hello() {
+    echo "Hello from HYPE CLI!"
+}
+
+cmd_world() {
+    echo "World says hello back!"
+}
+
+cmd_helmfile() {
+    debug_log "Starting helmfile wrapper with args: $*"
+    
+    if ! command -v helmfile &> /dev/null; then
+        echo "Error: helmfile is not installed or not in PATH" >&2
+        echo "Please install helmfile: https://github.com/helmfile/helmfile" >&2
+        exit 1
+    fi
+    
+    if ! command -v kubectl &> /dev/null; then
+        echo "Error: kubectl is not installed or not in PATH" >&2
+        echo "Please install kubectl: https://kubernetes.io/docs/tasks/tools/" >&2
+        exit 1
+    fi
+    
+    parse_helmfile_arguments "$@"
+}
+
+parse_helmfile_arguments() {
+    local args=("$@")
+    local base_options=()
+    local mode=""
+    local post_options=()
+    local mode_found=false
+    
+    debug_log "Parsing helmfile arguments: ${args[*]}"
+    
+    # Known helmfile modes
+    local modes=("apply" "diff" "sync" "template" "destroy" "delete" "lint" "build" "list" "status" "test" "fetch" "deps" "charts" "repos")
+    
+    for arg in "${args[@]}"; do
+        if [[ "$mode_found" == false ]]; then
+            # Check if this arg is a mode
+            local is_mode=false
+            for m in "${modes[@]}"; do
+                if [[ "$arg" == "$m" ]]; then
+                    mode="$arg"
+                    mode_found=true
+                    is_mode=true
+                    break
+                fi
+            done
+            
+            if [[ "$is_mode" == false ]]; then
+                base_options+=("$arg")
+            fi
+        else
+            post_options+=("$arg")
+        fi
+    done
+    
+    debug_log "Base options: ${base_options[*]:-}"
+    debug_log "Mode: $mode"
+    debug_log "Post options: ${post_options[*]:-}"
+    
+    if [[ -z "$mode" ]]; then
+        echo "Error: No helmfile mode specified (apply, diff, sync, etc.)" >&2
+        exit 1
+    fi
+    
+    process_helmfile_template "${base_options[@]}" "$mode" "${post_options[@]}"
+}
+
+process_helmfile_template() {
+    local base_options=("${@:1:$(($# - 2))}")  # All but last 2
+    local mode="${*:$(($# - 1)):1}"            # Second to last
+    local post_options_str="${*:$#:1}"         # Last argument
+    
+    # Convert post_options_str back to array if needed
+    read -ra post_options <<< "$post_options_str"
+    
+    debug_log "Processing template with base options: ${base_options[*]:-}"
+    debug_log "Mode: $mode"
+    debug_log "Post options: ${post_options[*]:-}"
+    
+    # Generate template to check for HYPE templates
+    local template_output
+    debug_log "Executing: helmfile ${base_options[*]:-} template"
+    
+    if ! template_output=$(helmfile "${base_options[@]}" template 2>&1); then
+        echo "Error: Failed to generate helmfile template" >&2
+        echo "$template_output" >&2
+        exit 1
+    fi
+    
+    debug_log "Template generated successfully"
+    
+    # Check if template contains hype templates
+    if ! echo "$template_output" | grep -q "templates\.hype"; then
+        debug_log "No HYPE templates found, executing helmfile directly"
+        exec helmfile "${base_options[@]}" "$mode" "${post_options[@]}"
+    fi
+    
+    debug_log "HYPE templates found, processing..."
+    parse_hype_templates "$template_output" "${base_options[@]}" "$mode" "${post_options[@]}"
+}
+
+parse_hype_templates() {
+    local template_output="$1"
+    shift
+    local base_options=("${@:1:$(($# - 2))}")
+    local mode="${*:$(($# - 1)):1}"
+    local post_options_str="${*:$#:1}"
+    
+    read -ra post_options <<< "$post_options_str"
+    
+    debug_log "Parsing HYPE templates from output"
+    
+    if ! command -v yq &> /dev/null; then
+        echo "Warning: yq not found, using basic parsing" >&2
+        # Fallback to basic parsing if yq not available
+        execute_helmfile_directly "${base_options[@]}" "$mode" "${post_options[@]}"
+        return
+    fi
+    
+    # Create temporary file for template output
+    local temp_template
+    temp_template=$(mktemp)
+    TEMP_FILES+=("$temp_template")
+    
+    echo "$template_output" > "$temp_template"
+    
+    # Extract HYPE template configurations
+    local hype_configs
+    if ! hype_configs=$(yq eval '.templates.hype[]? // empty' "$temp_template" 2>/dev/null); then
+        debug_log "No valid HYPE templates found or parsing error"
+        execute_helmfile_directly "${base_options[@]}" "$mode" "${post_options[@]}"
+        return
+    fi
+    
+    if [[ -z "$hype_configs" ]]; then
+        debug_log "No HYPE templates configuration found"
+        execute_helmfile_directly "${base_options[@]}" "$mode" "${post_options[@]}"
+        return
+    fi
+    
+    debug_log "Found HYPE template configurations"
+    manage_configmaps "$hype_configs" "${base_options[@]}" "$mode" "${post_options[@]}"
+}
+
+manage_configmaps() {
+    local hype_configs="$1"
+    shift
+    local base_options=("${@:1:$(($# - 2))}")
+    local mode="${*:$(($# - 1)):1}"
+    local post_options_str="${*:$#:1}"
+    
+    read -ra post_options <<< "$post_options_str"
+    
+    debug_log "Managing ConfigMaps for HYPE templates"
+    
+    # Create temporary file for hype configs
+    local temp_configs
+    temp_configs=$(mktemp)
+    TEMP_FILES+=("$temp_configs")
+    echo "$hype_configs" > "$temp_configs"
+    
+    local value_files=()
+    
+    # Process each HYPE template
+    while IFS= read -r config; do
+        if [[ -z "$config" ]]; then
+            continue
+        fi
+        
+        local name type values
+        name=$(echo "$config" | yq eval '.name // ""' -)
+        type=$(echo "$config" | yq eval '.type // "state-value-file"' -)
+        values=$(echo "$config" | yq eval '.values // {}' -)
+        
+        if [[ -z "$name" ]]; then
+            debug_log "Skipping config without name"
+            continue
+        fi
+        
+        debug_log "Processing HYPE template: $name (type: $type)"
+        
+        # Check if ConfigMap exists
+        if kubectl get configmap "$name" &>/dev/null; then
+            debug_log "ConfigMap $name already exists, skipping creation"
+        else
+            debug_log "Creating ConfigMap $name"
+            # Create ConfigMap with values
+            local temp_values
+            temp_values=$(mktemp)
+            TEMP_FILES+=("$temp_values")
+            echo "$values" > "$temp_values"
+            
+            if ! kubectl create configmap "$name" --from-file=values.yaml="$temp_values"; then
+                echo "Error: Failed to create ConfigMap $name" >&2
+                exit 1
+            fi
+        fi
+        
+        # Generate value file for this ConfigMap
+        if [[ "$type" == "state-value-file" || "$type" == "secrets-default" ]]; then
+            local value_file
+            value_file=$(generate_value_file "$name")
+            if [[ -n "$value_file" ]]; then
+                value_files+=("--state-values-file" "$value_file")
+            fi
+        fi
+        
+    done <<< "$(echo "$hype_configs" | yq eval '.[] // empty' -)"
+    
+    execute_helmfile_with_values "${value_files[@]}" "${base_options[@]}" "$mode" "${post_options[@]}"
+}
+
+generate_value_file() {
+    local configmap_name="$1"
+    
+    debug_log "Generating value file for ConfigMap: $configmap_name"
+    
+    local temp_value_file
+    temp_value_file=$(mktemp)
+    TEMP_FILES+=("$temp_value_file")
+    
+    # Extract values from ConfigMap
+    if ! kubectl get configmap "$configmap_name" -o jsonpath='{.data.values\.yaml}' > "$temp_value_file"; then
+        echo "Warning: Failed to extract values from ConfigMap $configmap_name" >&2
+        return 1
+    fi
+    
+    echo "$temp_value_file"
+}
+
+execute_helmfile_with_values() {
+    local value_args=()
+    local base_options=()
+    local mode=""
+    local post_options=()
+    
+    # Parse arguments
+    local parsing_values=true
+    for arg in "$@"; do
+        if [[ "$parsing_values" == true && "$arg" == "--state-values-file" ]]; then
+            value_args+=("$arg")
+            continue
+        elif [[ "$parsing_values" == true && "${#value_args[@]}" -gt 0 && "${value_args[-1]}" == "--state-values-file" ]]; then
+            value_args+=("$arg")
+            continue
+        else
+            parsing_values=false
+            if [[ -z "$mode" ]]; then
+                # Find mode in remaining args
+                local modes=("apply" "diff" "sync" "template" "destroy" "delete" "lint" "build" "list" "status" "test" "fetch" "deps" "charts" "repos")
+                local mode_found=false
+                for m in "${modes[@]}"; do
+                    if [[ "$arg" == "$m" ]]; then
+                        mode="$arg"
+                        mode_found=true
+                        break
+                    fi
+                done
+                if [[ "$mode_found" == false ]]; then
+                    base_options+=("$arg")
+                fi
+            else
+                post_options+=("$arg")
+            fi
+        fi
+    done
+    
+    debug_log "Executing helmfile with value files: ${value_args[*]:-}"
+    debug_log "Final command: helmfile ${base_options[*]:-} ${value_args[*]:-} $mode ${post_options[*]:-}"
+    
+    exec helmfile "${base_options[@]}" "${value_args[@]}" "$mode" "${post_options[@]}"
+}
+
+execute_helmfile_directly() {
+    local base_options=("${@:1:$(($# - 2))}")
+    local mode="${*:$(($# - 1)):1}"
+    local post_options_str="${*:$#:1}"
+    
+    read -ra post_options <<< "$post_options_str"
+    
+    debug_log "Executing helmfile directly: helmfile ${base_options[*]:-} $mode ${post_options[*]:-}"
+    exec helmfile "${base_options[@]}" "$mode" "${post_options[@]}"
+}
+
+main() {
+    case "${1:-}" in
+        --help|-h)
+            show_help
+            ;;
+        --version|-v)
+            show_version
+            ;;
+        hello)
+            cmd_hello
+            ;;
+        world)
+            cmd_world
+            ;;
+        helmfile)
+            shift
+            cmd_helmfile "$@"
+            ;;
+        "")
+            show_help
+            exit 1
+            ;;
+        *)
+            echo "Unknown command: $1" >&2
+            echo "Run 'hype --help' for usage information." >&2
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
