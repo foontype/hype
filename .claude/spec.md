@@ -69,14 +69,26 @@ hype helmfile apply
 templates:
   hype:
     - name: "config-name-1"
+      type: "state-value-file"
       values:
         key1: value1
         key2: value2
     - name: "config-name-2" 
+      type: "secrets-default"
       values:
         key3: value3
         key4: value4
 ```
+
+### Template Types
+
+#### state-value-file
+- Creates ConfigMap with values
+- Values are extracted and passed as `--state-value-file` to helmfile
+
+#### secrets-default
+- Creates ConfigMap with default values for kubectl secrets
+- Values are processed similarly to state-value-file but used as default values for secret management
 
 ## Implementation Requirements
 
