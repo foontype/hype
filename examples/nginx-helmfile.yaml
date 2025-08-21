@@ -1,0 +1,57 @@
+environments:
+  dev:
+    values:
+      - environment: dev
+      - namespace: nginx-dev
+  prod:
+    values:
+      - environment: prod
+      - namespace: nginx-prod
+
+templates:
+  hype:
+    - name: "{{ .Environment.Name }}-nginx-config"
+      type: state-value-file
+      values:
+        nginx:
+          replicaCount: 2
+          image:
+            tag: "1.21.6"
+          service:
+            type: ClusterIP
+            port: 80
+          ingress:
+            enabled: true
+            hosts:
+              - host: "nginx-{{ .Environment.Name }}.example.com"
+                paths:
+                  - path: /
+                    pathType: Prefix
+
+    - name: "{{ .Environment.Name }}-nginx-secrets"
+      type: secrets-default
+      values:
+        nginx:
+          auth:
+            username: "admin"
+            password: "changeme123"
+
+releases:
+  - name: nginx
+    namespace: "{{ .Values.namespace }}"
+    chart: bitnami/nginx
+    version: "13.2.23"
+    values:
+      - replicaCount: "{{ .Values.nginx.replicaCount | default 1 }}"
+      - image:
+          tag: "{{ .Values.nginx.image.tag | default \"latest\" }}"
+      - service:
+          type: "{{ .Values.nginx.service.type | default \"ClusterIP\" }}"
+          port: "{{ .Values.nginx.service.port | default 80 }}"
+      - ingress:
+          enabled: "{{ .Values.nginx.ingress.enabled | default false }}"
+          hosts: "{{ .Values.nginx.ingress.hosts | default list }}"
+
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
