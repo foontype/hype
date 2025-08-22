@@ -20,6 +20,8 @@ ConfigMap = hype <hype name> init 時、name の名前、values の内容で kub
 
 Secrets = hype <hype name> init 時、name の名前、values の内容で kubernetes シークレットリソースが作成されます。
 
+hypefile.yaml の {{ .Hype.Name }} は <hype name> で展開されます。
+
 ```
 usage:
 
