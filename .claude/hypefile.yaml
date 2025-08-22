@@ -1,16 +1,16 @@
-default-resources:
-  - name: {{ .Environments.Name }}-state-value
-    type: state-value
+defaultResources:
+  - name: {{ .Hype.Name }}-state-value
+    type: StateValueConfigmap
     values:
       hoge: 12345
 
-  - name: {{ .Environment.Name }}-configmap
-    type: configmap
+  - name: {{ .Hype.Name }}-configmap
+    type: Configmap
     values:
       fuga: 23456
 
-  - name: {{ .Environment.Name }}-secrets
-    type: secrets
+  - name: {{ .Hype.Name }}-secrets
+    type: Secrets
     values:
       piyo: 34567
 
