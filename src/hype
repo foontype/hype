@@ -64,12 +64,15 @@ show_version() {
 
 check_dependencies() {
     local missing_deps=()
+    local subcommand="${SUBCOMMAND:-}"
     
+    # kubectl is always required
     if ! command -v kubectl >/dev/null 2>&1; then
         missing_deps+=("kubectl")
     fi
     
-    if ! command -v helmfile >/dev/null 2>&1; then
+    # helmfile is only required for helmfile subcommand
+    if [[ "$subcommand" == "helmfile" ]] && ! command -v helmfile >/dev/null 2>&1; then
         missing_deps+=("helmfile")
     fi
     
@@ -139,6 +142,10 @@ parse_default_resources() {
             elif [[ "$in_values_section" == true ]] && [[ "$line" =~ ^[[:space:]]+([^:]+):[[:space:]]*(.+) ]]; then
                 local key="${BASH_REMATCH[1]}"
                 local value="${BASH_REMATCH[2]}"
+                # Handle multiline values (starting with |)
+                if [[ "$value" == "|" ]]; then
+                    continue  # Skip multiline values for now
+                fi
                 value="${value#\"}"
                 value="${value%\"}"
                 current_values="${current_values}${key}=${value}\n"
@@ -367,9 +374,30 @@ generate_state_value_file() {
     local temp_file
     temp_file=$(mktemp)
     
+    # Use yq to properly convert JSON to YAML
+    if command -v yq >/dev/null 2>&1; then
+        debug_log "Using yq for JSON to YAML conversion"
+        if kubectl get configmap "$name" -o jsonpath='{.data}' | yq -y . > "$temp_file" 2>/dev/null; then
+            debug_log "State value file generated with yq: $temp_file"
+            echo "$temp_file"
+            return 0
+        else
+            debug_log "yq conversion failed, falling back to manual parsing"
+        fi
+    fi
+    
+    # Fallback: manual JSON to YAML conversion
+    debug_log "Using fallback JSON to YAML conversion"
     if kubectl get configmap "$name" -o jsonpath='{.data}' | \
-       sed 's/^{//; s/}$//; s/","/"\n"/g; s/":/: /g; s/^"//; s/"$//g' > "$temp_file"; then
-        debug_log "State value file generated: $temp_file"
+       python3 -c "
+import sys, json, yaml
+try:
+    data = json.load(sys.stdin)
+    print(yaml.dump(data, default_flow_style=False))
+except:
+    sys.exit(1)
+" > "$temp_file" 2>/dev/null; then
+        debug_log "State value file generated with Python: $temp_file"
         echo "$temp_file"
     else
         error_log "Failed to generate state value file from ConfigMap: $name"
