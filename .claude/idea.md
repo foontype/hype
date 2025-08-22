@@ -38,5 +38,3 @@ hype my-nginx helmfile apply
 
 ```
 
-TODO
-
