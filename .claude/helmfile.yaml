@@ -1,15 +1,19 @@
+default-resources:
+  - name: {{ .Environments.Name }}-state-value
+    type: state-value
+    values:
+      hoge: 12345
 
-templates:
-  hype:
-    - name: {{ .Environments.Name }}-configmap
-      type: state-value-file
-      values:
-        hoge: 12345
+  - name: {{ .Environment.Name }}-configmap
+    type: configmap
+    values:
+      fuga: 23456
 
-    - name: {{ .Environment.Name }}-secrets
-      type: secrets-default
-      values:
-        fuga: 23456
+  - name: {{ .Environment.Name }}-secrets
+    type: secrets
+    values:
+      piyo: 34567
 
-releases:
-  ...
+helmfile:
+  releases:
+    ...
