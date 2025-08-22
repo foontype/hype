@@ -4,6 +4,10 @@ hype cli は ai の kubernetes デプロイを支援する helmfile ラッパー
 
 hypefile.yaml の設定読み込んで、デフォルトリソースの作成と、helmfile によるコンテナデプロイを行います。
 
+実装言語は bash で src/hype に実装します。
+
+各関数のテストは tests ディレクトリに bats ファイルを書いてください。
+
 ## hypefile.yaml フォーマット
 
 .claude/hypefile.yaml 参照。
