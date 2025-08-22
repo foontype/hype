@@ -1,13 +1,3 @@
-environments:
-  dev:
-    values:
-      - environment: dev
-      - namespace: nginx-dev
-  prod:
-    values:
-      - environment: prod
-      - namespace: nginx-prod
-
 templates:
   hype:
     - name: "{{ .Environment.Name }}-nginx-config"
