@@ -122,13 +122,13 @@ parse_helmfile_arguments() {
         exit 1
     fi
     
-    process_helmfile_template "${base_options[@]}" "$mode" "${post_options[@]}"
+    process_helmfile_template "${base_options[@]}" "$mode"
 }
 
 process_helmfile_template() {
-    local base_options=("${@:1:$(($# - 2))}")  # All but last 2
-    local mode="${*:$(($# - 1)):1}"            # Second to last
-    local post_options_str="${*:$#:1}"         # Last argument
+    local base_options=("${@:1:$(($# - 1))}")  # All but last 1
+    local mode="${*:$#:1}"                     # Last argument
+    local post_options_str=""                  # No post options for template mode
     
     # Convert post_options_str back to array if needed
     read -ra post_options <<< "$post_options_str"
