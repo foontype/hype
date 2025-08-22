@@ -1,2 +1,383 @@
 #!/bin/bash
 
+set -euo pipefail
+
+HYPE_VERSION="0.2.0"
+HYPEFILE_NAME="hypefile.yaml"
+DEBUG_ENABLED=${DEBUG:-false}
+
+cleanup_temp_files() {
+    if [[ -n "${TEMP_STATE_FILES:-}" ]]; then
+        for file in $TEMP_STATE_FILES; do
+            [[ -f "$file" ]] && rm -f "$file"
+        done
+    fi
+}
+
+trap cleanup_temp_files EXIT
+
+debug_log() {
+    if [[ "$DEBUG_ENABLED" == "true" ]]; then
+        echo "[DEBUG] $*" >&2
+    fi
+}
+
+error_log() {
+    echo "[ERROR] $*" >&2
+}
+
+info_log() {
+    echo "[INFO] $*" >&2
+}
+
+show_help() {
+    cat <<EOF
+HYPE - Kubernetes deployments with helmfile wrapper
+
+Usage:
+    hype <hype-name> init                    Create default resources from hypefile.yaml
+    hype <hype-name> helmfile [options]      Run helmfile with state values
+    hype --version                           Show version information
+    hype --help                              Show this help message
+
+Commands:
+    init        Create default Kubernetes resources (ConfigMaps/Secrets)
+    helmfile    Execute helmfile with StateValueConfigmap as --state-value-file
+
+Options:
+    --version   Display version information
+    --help      Display this help message
+
+Environment Variables:
+    DEBUG=true  Enable debug logging
+
+Examples:
+    hype my-nginx init
+    hype my-nginx helmfile apply
+    hype my-nginx helmfile diff --debug
+EOF
+}
+
+show_version() {
+    echo "hype version $HYPE_VERSION"
+}
+
+check_dependencies() {
+    local missing_deps=()
+    
+    if ! command -v kubectl >/dev/null 2>&1; then
+        missing_deps+=("kubectl")
+    fi
+    
+    if ! command -v helmfile >/dev/null 2>&1; then
+        missing_deps+=("helmfile")
+    fi
+    
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        error_log "Missing required dependencies: ${missing_deps[*]}"
+        error_log "Please install the missing tools and try again."
+        exit 1
+    fi
+}
+
+load_hypefile() {
+    if [[ ! -f "$HYPEFILE_NAME" ]]; then
+        error_log "hypefile.yaml not found in current directory"
+        exit 1
+    fi
+    
+    debug_log "Loading $HYPEFILE_NAME"
+    
+    if ! HYPEFILE_CONTENT=$(cat "$HYPEFILE_NAME"); then
+        error_log "Failed to read $HYPEFILE_NAME"
+        exit 1
+    fi
+    
+    validate_hypefile_structure
+    debug_log "Hypefile loaded and validated successfully"
+}
+
+validate_hypefile_structure() {
+    if ! echo "$HYPEFILE_CONTENT" | grep -q "^defaultResources:"; then
+        error_log "Invalid hypefile.yaml: missing 'defaultResources' section"
+        exit 1
+    fi
+    
+    debug_log "Hypefile structure validation passed"
+}
+
+parse_default_resources() {
+    local processed_content="$1"
+    local resource_list=()
+    local in_resources_section=false
+    local in_values_section=false
+    local current_name=""
+    local current_type=""
+    local current_values=""
+    
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^defaultResources: ]]; then
+            in_resources_section=true
+            continue
+        elif [[ "$line" =~ ^[[:alpha:]] ]] && [[ "$in_resources_section" == true ]]; then
+            in_resources_section=false
+        fi
+        
+        if [[ "$in_resources_section" == true ]]; then
+            if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*name:[[:space:]]*\"?([^\"]+)\"? ]]; then
+                if [[ -n "$current_name" ]]; then
+                    resource_list+=("$current_name|$current_type|$current_values")
+                fi
+                current_name="${BASH_REMATCH[1]}"
+                current_type=""
+                current_values=""
+                in_values_section=false
+            elif [[ "$line" =~ ^[[:space:]]+type:[[:space:]]*(.+) ]]; then
+                current_type="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ ^[[:space:]]+values: ]]; then
+                in_values_section=true
+            elif [[ "$in_values_section" == true ]] && [[ "$line" =~ ^[[:space:]]+([^:]+):[[:space:]]*(.+) ]]; then
+                local key="${BASH_REMATCH[1]}"
+                local value="${BASH_REMATCH[2]}"
+                value="${value#\"}"
+                value="${value%\"}"
+                current_values="${current_values}${key}=${value}\n"
+            fi
+        fi
+    done <<< "$processed_content"
+    
+    if [[ -n "$current_name" ]]; then
+        resource_list+=("$current_name|$current_type|$current_values")
+    fi
+    
+    printf '%s\n' "${resource_list[@]}"
+}
+
+process_templates() {
+    local hype_name="$1"
+    debug_log "Processing templates with hype_name: $hype_name"
+    PROCESSED_CONTENT="${HYPEFILE_CONTENT//\{\{ \.Hype\.Name \}\}/$hype_name}"
+}
+
+parse_arguments() {
+    if [[ $# -eq 0 ]]; then
+        show_help
+        exit 0
+    fi
+    
+    case "$1" in
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        --version|-v)
+            show_version
+            exit 0
+            ;;
+        *)
+            if [[ $# -lt 2 ]]; then
+                error_log "Missing subcommand. Use 'hype <hype-name> <subcommand>'"
+                show_help
+                exit 1
+            fi
+            
+            HYPE_NAME="$1"
+            SUBCOMMAND="$2"
+            shift 2
+            REMAINING_ARGS=("$@")
+            ;;
+    esac
+}
+
+main() {
+    parse_arguments "$@"
+    
+    debug_log "Starting hype with name: $HYPE_NAME, command: $SUBCOMMAND"
+    
+    check_dependencies
+    load_hypefile
+    process_templates "$HYPE_NAME"
+    
+    case "$SUBCOMMAND" in
+        init)
+            cmd_init
+            ;;
+        helmfile)
+            cmd_helmfile "${REMAINING_ARGS[@]}"
+            ;;
+        *)
+            error_log "Unknown subcommand: $SUBCOMMAND"
+            show_help
+            exit 1
+            ;;
+    esac
+}
+
+cmd_init() {
+    info_log "Initializing default resources for: $HYPE_NAME"
+    
+    local resources
+    resources=$(parse_default_resources "$PROCESSED_CONTENT")
+    
+    if [[ -z "$resources" ]]; then
+        info_log "No default resources found in hypefile.yaml"
+        return 0
+    fi
+    
+    while IFS= read -r resource_line; do
+        if [[ -n "$resource_line" ]]; then
+            create_resource "$resource_line"
+        fi
+    done <<< "$resources"
+    
+    info_log "Resource initialization completed for: $HYPE_NAME"
+}
+
+create_resource() {
+    local resource_data="$1"
+    local name type values
+    IFS='|' read -r name type values <<< "$resource_data"
+    
+    debug_log "Creating resource: name=$name, type=$type"
+    
+    case "$type" in
+        StateValueConfigmap|Configmap)
+            create_configmap "$name" "$values"
+            ;;
+        Secrets)
+            create_secret "$name" "$values"
+            ;;
+        *)
+            error_log "Unknown resource type: $type"
+            return 1
+            ;;
+    esac
+}
+
+create_configmap() {
+    local name="$1"
+    local values="$2"
+    
+    if kubectl get configmap "$name" >/dev/null 2>&1; then
+        info_log "ConfigMap $name already exists, skipping creation"
+        return 0
+    fi
+    
+    debug_log "Creating ConfigMap: $name"
+    
+    local kubectl_args=("create" "configmap" "$name")
+    
+    while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            local key value
+            IFS='=' read -r key value <<< "$line"
+            kubectl_args+=("--from-literal=${key}=${value}")
+        fi
+    done <<< "$(echo -e "$values")"
+    
+    if kubectl "${kubectl_args[@]}"; then
+        info_log "ConfigMap $name created successfully"
+    else
+        error_log "Failed to create ConfigMap $name"
+        return 1
+    fi
+}
+
+create_secret() {
+    local name="$1"
+    local values="$2"
+    
+    if kubectl get secret "$name" >/dev/null 2>&1; then
+        info_log "Secret $name already exists, skipping creation"
+        return 0
+    fi
+    
+    debug_log "Creating Secret: $name"
+    
+    local kubectl_args=("create" "secret" "generic" "$name")
+    
+    while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            local key value
+            IFS='=' read -r key value <<< "$line"
+            kubectl_args+=("--from-literal=${key}=${value}")
+        fi
+    done <<< "$(echo -e "$values")"
+    
+    if kubectl "${kubectl_args[@]}"; then
+        info_log "Secret $name created successfully"
+    else
+        error_log "Failed to create Secret $name"
+        return 1
+    fi
+}
+
+cmd_helmfile() {
+    local helmfile_args=("$@")
+    info_log "Running helmfile for: $HYPE_NAME with args: ${helmfile_args[*]}"
+    
+    local resources
+    resources=$(parse_default_resources "$PROCESSED_CONTENT")
+    
+    local state_value_files=()
+    TEMP_STATE_FILES=""
+    
+    while IFS= read -r resource_line; do
+        if [[ -n "$resource_line" ]]; then
+            local name type values
+            IFS='|' read -r name type values <<< "$resource_line"
+            
+            if [[ "$type" == "StateValueConfigmap" ]]; then
+                local temp_file
+                temp_file=$(generate_state_value_file "$name" "$values")
+                if [[ -n "$temp_file" ]]; then
+                    state_value_files+=("--state-values-file" "$temp_file")
+                    TEMP_STATE_FILES="$TEMP_STATE_FILES $temp_file"
+                fi
+            fi
+        fi
+    done <<< "$resources"
+    
+    local final_args=("-e" "$HYPE_NAME")
+    final_args+=("${state_value_files[@]}")
+    final_args+=("${helmfile_args[@]}")
+    
+    debug_log "Executing: helmfile ${final_args[*]}"
+    
+    if helmfile "${final_args[@]}"; then
+        info_log "Helmfile execution completed successfully"
+    else
+        local exit_code=$?
+        error_log "Helmfile execution failed with exit code: $exit_code"
+        return $exit_code
+    fi
+}
+
+generate_state_value_file() {
+    local name="$1"
+    local values="$2"
+    
+    if ! kubectl get configmap "$name" >/dev/null 2>&1; then
+        error_log "ConfigMap $name not found. Run 'hype $HYPE_NAME init' first."
+        return 1
+    fi
+    
+    debug_log "Generating state value file from ConfigMap: $name"
+    
+    local temp_file
+    temp_file=$(mktemp)
+    
+    if kubectl get configmap "$name" -o jsonpath='{.data}' | \
+       sed 's/^{//; s/}$//; s/","/"\n"/g; s/":/: /g; s/^"//; s/"$//g' > "$temp_file"; then
+        debug_log "State value file generated: $temp_file"
+        echo "$temp_file"
+    else
+        error_log "Failed to generate state value file from ConfigMap: $name"
+        rm -f "$temp_file"
+        return 1
+    fi
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
