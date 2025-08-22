@@ -122,7 +122,7 @@ parse_helmfile_arguments() {
         exit 1
     fi
     
-    process_helmfile_template "${base_options[@]}" "$mode" "${post_options[@]}"
+    process_helmfile_template "${base_options[@]}" "$mode"
 }
 
 process_helmfile_template() {
