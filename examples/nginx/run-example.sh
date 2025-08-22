@@ -35,37 +35,37 @@ echo ""
 
 # Example 1: Generate template to see what HYPE would process
 echo "=== Example 1: Template Generation ==="
-echo "Running: hype helmfile -f helmfile.yaml -e dev template"
+echo "Running: hype helmfile -f helmfile.yaml -e hype-example template"
 echo ""
-DEBUG=1 ../../src/hype helmfile -f helmfile.yaml -e dev template
+DEBUG=1 ../../src/hype helmfile -f helmfile.yaml -e hype-example template
 echo ""
 
 # Example 2: Show what would happen with diff (dry-run)
 echo "=== Example 2: Diff Mode (what would be deployed) ==="
-echo "Running: hype helmfile -f helmfile.yaml -e dev diff"
+echo "Running: hype helmfile -f helmfile.yaml -e hype-example diff"
 echo ""
 # Note: This will create ConfigMaps but show what would be deployed
-DEBUG=1 ../../src/hype helmfile -f helmfile.yaml -e dev diff
+DEBUG=1 ../../src/hype helmfile -f helmfile.yaml -e hype-example diff
 echo ""
 
 # Example 3: Actual deployment (commented out for safety)
 echo "=== Example 3: Deployment (commented out) ==="
 echo "To actually deploy nginx, run:"
-echo "  hype helmfile -f helmfile.yaml -e dev apply"
+echo "  hype helmfile -f helmfile.yaml -e hype-example apply"
 echo ""
 echo "This would:"
-echo "1. Create 'dev-nginx-config' ConfigMap with nginx configuration"
-echo "2. Create 'dev-nginx-secrets' ConfigMap with default auth values"
+echo "1. Create 'hype-example-nginx-config' ConfigMap with nginx configuration"
+echo "2. Create 'hype-example-nginx-secrets' ConfigMap with default auth values"
 echo "3. Generate temporary value files from ConfigMaps"
 echo "4. Execute 'helmfile apply' with the generated value files"
 echo ""
 
 echo "=== ConfigMaps that would be created ==="
-echo "1. dev-nginx-config:"
+echo "1. hype-example-nginx-config:"
 echo "   - Contains nginx replica count, image tag, service config"
 echo "   - Type: state-value-file"
 echo ""
-echo "2. dev-nginx-secrets:"  
+echo "2. hype-example-nginx-secrets:"  
 echo "   - Contains default auth credentials"
 echo "   - Type: secrets-default"
 echo ""

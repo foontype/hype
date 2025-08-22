@@ -32,21 +32,21 @@ cd examples/nginx
 # Or run commands directly:
 
 # 1. Generate template to see HYPE processing
-DEBUG=1 ../../src/hype helmfile -f helmfile.yaml -e dev template
+DEBUG=1 ../../src/hype helmfile -f helmfile.yaml -e hype-example template
 
 # 2. Show diff (creates ConfigMaps, shows what would deploy)
-../../src/hype helmfile -f helmfile.yaml -e dev diff
+../../src/hype helmfile -f helmfile.yaml -e hype-example diff
 
 # 3. Deploy nginx (creates ConfigMaps and deploys)
-../../src/hype helmfile -f helmfile.yaml -e dev apply
+../../src/hype helmfile -f helmfile.yaml -e hype-example apply
 ```
 
 ### What Happens
 
 1. **Template Processing**: HYPE CLI detects `templates.hype` configuration
 2. **ConfigMap Creation**: 
-   - `dev-nginx-config` with application settings
-   - `dev-nginx-secrets` with authentication defaults
+   - `hype-example-nginx-config` with application settings
+   - `hype-example-nginx-secrets` with authentication defaults
 3. **Value Injection**: Temporary value files generated from ConfigMaps
 4. **Helmfile Execution**: Final helmfile command with `--state-values-file`
 
