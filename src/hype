@@ -1,1 +1,438 @@
 #!/bin/bash
+
+set -euo pipefail
+
+HYPE_VERSION="0.1.0"
+HYPEFILE="${HYPEFILE:-hypefile.yaml}"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Debug mode
+DEBUG="${DEBUG:-false}"
+
+debug() {
+    if [[ "$DEBUG" == "true" ]]; then
+        echo -e "${BLUE}[DEBUG]${NC} $*" >&2
+    fi
+}
+
+info() {
+    echo -e "${GREEN}[INFO]${NC} $*"
+}
+
+warn() {
+    echo -e "${YELLOW}[WARN]${NC} $*"
+}
+
+error() {
+    echo -e "${RED}[ERROR]${NC} $*" >&2
+}
+
+die() {
+    error "$@"
+    exit 1
+}
+
+# Check if required tools are available
+check_dependencies() {
+    local missing=()
+    
+    if ! command -v kubectl >/dev/null 2>&1; then
+        missing+=("kubectl")
+    fi
+    
+    if ! command -v helmfile >/dev/null 2>&1; then
+        missing+=("helmfile")
+    fi
+    
+    if ! command -v yq >/dev/null 2>&1; then
+        missing+=("yq")
+    fi
+    
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        die "Missing required dependencies: ${missing[*]}"
+    fi
+}
+
+# Show help
+show_help() {
+    cat <<EOF
+HYPE CLI - Helmfile Wrapper Tool for Kubernetes AI Deployments
+
+Usage:
+  hype <hype-name> init                         Create default resources
+  hype <hype-name> deinit                       Delete default resources  
+  hype <hype-name> resources                    List default resources status
+  hype <hype-name> helmfile <helmfile-options>  Run helmfile command
+  hype --version                                Show version
+  hype --help                                   Show this help
+
+Options:
+  --version                Show version information
+  --help                   Show help information
+
+Environment Variables:
+  HYPEFILE                 Path to hypefile.yaml (default: hypefile.yaml)
+  DEBUG                    Enable debug output (default: false)
+
+Examples:
+  hype my-nginx init                           Create resources for my-nginx
+  hype my-nginx helmfile apply                 Apply helmfile for my-nginx
+  hype my-nginx resources                      Check resource status
+  hype my-nginx deinit                         Remove all resources
+
+EOF
+}
+
+# Show version
+show_version() {
+    echo "HYPE CLI version $HYPE_VERSION"
+}
+
+# Parse hypefile.yaml and split into hype and helmfile sections
+parse_hypefile() {
+    local hype_name="$1"
+    
+    if [[ ! -f "$HYPEFILE" ]]; then
+        die "Hypefile not found: $HYPEFILE"
+    fi
+    
+    debug "Parsing hypefile: $HYPEFILE"
+    
+    # Create temporary files
+    HYPE_SECTION_FILE=$(mktemp)
+    HELMFILE_SECTION_FILE=$(mktemp)
+    
+    # Split file on "---" separator
+    awk -v hype_file="$HYPE_SECTION_FILE" -v helmfile_file="$HELMFILE_SECTION_FILE" '
+    BEGIN { section = "hype" }
+    /^---$/ { section = "helmfile"; next }
+    section == "hype" { print > hype_file }
+    section == "helmfile" { print > helmfile_file }
+    ' "$HYPEFILE"
+    
+    # Replace {{ .Hype.Name }} with actual hype name
+    sed -i "s/{{ \.Hype\.Name }}/$hype_name/g" "$HYPE_SECTION_FILE"
+    sed -i "s/{{ \.Hype\.Name }}/$hype_name/g" "$HELMFILE_SECTION_FILE"
+    
+    debug "Created temporary files: $HYPE_SECTION_FILE, $HELMFILE_SECTION_FILE"
+}
+
+# Cleanup temporary files
+cleanup() {
+    if [[ -n "${HYPE_SECTION_FILE:-}" && -f "$HYPE_SECTION_FILE" ]]; then
+        rm -f "$HYPE_SECTION_FILE"
+    fi
+    if [[ -n "${HELMFILE_SECTION_FILE:-}" && -f "$HELMFILE_SECTION_FILE" ]]; then
+        rm -f "$HELMFILE_SECTION_FILE"
+    fi
+}
+
+trap cleanup EXIT
+
+# Get default resources from hype section
+get_default_resources() {
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        return
+    fi
+    
+    yq eval '.defaultResources[]' "$HYPE_SECTION_FILE" 2>/dev/null || true
+}
+
+# Create kubernetes resource
+create_resource() {
+    local name="$1"
+    local type="$2"
+    local values="$3"
+    
+    debug "Creating resource: $name (type: $type)"
+    
+    case "$type" in
+        "StateValueConfigmap"|"Configmap")
+            if kubectl get configmap "$name" >/dev/null 2>&1; then
+                info "ConfigMap $name already exists"
+                return
+            fi
+            
+            # Create configmap from values
+            local kubectl_args=("create" "configmap" "$name")
+            while IFS='=' read -r key value; do
+                kubectl_args+=("--from-literal=$key=$value")
+            done <<< "$values"
+            
+            kubectl "${kubectl_args[@]}"
+            info "Created ConfigMap: $name"
+            ;;
+        "Secrets")
+            if kubectl get secret "$name" >/dev/null 2>&1; then
+                info "Secret $name already exists"
+                return
+            fi
+            
+            # Create secret from values
+            local kubectl_args=("create" "secret" "generic" "$name")
+            while IFS='=' read -r key value; do
+                kubectl_args+=("--from-literal=$key=$value")
+            done <<< "$values"
+            
+            kubectl "${kubectl_args[@]}"
+            info "Created Secret: $name"
+            ;;
+        *)
+            warn "Unknown resource type: $type"
+            ;;
+    esac
+}
+
+# Delete kubernetes resource
+delete_resource() {
+    local name="$1"
+    local type="$2"
+    
+    debug "Deleting resource: $name (type: $type)"
+    
+    case "$type" in
+        "StateValueConfigmap"|"Configmap")
+            if kubectl get configmap "$name" >/dev/null 2>&1; then
+                kubectl delete configmap "$name"
+                info "Deleted ConfigMap: $name"
+            else
+                info "ConfigMap $name does not exist"
+            fi
+            ;;
+        "Secrets")
+            if kubectl get secret "$name" >/dev/null 2>&1; then
+                kubectl delete secret "$name"
+                info "Deleted Secret: $name"
+            else
+                info "Secret $name does not exist"
+            fi
+            ;;
+        *)
+            warn "Unknown resource type: $type"
+            ;;
+    esac
+}
+
+# Check resource status
+check_resource_status() {
+    local name="$1"
+    local type="$2"
+    
+    case "$type" in
+        "StateValueConfigmap"|"Configmap")
+            if kubectl get configmap "$name" >/dev/null 2>&1; then
+                echo -e "${GREEN}✓${NC} ConfigMap $name exists"
+            else
+                echo -e "${RED}✗${NC} ConfigMap $name missing"
+            fi
+            ;;
+        "Secrets")
+            if kubectl get secret "$name" >/dev/null 2>&1; then
+                echo -e "${GREEN}✓${NC} Secret $name exists"
+            else
+                echo -e "${RED}✗${NC} Secret $name missing"
+            fi
+            ;;
+        *)
+            echo -e "${YELLOW}?${NC} Unknown resource type: $type"
+            ;;
+    esac
+}
+
+# Get values as key=value pairs
+get_resource_values() {
+    local values_yaml="$1"
+    
+    # Convert YAML values to key=value format
+    echo "$values_yaml" | yq eval 'to_entries | .[] | .key + "=" + (.value | tostring)' -
+}
+
+# Initialize default resources
+cmd_init() {
+    local hype_name="$1"
+    
+    info "Initializing resources for: $hype_name"
+    
+    parse_hypefile "$hype_name"
+    
+    # Process each default resource
+    while read -r resource; do
+        if [[ -n "$resource" ]]; then
+            local name
+            local type
+            local values_yaml
+            
+            name=$(echo "$resource" | yq eval '.name' -)
+            type=$(echo "$resource" | yq eval '.type' -)
+            values_yaml=$(echo "$resource" | yq eval '.values' -)
+            
+            if [[ "$name" != "null" && "$type" != "null" && "$values_yaml" != "null" ]]; then
+                local values
+                values=$(get_resource_values "$values_yaml")
+                create_resource "$name" "$type" "$values"
+            fi
+        fi
+    done < <(get_default_resources)
+    
+    info "Initialization completed for: $hype_name"
+}
+
+# Deinitialize default resources
+cmd_deinit() {
+    local hype_name="$1"
+    
+    info "Deinitializing resources for: $hype_name"
+    
+    parse_hypefile "$hype_name"
+    
+    # Process each default resource
+    while read -r resource; do
+        if [[ -n "$resource" ]]; then
+            local name
+            local type
+            
+            name=$(echo "$resource" | yq eval '.name' -)
+            type=$(echo "$resource" | yq eval '.type' -)
+            
+            if [[ "$name" != "null" && "$type" != "null" ]]; then
+                delete_resource "$name" "$type"
+            fi
+        fi
+    done < <(get_default_resources)
+    
+    info "Deinitialization completed for: $hype_name"
+}
+
+# Show resources status
+cmd_resources() {
+    local hype_name="$1"
+    
+    info "Resource status for: $hype_name"
+    echo
+    
+    parse_hypefile "$hype_name"
+    
+    # Check status of each default resource
+    while read -r resource; do
+        if [[ -n "$resource" ]]; then
+            local name
+            local type
+            
+            name=$(echo "$resource" | yq eval '.name' -)
+            type=$(echo "$resource" | yq eval '.type' -)
+            
+            if [[ "$name" != "null" && "$type" != "null" ]]; then
+                check_resource_status "$name" "$type"
+            fi
+        fi
+    done < <(get_default_resources)
+}
+
+# Run helmfile command
+cmd_helmfile() {
+    local hype_name="$1"
+    shift
+    local helmfile_args=("$@")
+    
+    info "Running helmfile for: $hype_name"
+    debug "Helmfile args: ${helmfile_args[*]}"
+    
+    parse_hypefile "$hype_name"
+    
+    # Build helmfile command
+    local cmd=("helmfile" "-f" "$HELMFILE_SECTION_FILE" "-e" "$hype_name")
+    
+    # Add state-value-file for StateValueConfigmap resources
+    while read -r resource; do
+        if [[ -n "$resource" ]]; then
+            local name
+            local type
+            
+            name=$(echo "$resource" | yq eval '.name' -)
+            type=$(echo "$resource" | yq eval '.type' -)
+            
+            if [[ "$type" == "StateValueConfigmap" && "$name" != "null" ]]; then
+                # Create temporary state values file
+                local state_file
+                state_file=$(mktemp)
+                kubectl get configmap "$name" -o jsonpath='{.data}' | yq eval '.' - > "$state_file"
+                cmd+=("--state-values-file" "$state_file")
+                
+                # Clean up state file when done
+                # shellcheck disable=SC2064
+                trap "rm -f '$state_file'" EXIT
+            fi
+        fi
+    done < <(get_default_resources)
+    
+    # Add user-provided arguments
+    cmd+=("${helmfile_args[@]}")
+    
+    debug "Executing: ${cmd[*]}"
+    "${cmd[@]}"
+}
+
+# Main function
+main() {
+    if [[ $# -eq 0 ]]; then
+        show_help
+        exit 1
+    fi
+    
+    case "${1:-}" in
+        "--help"|"-h")
+            show_help
+            ;;
+        "--version"|"-v")
+            show_version
+            ;;
+        *)
+            if [[ $# -lt 2 ]]; then
+                error "Missing required arguments"
+                show_help
+                exit 1
+            fi
+            
+            local hype_name="$1"
+            local command="$2"
+            shift 2
+            
+            # Validate hype name
+            if [[ ! "$hype_name" =~ ^[a-zA-Z0-9-]+$ ]]; then
+                die "Invalid hype name: $hype_name (only alphanumeric characters and hyphens allowed)"
+            fi
+            
+            check_dependencies
+            
+            case "$command" in
+                "init")
+                    cmd_init "$hype_name"
+                    ;;
+                "deinit")
+                    cmd_deinit "$hype_name"
+                    ;;
+                "resources")
+                    cmd_resources "$hype_name"
+                    ;;
+                "helmfile")
+                    cmd_helmfile "$hype_name" "$@"
+                    ;;
+                *)
+                    error "Unknown command: $command"
+                    show_help
+                    exit 1
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
