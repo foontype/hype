@@ -17,6 +17,5 @@ defaultResources:
 
 ---
 # helmfile section
-helmfile:
-  releases:
-    ...
+releases:
+  ...
