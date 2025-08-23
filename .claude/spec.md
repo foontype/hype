@@ -62,9 +62,9 @@ hype <hype name> deinit
 - Destroys default resources created by init
 - Removes all resources associated with the hype name
 
-#### `resources`
+#### `check`
 ```
-hype <hype name> resources
+hype <hype name> check
 ```
 - Lists all default resources
 - Shows creation status (created/not created) for each resource
@@ -88,7 +88,7 @@ hype my-nginx init
 hype my-nginx helmfile apply
 
 # Check resource status
-hype my-nginx resources
+hype my-nginx check
 
 # Clean up
 hype my-nginx deinit
@@ -100,7 +100,7 @@ hype my-nginx deinit
 2. Create two temporary files:
    - HYPE section file (for init/deinit operations)
    - Helmfile section file (for helmfile operations)
-3. Process template variables (`{{ .Hype.Name }}` ’ actual name)
+3. Process template variables (`{{ .Hype.Name }}` ï¿½ actual name)
 4. Execute appropriate operations based on subcommand
 
 ## Dependencies

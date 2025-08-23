@@ -41,7 +41,7 @@ Implementation of HYPE CLI - a Helmfile wrapper tool for Kubernetes deployments 
   - Skip existing resources
 - [ ] Implement `deinit` subcommand  
   - Remove all resources associated with hype name
-- [ ] Implement `resources` subcommand
+- [ ] Implement `check` subcommand
   - List all default resources
   - Show creation status for each
 
@@ -99,7 +99,7 @@ src/
 tests/
 ├── test_init.bats      # Tests for init functionality
 ├── test_deinit.bats    # Tests for deinit functionality  
-├── test_resources.bats # Tests for resources command
+├── test_check.bats     # Tests for check command
 ├── test_helmfile.bats  # Tests for helmfile integration
 ├── test_parsing.bats   # Tests for YAML parsing
 └── fixtures/           # Test fixtures and sample files
