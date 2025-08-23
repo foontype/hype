@@ -3,6 +3,7 @@ defaultResources:
   - name: "{{ .Hype.Name }}-nginx-state-value"
     type: StateValueConfigmap
     values:
+      namespace: default
       nginx:
         replicaCount: 2
         image:
