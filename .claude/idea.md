@@ -12,6 +12,12 @@ hypefile.yaml の設定読み込んで、デフォルトリソースの作成と
 
 .claude/hypefile.yaml 参照。
 
+### hypefile.yaml の処理方法
+
+TODO
+
+### defaultResources
+
 defaultResources には次のタイプがあります。
 
 StateValueConfigmap = hype <hype name> init 時、name の名前、values の内容で kubernetes コンフィグマップリソースが作成されます。コンフィグマップの内容は hype <hype name> helmfile 時に --state-value-file オプションでファイルとして渡されます。
@@ -21,6 +27,8 @@ ConfigMap = hype <hype name> init 時、name の名前、values の内容で kub
 Secrets = hype <hype name> init 時、name の名前、values の内容で kubernetes シークレットリソースが作成されます。
 
 hypefile.yaml の {{ .Hype.Name }} は <hype name> で展開されます。
+
+## コマンドの使い方
 
 ```
 usage:
@@ -35,7 +43,7 @@ hype <hype name> helmfile <helmfile options>
 
 ```
 
-## 例
+### コマンド例
 
 ```
 hype my-nginx helmfile apply
