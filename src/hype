@@ -12,6 +12,9 @@ cleanup_temp_files() {
             [[ -f "$file" ]] && rm -f "$file"
         done
     fi
+    if [[ -n "${TEMP_HELMFILE:-}" && -f "${TEMP_HELMFILE}" ]]; then
+        rm -f "$TEMP_HELMFILE"
+    fi
 }
 
 trap cleanup_temp_files EXIT
@@ -106,6 +109,11 @@ validate_hypefile_structure() {
         exit 1
     fi
     
+    if ! echo "$HYPEFILE_CONTENT" | grep -q "^helmfile:"; then
+        error_log "Invalid hypefile.yaml: missing 'helmfile' section"
+        exit 1
+    fi
+    
     debug_log "Hypefile structure validation passed"
 }
 
@@ -153,6 +161,63 @@ parse_default_resources() {
     
     rm -f "$temp_yaml"
     printf '%s\n' "${resource_list[@]}"
+}
+
+parse_helmfile_section() {
+    local processed_content="$1"
+    
+    if ! command -v yq >/dev/null 2>&1; then
+        error_log "yq command not found. Please install yq for proper YAML parsing."
+        exit 1
+    fi
+    
+    # Create temporary file for processed content
+    local temp_yaml
+    temp_yaml=$(mktemp)
+    echo "$processed_content" > "$temp_yaml"
+    
+    # Extract helmfile section and convert to YAML
+    local helmfile_content
+    if helmfile_content=$(yq -y '.helmfile' "$temp_yaml" 2>/dev/null); then
+        if [[ "$helmfile_content" != "null" ]]; then
+            rm -f "$temp_yaml"
+            echo "$helmfile_content"
+            return 0
+        fi
+    fi
+    
+    rm -f "$temp_yaml"
+    error_log "Failed to parse helmfile section from hypefile.yaml"
+    return 1
+}
+
+generate_helmfile() {
+    local hype_name="$1"
+    
+    debug_log "Generating temporary helmfile for: $hype_name"
+    
+    local helmfile_content
+    if ! helmfile_content=$(parse_helmfile_section "$PROCESSED_CONTENT"); then
+        error_log "Failed to extract helmfile section"
+        return 1
+    fi
+    
+    # Create temporary helmfile.yaml
+    TEMP_HELMFILE=$(mktemp --suffix=.yaml)
+    
+    # Process templates in helmfile content
+    local processed_helmfile
+    processed_helmfile="${helmfile_content//\{\{ \.Hype\.Name \}\}/$hype_name}"
+    
+    # Write to temporary file
+    echo "$processed_helmfile" > "$TEMP_HELMFILE"
+    
+    debug_log "Temporary helmfile generated: $TEMP_HELMFILE"
+    if [[ "$DEBUG_ENABLED" == "true" ]]; then
+        debug_log "Temporary helmfile content:"
+        debug_log "$(cat "$TEMP_HELMFILE")"
+    fi
+    echo "$TEMP_HELMFILE"
 }
 
 process_templates() {
@@ -318,6 +383,13 @@ cmd_helmfile() {
     local helmfile_args=("$@")
     info_log "Running helmfile for: $HYPE_NAME with args: ${helmfile_args[*]}"
     
+    # Generate temporary helmfile.yaml
+    local temp_helmfile
+    if ! temp_helmfile=$(generate_helmfile "$HYPE_NAME"); then
+        error_log "Failed to generate helmfile"
+        return 1
+    fi
+    
     local resources
     resources=$(parse_default_resources "$PROCESSED_CONTENT")
     
@@ -340,7 +412,7 @@ cmd_helmfile() {
         fi
     done <<< "$resources"
     
-    local final_args=("-e" "$HYPE_NAME")
+    local final_args=("--file" "$temp_helmfile" "-e" "$HYPE_NAME")
     final_args+=("${state_value_files[@]}")
     final_args+=("${helmfile_args[@]}")
     

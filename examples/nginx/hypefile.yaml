@@ -29,7 +29,7 @@ defaultResources:
 helmfile:
   releases:
     - name: nginx
-      namespace: "{{ .Values.namespace }}"
+      namespace: default
       chart: bitnami/nginx
       version: "13.2.23"
       values:
