@@ -30,8 +30,7 @@ jobs:
         chmod +x src/hype
         
         # Test commands
-        ./src/hype
-        ./src/hype hello
+        ./src/hype --help
         ./src/hype --version
         
     - name: Create Release
