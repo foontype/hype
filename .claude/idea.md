@@ -45,6 +45,14 @@ usage:
 
 hype <hype name> init
   デフォルトリソース作成を行います。
+  作成済なら何もしません。
+
+hype <hype name> deinit
+  デフォルトリソースの破棄を行います。
+
+hype <hype name> resources
+  デフォルトリソース一覧を表示します。
+  リソースが作成済みかそうでないかを表示します。
   
 hype <hype name> helmfile <helmfile options>
   helmfile コマンド実行します
