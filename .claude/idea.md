@@ -14,7 +14,17 @@ hypefile.yaml の設定読み込んで、デフォルトリソースの作成と
 
 ### hypefile.yaml の処理方法
 
-TODO
+ファイルセパレーター "---" で hype セクションと helmfile セクションに分離されます。
+
+hype が起動すると、ファイルセパレーターで二つの一時ファイルを生成します。
+
+hype セクションファイルは、init または deinit サブコマンド時に処理します。
+
+{{ .Hype.Name }} を <hype name> に置換してください。その後、hype セクションに書かれたデフォルトリソースを作成または破棄します。
+
+デフォルトリソースの種類のついては defaultResources の項を参照してください。
+
+helmfile セクションは、 helmfile サブコマンド時に処理します。これは、そのまま helmfile -f にパスします。
 
 ### defaultResources
 
