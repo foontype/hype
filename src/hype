@@ -67,7 +67,7 @@ HYPE CLI - Helmfile Wrapper Tool for Kubernetes AI Deployments
 Usage:
   hype <hype-name> init                         Create default resources
   hype <hype-name> deinit                       Delete default resources  
-  hype <hype-name> check-resources              List default resources status
+  hype <hype-name> check                        List default resources status
   hype <hype-name> template                     Show rendered hype section YAML
   hype <hype-name> helmfile <helmfile-options>  Run helmfile command
   hype --version                                Show version
@@ -85,7 +85,7 @@ Examples:
   hype my-nginx init                           Create resources for my-nginx
   hype my-nginx template                       Show rendered YAML for my-nginx
   hype my-nginx helmfile apply                 Apply helmfile for my-nginx
-  hype my-nginx check-resources                Check resource status
+  hype my-nginx check                          Check resource status
   hype my-nginx deinit                         Remove all resources
 
 EOF
@@ -436,7 +436,7 @@ main() {
                 "deinit")
                     cmd_deinit "$hype_name"
                     ;;
-                "check-resources")
+                "check")
                     cmd_check_resources "$hype_name"
                     ;;
                 "template")
