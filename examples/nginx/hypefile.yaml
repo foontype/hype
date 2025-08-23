@@ -3,7 +3,6 @@ defaultResources:
   - name: "{{ .Hype.Name }}-nginx-state-value"
     type: StateValueConfigmap
     values:
-      namespace: default
       nginx:
         replicaCount: 2
         image:
@@ -30,7 +29,7 @@ defaultResources:
 helmfile:
   releases:
     - name: nginx
-      namespace: "{{ .Values.namespace }}"
+      namespace: default
       chart: bitnami/nginx
       version: "13.2.23"
       values:
