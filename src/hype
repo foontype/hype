@@ -112,51 +112,46 @@ validate_hypefile_structure() {
 parse_default_resources() {
     local processed_content="$1"
     local resource_list=()
-    local in_resources_section=false
-    local in_values_section=false
-    local current_name=""
-    local current_type=""
-    local current_values=""
     
-    while IFS= read -r line; do
-        if [[ "$line" =~ ^defaultResources: ]]; then
-            in_resources_section=true
-            continue
-        elif [[ "$line" =~ ^[[:alpha:]] ]] && [[ "$in_resources_section" == true ]]; then
-            in_resources_section=false
-        fi
-        
-        if [[ "$in_resources_section" == true ]]; then
-            if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*name:[[:space:]]*\"?([^\"]+)\"? ]]; then
-                if [[ -n "$current_name" ]]; then
-                    resource_list+=("$current_name|$current_type|$current_values")
-                fi
-                current_name="${BASH_REMATCH[1]}"
-                current_type=""
-                current_values=""
-                in_values_section=false
-            elif [[ "$line" =~ ^[[:space:]]+type:[[:space:]]*(.+) ]]; then
-                current_type="${BASH_REMATCH[1]}"
-            elif [[ "$line" =~ ^[[:space:]]+values: ]]; then
-                in_values_section=true
-            elif [[ "$in_values_section" == true ]] && [[ "$line" =~ ^[[:space:]]+([^:]+):[[:space:]]*(.+) ]]; then
-                local key="${BASH_REMATCH[1]}"
-                local value="${BASH_REMATCH[2]}"
-                # Handle multiline values (starting with |)
-                if [[ "$value" == "|" ]]; then
-                    continue  # Skip multiline values for now
-                fi
-                value="${value#\"}"
-                value="${value%\"}"
-                current_values="${current_values}${key}=${value}\n"
-            fi
-        fi
-    done <<< "$processed_content"
-    
-    if [[ -n "$current_name" ]]; then
-        resource_list+=("$current_name|$current_type|$current_values")
+    # Use yq to parse YAML structure properly
+    if ! command -v yq >/dev/null 2>&1; then
+        error_log "yq command not found. Please install yq for proper YAML parsing."
+        exit 1
     fi
     
+    # Create temporary file for processed content
+    local temp_yaml
+    temp_yaml=$(mktemp)
+    echo "$processed_content" > "$temp_yaml"
+    
+    # Get number of resources
+    local resource_count
+    resource_count=$(yq '.defaultResources | length' "$temp_yaml" 2>/dev/null || echo "0")
+    
+    if [[ "$resource_count" -eq 0 ]]; then
+        rm -f "$temp_yaml"
+        return 0
+    fi
+    
+    # Parse each resource
+    for ((i = 0; i < resource_count; i++)); do
+        local name type values_json
+        
+        name=$(yq ".defaultResources[$i].name" "$temp_yaml" 2>/dev/null | sed 's/^"//;s/"$//')
+        type=$(yq ".defaultResources[$i].type" "$temp_yaml" 2>/dev/null | sed 's/^"//;s/"$//')
+        
+        # Convert values to key=value format
+        local values=""
+        if yq ".defaultResources[$i].values" "$temp_yaml" >/dev/null 2>&1; then
+            values=$(yq ".defaultResources[$i].values | to_entries | .[] | .key + \"=\" + (.value | tostring)" "$temp_yaml" 2>/dev/null | sed 's/^"//;s/"$//' | tr '\n' '\n')
+        fi
+        
+        if [[ -n "$name" && -n "$type" ]]; then
+            resource_list+=("$name|$type|$values")
+        fi
+    done
+    
+    rm -f "$temp_yaml"
     printf '%s\n' "${resource_list[@]}"
 }
 
