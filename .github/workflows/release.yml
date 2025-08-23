@@ -41,19 +41,72 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        release_name: HYPE CLI ${{ github.ref }}
         body: |
-          Release ${{ github.ref }}
+          # HYPE CLI ${{ github.ref }}
           
-          ## Installation
+          A simple command-line tool that wraps Helmfile for Kubernetes AI deployments, providing streamlined management of default resources and configurations.
           
+          ## ✨ Features
+          
+          - **Default Resource Management**: Automatically create and manage ConfigMaps and Secrets
+          - **Template Rendering**: Process hypefile.yaml templates with dynamic values  
+          - **Helmfile Integration**: Seamless integration with existing Helmfile workflows
+          - **Resource Status Checking**: Monitor the status of managed resources
+          - **Debug Support**: Built-in debug logging for troubleshooting
+          
+          ## 📦 Installation
+          
+          ### Quick Install
           ```bash
           curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
           ```
           
-          ## Changes
+          ### Manual Install
+          ```bash
+          wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref }}/hype
+          chmod +x hype
+          sudo mv hype /usr/local/bin/
+          ```
           
-          See the [commit history](https://github.com/${{ github.repository }}/commits/${{ github.ref }}) for details.
+          ## 🚀 Quick Start
+          
+          ```bash
+          # Initialize default resources for a deployment
+          hype my-nginx init
+          
+          # Check status of default resources  
+          hype my-nginx check
+          
+          # Show rendered hype section template
+          hype my-nginx template
+          
+          # Run helmfile commands with generated configuration
+          hype my-nginx helmfile apply
+          
+          # Clean up default resources
+          hype my-nginx deinit
+          ```
+          
+          ## 📋 Requirements
+          
+          - Bash 4.0+
+          - kubectl
+          - helmfile  
+          - yq
+          
+          ## 📚 Documentation
+          
+          See the [README.md](https://github.com/${{ github.repository }}/blob/${{ github.ref }}/README.md) for detailed usage instructions and examples.
+          
+          ## 🔄 Changes in this Release
+          
+          - Initial release of HYPE CLI
+          - Core functionality for managing Kubernetes resources via Helmfile
+          - Support for ConfigMaps and Secrets as default resources
+          - Template rendering with dynamic value substitution
+          - Integration with Helmfile workflows
+          - Comprehensive documentation and examples
         draft: false
         prerelease: false
         
