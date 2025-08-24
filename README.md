@@ -28,7 +28,7 @@ You can install a specific version using the `INSTALL_VERSION` environment varia
 
 ```bash
 # Install specific version
-INSTALL_VERSION=v0.2.1 curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | INSTALL_VERSION=v0.2.1 bash
 
 # Or download and run locally
 curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh -o install.sh
