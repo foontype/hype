@@ -1,6 +1,29 @@
 "v0.0.1": |
   Initial release of HYPE CLI
 
+"v0.2.1": |
+  ## What's New in HYPE CLI v0.2.1
+
+  ### Bug Fixes
+  - **StateValueConfigmap Processing**: Fixed StateValueConfigmap resource handling and data extraction from Kubernetes ConfigMaps
+  - **Multiple Resource Support**: Improved resource processing to correctly handle multiple defaultResources in hypefile configurations
+  - **yq Compatibility**: Added version compatibility fixes for mikefarah/yq and improved YAML processing
+  - **Helmfile Integration**: Fixed `--state-values-file` option name for proper helmfile compatibility
+
+  ### Improvements
+  - Enhanced debug logging and error reporting for troubleshooting
+  - Better ConfigMap data conversion from JSON to YAML format
+  - Improved Go template variable substitution in configuration files
+  - More robust error handling throughout the application
+
+  ### Technical Changes
+  - Fixed broken while-read loop with proper array indexing for resource iteration
+  - Enhanced JSON-to-YAML conversion for helmfile state values
+  - Improved resource creation and deletion workflows
+  - Better cleanup of temporary files
+
+  This release focuses on stability and reliability improvements, ensuring StateValueConfigmap functionality works correctly with Kubernetes deployments.
+
 "v0.2.0": |
   ## What's New in HYPE CLI v0.2.0
 
