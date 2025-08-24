@@ -42,15 +42,19 @@ jobs:
       id: get_release_notes
       run: |
         # Extract version from tag (remove 'v' prefix)
-        VERSION=${GITHUB_REF#refs/tags/v}
+        VERSION=v${GITHUB_REF#refs/tags/v}
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         
-        # Get release name and body from YAML
-        RELEASE_NAME=$(yq eval ".releases.\"$VERSION\".name" release-note.yaml)
-        echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+        # Get release notes from YAML
+        if yq eval ".\"$VERSION\"" release-notes.yaml | grep -q "null"; then
+          echo "No release notes found for version $VERSION"
+          echo "Release $VERSION" > release_notes.md
+        else
+          yq eval ".\"$VERSION\"" release-notes.yaml > release_notes.md
+        fi
         
-        # Write release body to file
-        yq eval ".releases.\"$VERSION\".body" release-note.yaml > release_notes.md
+        # Set release name
+        echo "release_name=Release $VERSION" >> $GITHUB_OUTPUT
         
     - name: Create Release
       id: create_release

@@ -1,5 +1,21 @@
 "v0.0.1": |
   Initial release of HYPE CLI
 
-"v0.0.2": |
-  TODO
+"v0.2.0": |
+  ## What's New in HYPE CLI v0.2.0
+
+  ### New Features
+  - **Section Command**: Added `hype section` subcommand to display raw hype and helmfile sections from configuration files
+  - **Enhanced Configuration Support**: Better support for parsing YAML configuration files with section-based organization
+
+  ### Improvements
+  - Improved error handling and user feedback
+  - Better command structure and help documentation
+  - Enhanced CLI argument parsing
+
+  ### Technical Changes
+  - Version bump to 0.2.0
+  - Updated project structure following development best practices
+  - Improved testing and validation workflows
+
+  This release focuses on expanding HYPE CLI's configuration management capabilities, making it easier to work with sectioned configuration files in development workflows.
