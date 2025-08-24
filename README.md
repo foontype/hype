@@ -19,13 +19,26 @@ HYPE is a Bash-based CLI tool that simplifies the deployment and management of K
 ### Quick Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/your-repo/hype/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | bash
+```
+
+### Install Specific Version
+
+You can install a specific version using the `INSTALL_VERSION` environment variable:
+
+```bash
+# Install specific version
+INSTALL_VERSION=v0.2.1 curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | bash
+
+# Or download and run locally
+curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh -o install.sh
+INSTALL_VERSION=v0.2.1 ./install.sh
 ```
 
 ### Manual Install
 
 ```bash
-git clone https://github.com/your-repo/hype.git
+git clone https://github.com/foontype/hype.git
 cd hype
 ./install.sh
 ```
