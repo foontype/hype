@@ -32,16 +32,7 @@ releases:
     namespace: default
     chart: bitnami/nginx
     version: "13.2.23"
-    values:
-    - replicaCount: "{{ .Values.nginx.replicaCount | default 1 }}"
-    - image:
-        tag: "{{ .Values.nginx.image.tag | default \"latest\" }}"
-    - service:
-        type: "{{ .Values.nginx.service.type | default \"ClusterIP\" }}"
-        port: "{{ .Values.nginx.service.port | default 80 }}"
-    - ingress:
-        enabled: "{{ .Values.nginx.ingress.enabled | default false }}"
-        hosts: "{{ .Values.nginx.ingress.hosts | default list }}"
+    values: []
 
 repositories:
   - name: bitnami

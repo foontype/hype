@@ -10,6 +10,7 @@ cd examples/nginx
 
 ../../src/hype test helmfile apply
   * kubectl を使って nginx がアップしていること
+  * デバッグログで helmfile の引数を表示したとき --state-value-file オプションが指定されていること
 
 ../../src/hype test helmfile destroy
   * kubectl を使って nginx がダウンしていること
