@@ -50,8 +50,12 @@ check_dependencies() {
         missing+=("helmfile")
     fi
     
+    # Check for correct yq version (mikefarah/yq)
     if ! command -v yq >/dev/null 2>&1; then
         missing+=("yq")
+    elif ! yq --version 2>&1 | grep -q "mikefarah"; then
+        error "Wrong yq version detected. Please install mikefarah/yq"
+        missing+=("yq (mikefarah version)")
     fi
     
     if [[ ${#missing[@]} -gt 0 ]]; then
@@ -255,8 +259,12 @@ check_resource_status() {
 get_resource_values() {
     local values_yaml="$1"
     
-    # Convert YAML values to key=value format
-    echo "$values_yaml" | yq eval 'to_entries | .[] | .key + "=" + (.value | tostring)' -
+    # For now, use a simple approach that works with basic YAML structures
+    # Convert YAML to key=value format suitable for kubectl create configmap
+    echo "$values_yaml" | yq eval -o=json | jq -r 'to_entries[] | "\(.key)=\(.value)"' 2>/dev/null || {
+        # Fallback: treat as simple key-value pairs
+        echo "$values_yaml" | yq eval 'to_entries | .[] | .key + "=" + (.value | @json)' -
+    }
 }
 
 # Initialize default resources
@@ -267,24 +275,36 @@ cmd_init() {
     
     parse_hypefile "$hype_name"
     
-    # Process each default resource
-    while read -r resource; do
-        if [[ -n "$resource" ]]; then
-            local name
-            local type
-            local values_yaml
-            
-            name=$(echo "$resource" | yq eval '.name' -)
-            type=$(echo "$resource" | yq eval '.type' -)
-            values_yaml=$(echo "$resource" | yq eval '.values' -)
-            
-            if [[ "$name" != "null" && "$type" != "null" && "$values_yaml" != "null" ]]; then
-                local values
-                values=$(get_resource_values "$values_yaml")
-                create_resource "$name" "$type" "$values"
-            fi
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        info "No hypefile section found"
+        return
+    fi
+    
+    # Get resource count first
+    local resource_count
+    resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
+    
+    if [[ "$resource_count" -eq 0 ]]; then
+        info "No default resources found"
+        return
+    fi
+    
+    # Process each default resource by index
+    for (( i=0; i<resource_count; i++ )); do
+        local name type values_yaml
+        
+        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
+        type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+        values_yaml=$(yq eval ".defaultResources[$i].values" "$HYPE_SECTION_FILE")
+        
+        debug "Processing resource $i: name=$name, type=$type"
+        
+        if [[ "$name" != "null" && "$type" != "null" && "$values_yaml" != "null" ]]; then
+            local values
+            values=$(get_resource_values "$values_yaml")
+            create_resource "$name" "$type" "$values"
         fi
-    done < <(get_default_resources)
+    done
     
     info "Initialization completed for: $hype_name"
 }
@@ -297,20 +317,33 @@ cmd_deinit() {
     
     parse_hypefile "$hype_name"
     
-    # Process each default resource
-    while read -r resource; do
-        if [[ -n "$resource" ]]; then
-            local name
-            local type
-            
-            name=$(echo "$resource" | yq eval '.name' -)
-            type=$(echo "$resource" | yq eval '.type' -)
-            
-            if [[ "$name" != "null" && "$type" != "null" ]]; then
-                delete_resource "$name" "$type"
-            fi
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        info "No hypefile section found"
+        return
+    fi
+    
+    # Get resource count first
+    local resource_count
+    resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
+    
+    if [[ "$resource_count" -eq 0 ]]; then
+        info "No default resources found"
+        return
+    fi
+    
+    # Process each default resource by index
+    for (( i=0; i<resource_count; i++ )); do
+        local name type
+        
+        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
+        type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+        
+        debug "Processing resource $i for deletion: name=$name, type=$type"
+        
+        if [[ "$name" != "null" && "$type" != "null" ]]; then
+            delete_resource "$name" "$type"
         fi
-    done < <(get_default_resources)
+    done
     
     info "Deinitialization completed for: $hype_name"
 }
@@ -324,20 +357,31 @@ cmd_check_resources() {
     
     parse_hypefile "$hype_name"
     
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        info "No hypefile section found"
+        return
+    fi
+    
+    # Get resource count first
+    local resource_count
+    resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
+    
+    if [[ "$resource_count" -eq 0 ]]; then
+        info "No default resources found"
+        return
+    fi
+    
     # Check status of each default resource
-    while read -r resource; do
-        if [[ -n "$resource" ]]; then
-            local name
-            local type
-            
-            name=$(echo "$resource" | yq eval '.name' -)
-            type=$(echo "$resource" | yq eval '.type' -)
-            
-            if [[ "$name" != "null" && "$type" != "null" ]]; then
-                check_resource_status "$name" "$type"
-            fi
+    for (( i=0; i<resource_count; i++ )); do
+        local name type
+        
+        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
+        type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+        
+        if [[ "$name" != "null" && "$type" != "null" ]]; then
+            check_resource_status "$name" "$type"
         fi
-    done < <(get_default_resources)
+    done
 }
 
 # Show rendered hype section template
@@ -398,27 +442,32 @@ cmd_helmfile() {
     local cmd=("helmfile" "-f" "$HELMFILE_SECTION_FILE" "-e" "$hype_name")
     
     # Add state-value-file for StateValueConfigmap resources
-    while read -r resource; do
-        if [[ -n "$resource" ]]; then
-            local name
-            local type
+    if [[ -f "$HYPE_SECTION_FILE" ]]; then
+        local resource_count
+        resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
+        
+        for (( i=0; i<resource_count; i++ )); do
+            local name type
             
-            name=$(echo "$resource" | yq eval '.name' -)
-            type=$(echo "$resource" | yq eval '.type' -)
+            name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
+            type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
             
             if [[ "$type" == "StateValueConfigmap" && "$name" != "null" ]]; then
                 # Create temporary state values file
                 local state_file
                 state_file=$(mktemp)
-                kubectl get configmap "$name" -o yaml | yq eval '.data' - > "$state_file"
-                cmd+=("--state-value-file" "$state_file")
+                # Extract and parse the JSON data from ConfigMap, convert to YAML
+                kubectl get configmap "$name" -o jsonpath='{.data.nginx}' | jq '.' | yq eval -P - > "$state_file"
+                cmd+=("--state-values-file" "$state_file")
+                
+                debug "Added state-values-file: $state_file for ConfigMap: $name"
                 
                 # Clean up state file when done
                 # shellcheck disable=SC2064
                 trap "rm -f '$state_file'" EXIT
             fi
-        fi
-    done < <(get_default_resources)
+        done
+    fi
     
     # Add user-provided arguments
     cmd+=("${helmfile_args[@]}")
