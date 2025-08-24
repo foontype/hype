@@ -1,0 +1,71 @@
+version: "0.2.0"
+release_name: "HYPE CLI v0.2.0"
+description: "A simple command-line tool that wraps Helmfile for Kubernetes AI deployments, providing streamlined management of default resources and configurations."
+
+features:
+  - "**Default Resource Management**: Automatically create and manage ConfigMaps and Secrets"
+  - "**Template Rendering**: Process hypefile.yaml templates with dynamic values"
+  - "**Helmfile Integration**: Seamless integration with existing Helmfile workflows"
+  - "**Resource Status Checking**: Monitor the status of managed resources"
+  - "**Section Display**: View raw hype and helmfile sections separately"
+  - "**Debug Support**: Built-in debug logging for troubleshooting"
+
+installation:
+  quick_install: |
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | bash
+    ```
+  manual_install: |
+    ```bash
+    wget https://github.com/foontype/hype/releases/download/v0.2.0/hype
+    chmod +x hype
+    sudo mv hype /usr/local/bin/
+    ```
+
+quick_start: |
+  ```bash
+  # Initialize default resources for a deployment
+  hype my-nginx init
+  
+  # Check status of default resources  
+  hype my-nginx check
+  
+  # Show rendered hype section template
+  hype my-nginx template
+  
+  # View raw hype or helmfile sections
+  hype my-nginx section hype
+  hype my-nginx section helmfile
+  
+  # Run helmfile commands with generated configuration
+  hype my-nginx helmfile apply
+  
+  # Clean up default resources
+  hype my-nginx deinit
+  ```
+
+requirements:
+  - "Bash 4.0+"
+  - "kubectl"
+  - "helmfile"
+  - "yq"
+
+changelog:
+  new_features:
+    - "**Section Command**: Added `hype <name> section [hype|helmfile]` command to display raw hype and helmfile sections"
+    - "**Default Section Type**: Section command defaults to 'hype' section when no type is specified"
+  
+  improvements:
+    - "**Command Simplification**: Renamed `resources` command to `check` for better usability"
+    - "**Template Display**: Enhanced `template` command for rendered hype section YAML"
+    - "**Help Documentation**: Updated help text with new command examples"
+  
+  technical_updates:
+    - "Version bumped to 0.2.0"
+    - "Release workflow test command fixes"
+    - "Improved error handling and validation"
+  
+  breaking_changes:
+    - "`resources` command renamed to `check`"
+
+compare_url: "https://github.com/foontype/hype/compare/v0.1.0...v0.2.0"

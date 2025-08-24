@@ -33,6 +33,105 @@ jobs:
         ./src/hype --help
         ./src/hype --version
         
+    - name: Install yq
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y yq
+        
+    - name: Generate release notes
+      id: generate_notes
+      run: |
+        VERSION=$(yq eval '.version' release-note.yaml)
+        RELEASE_NAME=$(yq eval '.release_name' release-note.yaml)
+        DESCRIPTION=$(yq eval '.description' release-note.yaml)
+        
+        # Build release notes content
+        cat > release_notes.md << 'EOF'
+        # HYPE CLI v${{ github.ref_name }}
+        
+        $DESCRIPTION
+        
+        ## ✨ Features
+        
+        EOF
+        
+        yq eval '.features[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
+        
+        cat >> release_notes.md << 'EOF'
+        
+        ## 📦 Installation
+        
+        ### Quick Install
+        EOF
+        
+        yq eval '.installation.quick_install' release-note.yaml >> release_notes.md
+        
+        cat >> release_notes.md << 'EOF'
+        
+        ### Manual Install
+        EOF
+        
+        yq eval '.installation.manual_install' release-note.yaml >> release_notes.md
+        
+        cat >> release_notes.md << 'EOF'
+        
+        ## 🚀 Quick Start
+        
+        EOF
+        
+        yq eval '.quick_start' release-note.yaml >> release_notes.md
+        
+        cat >> release_notes.md << 'EOF'
+        
+        ## 📋 Requirements
+        
+        EOF
+        
+        yq eval '.requirements[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
+        
+        cat >> release_notes.md << 'EOF'
+        
+        ## 📚 Documentation
+        
+        See the [README.md](https://github.com/${{ github.repository }}/blob/${{ github.ref }}/README.md) for detailed usage instructions and examples.
+        
+        ## 🔄 Changes in v${{ github.ref_name }}
+        
+        ### 🚀 New Features
+        EOF
+        
+        yq eval '.changelog.new_features[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
+        
+        cat >> release_notes.md << 'EOF'
+        
+        ### ✨ Improvements
+        EOF
+        
+        yq eval '.changelog.improvements[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
+        
+        cat >> release_notes.md << 'EOF'
+        
+        ### 🛠️ Technical Updates
+        EOF
+        
+        yq eval '.changelog.technical_updates[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
+        
+        cat >> release_notes.md << 'EOF'
+        
+        ### 🔧 Breaking Changes
+        EOF
+        
+        yq eval '.changelog.breaking_changes[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
+        
+        cat >> release_notes.md << 'EOF'
+        
+        **Full Changelog**: EOF
+        
+        yq eval '.compare_url' release-note.yaml >> release_notes.md
+        
+        # Set output for next step
+        echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+        
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -40,89 +139,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
-        release_name: HYPE CLI ${{ github.ref }}
-        body: |
-          # HYPE CLI ${{ github.ref }}
-          
-          A simple command-line tool that wraps Helmfile for Kubernetes AI deployments, providing streamlined management of default resources and configurations.
-          
-          ## ✨ Features
-          
-          - **Default Resource Management**: Automatically create and manage ConfigMaps and Secrets
-          - **Template Rendering**: Process hypefile.yaml templates with dynamic values  
-          - **Helmfile Integration**: Seamless integration with existing Helmfile workflows
-          - **Resource Status Checking**: Monitor the status of managed resources
-          - **Section Display**: View raw hype and helmfile sections separately
-          - **Debug Support**: Built-in debug logging for troubleshooting
-          
-          ## 📦 Installation
-          
-          ### Quick Install
-          ```bash
-          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
-          ```
-          
-          ### Manual Install
-          ```bash
-          wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref }}/hype
-          chmod +x hype
-          sudo mv hype /usr/local/bin/
-          ```
-          
-          ## 🚀 Quick Start
-          
-          ```bash
-          # Initialize default resources for a deployment
-          hype my-nginx init
-          
-          # Check status of default resources  
-          hype my-nginx check
-          
-          # Show rendered hype section template
-          hype my-nginx template
-          
-          # View raw hype or helmfile sections
-          hype my-nginx section hype
-          hype my-nginx section helmfile
-          
-          # Run helmfile commands with generated configuration
-          hype my-nginx helmfile apply
-          
-          # Clean up default resources
-          hype my-nginx deinit
-          ```
-          
-          ## 📋 Requirements
-          
-          - Bash 4.0+
-          - kubectl
-          - helmfile  
-          - yq
-          
-          ## 📚 Documentation
-          
-          See the [README.md](https://github.com/${{ github.repository }}/blob/${{ github.ref }}/README.md) for detailed usage instructions and examples.
-          
-          ## 🔄 Changes in v0.2.0
-          
-          ### 🚀 New Features
-          - **Section Command**: Added `hype <name> section [hype|helmfile]` command to display raw hype and helmfile sections
-          - **Default Section Type**: Section command defaults to 'hype' section when no type is specified
-          
-          ### ✨ Improvements  
-          - **Command Simplification**: Renamed `resources` command to `check` for better usability
-          - **Template Display**: Enhanced `template` command for rendered hype section YAML
-          - **Help Documentation**: Updated help text with new command examples
-          
-          ### 🛠️ Technical Updates
-          - Version bumped to 0.2.0
-          - Release workflow test command fixes
-          - Improved error handling and validation
-          
-          ### 🔧 Breaking Changes
-          - `resources` command renamed to `check`
-          
-          **Full Changelog**: https://github.com/${{ github.repository }}/compare/v0.1.0...v0.2.0
+        release_name: ${{ steps.generate_notes.outputs.release_name }} ${{ github.ref }}
+        body_path: ./release_notes.md
         draft: false
         prerelease: false
         
