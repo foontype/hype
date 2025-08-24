@@ -116,7 +116,7 @@ parse_hypefile() {
     
     # Create temporary files
     HYPE_SECTION_FILE=$(mktemp)
-    HELMFILE_SECTION_FILE=$(mktemp)
+    HELMFILE_SECTION_FILE=$(mktemp --suffix=.yaml.gotmpl)
     
     # Split file on "---" separator
     awk -v hype_file="$HYPE_SECTION_FILE" -v helmfile_file="$HELMFILE_SECTION_FILE" '
@@ -451,6 +451,21 @@ cmd_helmfile() {
     
     # Build helmfile command
     local cmd=("helmfile" "-f" "$HELMFILE_SECTION_FILE" "-e" "$hype_name")
+    
+    # Add current directory as state value
+    local current_dir_state_file
+    current_dir_state_file=$(mktemp --suffix=.yaml)
+    cat > "$current_dir_state_file" << EOF
+hype:
+  currentDirectory: "$(pwd)"
+EOF
+    cmd+=("--state-values-file" "$current_dir_state_file")
+    
+    debug "Added current directory state values: $(pwd)"
+    
+    # Clean up current directory state file when done
+    # shellcheck disable=SC2064
+    trap "rm -f '$current_dir_state_file'" EXIT
     
     # Add state-value-file for StateValueConfigmap resources
     if [[ -f "$HYPE_SECTION_FILE" ]]; then
