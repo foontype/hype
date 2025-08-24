@@ -1,3 +1,25 @@
+"v0.3.0": |
+  ## What's New in HYPE CLI v0.3.0
+
+  ### New Features
+  - **Current Directory State Values**: Added automatic injection of current directory path as `hype.currentDirectory` in helmfile state values
+  - **Enhanced Template Support**: Improved Go template (.yaml.gotmpl) file extension support for helmfile sections
+  - **Version-Specific Installation**: Added support for installing specific versions using `INSTALL_VERSION` environment variable
+
+  ### Improvements
+  - Enhanced installation script with version control capabilities
+  - Better temporary file handling with appropriate file extensions
+  - Improved debugging output for helmfile template operations
+  - Updated documentation with proper repository URLs
+
+  ### Technical Changes
+  - Modified temporary file creation to use `.yaml.gotmpl` extension for helmfile sections
+  - Added current directory state value injection in `cmd_helmfile()` function
+  - Enhanced install script with version-specific download support
+  - Updated repository references in README.md
+
+  This release improves template processing capabilities and provides better installation flexibility with version control.
+
 "v0.2.2": |
   ## What's New in HYPE CLI v0.2.2
 
