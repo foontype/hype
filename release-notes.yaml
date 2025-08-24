@@ -1,3 +1,16 @@
+"v0.3.1": |
+  ## What's New in HYPE CLI v0.3.1
+
+  ### Bug Fixes
+  - **ConfigMap Data Extraction**: Fixed StateValueConfigmap processing to extract all data from ConfigMaps instead of only `.data.nginx` field
+  - Improved ConfigMap integration for helmfile state values
+
+  ### Technical Changes
+  - Updated kubectl jsonpath query from `{.data.nginx}` to `{.data}` for complete ConfigMap data extraction
+  - Enhanced ConfigMap to YAML conversion workflow
+
+  This is a patch release that fixes ConfigMap data extraction for more flexible state value management.
+
 "v0.3.0": |
   ## What's New in HYPE CLI v0.3.0
 
