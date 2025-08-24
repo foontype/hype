@@ -410,8 +410,8 @@ cmd_helmfile() {
                 # Create temporary state values file
                 local state_file
                 state_file=$(mktemp)
-                kubectl get configmap "$name" -o jsonpath='{.data}' | yq eval '.' - > "$state_file"
-                cmd+=("--state-values-file" "$state_file")
+                kubectl get configmap "$name" -o yaml | yq eval '.data' - > "$state_file"
+                cmd+=("--state-value-file" "$state_file")
                 
                 # Clean up state file when done
                 # shellcheck disable=SC2064
