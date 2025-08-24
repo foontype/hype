@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-HYPE_VERSION="0.2.1"
+HYPE_VERSION="0.2.2"
 HYPEFILE="${HYPEFILE:-hypefile.yaml}"
 
 # Colors for output
@@ -131,6 +131,17 @@ parse_hypefile() {
     sed -i "s/{{ \.Hype\.Name }}/$hype_name/g" "$HELMFILE_SECTION_FILE"
     
     debug "Created temporary files: $HYPE_SECTION_FILE, $HELMFILE_SECTION_FILE"
+    
+    # Debug: Show contents of temporary files
+    if [[ "$DEBUG" == "true" ]]; then
+        debug "=== HYPE SECTION CONTENT ==="
+        cat "$HYPE_SECTION_FILE" >&2
+        debug "=== END HYPE SECTION ==="
+        
+        debug "=== HELMFILE SECTION CONTENT ==="
+        cat "$HELMFILE_SECTION_FILE" >&2
+        debug "=== END HELMFILE SECTION ==="
+    fi
 }
 
 # Cleanup temporary files
@@ -461,6 +472,13 @@ cmd_helmfile() {
                 cmd+=("--state-values-file" "$state_file")
                 
                 debug "Added state-values-file: $state_file for ConfigMap: $name"
+                
+                # Debug: Show contents of state values file
+                if [[ "$DEBUG" == "true" ]]; then
+                    debug "=== STATE VALUES FILE CONTENT ($name) ==="
+                    cat "$state_file" >&2
+                    debug "=== END STATE VALUES FILE ==="
+                fi
                 
                 # Clean up state file when done
                 # shellcheck disable=SC2064
