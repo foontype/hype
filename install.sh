@@ -8,6 +8,7 @@ set -euo pipefail
 INSTALL_DIR="/usr/local/bin"
 SCRIPT_NAME="hype"
 REPO_URL="https://raw.githubusercontent.com/foontype/hype/main/src/hype"
+RELEASE_URL="https://github.com/foontype/hype/releases/download"
 
 # Colors for output
 RED='\033[0;31m'
@@ -62,6 +63,7 @@ check_dependencies() {
 # Download and install hype
 install_hype() {
     local target_path="$INSTALL_DIR/$SCRIPT_NAME"
+    local download_url
     
     log_info "Installing hype to $target_path"
     
@@ -70,12 +72,21 @@ install_hype() {
         log_info "Using local development version"
         cp "src/hype" "$target_path"
     else
+        # Determine download URL based on INSTALL_VERSION
+        if [[ -n "${INSTALL_VERSION:-}" ]]; then
+            download_url="$RELEASE_URL/$INSTALL_VERSION/$SCRIPT_NAME"
+            log_info "Installing specific version: $INSTALL_VERSION"
+        else
+            download_url="$REPO_URL"
+            log_info "Installing latest version from main branch"
+        fi
+        
         # Download from repository
-        log_info "Downloading from $REPO_URL"
+        log_info "Downloading from $download_url"
         if command -v curl >/dev/null 2>&1; then
-            curl -fsSL "$REPO_URL" -o "$target_path"
+            curl -fsSL "$download_url" -o "$target_path"
         elif command -v wget >/dev/null 2>&1; then
-            wget -q "$REPO_URL" -O "$target_path"
+            wget -q "$download_url" -O "$target_path"
         else
             log_error "Neither curl nor wget is available. Cannot download hype."
             exit 1
