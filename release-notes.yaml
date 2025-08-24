@@ -1,3 +1,24 @@
+"v0.2.2": |
+  ## What's New in HYPE CLI v0.2.2
+
+  ### New Features
+  - **Enhanced Debug Logging**: Added detailed debug output for temporary files when DEBUG=true
+    - Show hype section content during parsing
+    - Show helmfile section content during parsing
+    - Show state values file content during helmfile operations
+  
+  ### Improvements
+  - Better debugging experience for troubleshooting hypefile processing
+  - More visibility into internal file processing workflows
+  - Improved development and testing capabilities
+
+  ### Technical Changes
+  - Added debug content display in parse_hypefile() function
+  - Added debug content display in cmd_helmfile() for state values files
+  - Enhanced temporary file content visibility for debugging
+
+  This release improves the debugging experience by providing detailed visibility into temporary file contents when running in debug mode.
+
 "v0.0.1": |
   Initial release of HYPE CLI
 
