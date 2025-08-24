@@ -38,99 +38,19 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y yq
         
-    - name: Generate release notes
-      id: generate_notes
+    - name: Get release notes
+      id: get_release_notes
       run: |
-        VERSION=$(yq eval '.version' release-note.yaml)
-        RELEASE_NAME=$(yq eval '.release_name' release-note.yaml)
-        DESCRIPTION=$(yq eval '.description' release-note.yaml)
+        # Extract version from tag (remove 'v' prefix)
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
         
-        # Build release notes content
-        cat > release_notes.md << 'EOF'
-        # HYPE CLI v${{ github.ref_name }}
-        
-        $DESCRIPTION
-        
-        ## ✨ Features
-        
-        EOF
-        
-        yq eval '.features[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
-        
-        cat >> release_notes.md << 'EOF'
-        
-        ## 📦 Installation
-        
-        ### Quick Install
-        EOF
-        
-        yq eval '.installation.quick_install' release-note.yaml >> release_notes.md
-        
-        cat >> release_notes.md << 'EOF'
-        
-        ### Manual Install
-        EOF
-        
-        yq eval '.installation.manual_install' release-note.yaml >> release_notes.md
-        
-        cat >> release_notes.md << 'EOF'
-        
-        ## 🚀 Quick Start
-        
-        EOF
-        
-        yq eval '.quick_start' release-note.yaml >> release_notes.md
-        
-        cat >> release_notes.md << 'EOF'
-        
-        ## 📋 Requirements
-        
-        EOF
-        
-        yq eval '.requirements[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
-        
-        cat >> release_notes.md << 'EOF'
-        
-        ## 📚 Documentation
-        
-        See the [README.md](https://github.com/${{ github.repository }}/blob/${{ github.ref }}/README.md) for detailed usage instructions and examples.
-        
-        ## 🔄 Changes in v${{ github.ref_name }}
-        
-        ### 🚀 New Features
-        EOF
-        
-        yq eval '.changelog.new_features[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
-        
-        cat >> release_notes.md << 'EOF'
-        
-        ### ✨ Improvements
-        EOF
-        
-        yq eval '.changelog.improvements[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
-        
-        cat >> release_notes.md << 'EOF'
-        
-        ### 🛠️ Technical Updates
-        EOF
-        
-        yq eval '.changelog.technical_updates[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
-        
-        cat >> release_notes.md << 'EOF'
-        
-        ### 🔧 Breaking Changes
-        EOF
-        
-        yq eval '.changelog.breaking_changes[]' release-note.yaml | sed 's/^/- /' >> release_notes.md
-        
-        cat >> release_notes.md << 'EOF'
-        
-        **Full Changelog**: EOF
-        
-        yq eval '.compare_url' release-note.yaml >> release_notes.md
-        
-        # Set output for next step
+        # Get release name and body from YAML
+        RELEASE_NAME=$(yq eval ".releases.\"$VERSION\".name" release-note.yaml)
         echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+        
+        # Write release body to file
+        yq eval ".releases.\"$VERSION\".body" release-note.yaml > release_notes.md
         
     - name: Create Release
       id: create_release
@@ -139,7 +59,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
-        release_name: ${{ steps.generate_notes.outputs.release_name }} ${{ github.ref }}
+        release_name: ${{ steps.get_release_notes.outputs.release_name }}
         body_path: ./release_notes.md
         draft: false
         prerelease: false
