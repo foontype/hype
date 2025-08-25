@@ -481,9 +481,12 @@ EOF
             if [[ "$type" == "StateValueConfigmap" && "$name" != "null" ]]; then
                 # Create temporary state values file
                 local state_file
-                state_file=$(mktemp)
-                # Extract and parse the JSON data from ConfigMap, convert to YAML
-                kubectl get configmap "$name" -o jsonpath='{.data}' | jq '.' | yq eval -P - > "$state_file"
+                state_file=$(mktemp --suffix=.yaml)
+                # Extract ConfigMap data and extract values content directly
+                local configmap_data
+                configmap_data=$(kubectl get configmap "$name" -o jsonpath='{.data.values}' 2>/dev/null || echo "{}")
+                # Parse JSON and convert to YAML, ensuring proper structure
+                echo "$configmap_data" | jq '.' | yq eval -P - > "$state_file"
                 cmd+=("--state-values-file" "$state_file")
                 
                 debug "Added state-values-file: $state_file for ConfigMap: $name"
