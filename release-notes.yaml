@@ -1,3 +1,26 @@
+"v0.3.2": |
+  ## What's New in HYPE CLI v0.3.2
+
+  ### Bug Fixes
+  - **State Values YAML Format**: Fixed state values file generation to properly handle all ConfigMap data types
+    - Simple values (strings, numbers, booleans) now output in correct `key: value` format
+    - Complex JSON objects are converted to proper YAML with correct indentation
+    - All ConfigMap entries are now properly expanded when passed to helmfile
+  - **ConfigMap Data Processing**: Enhanced ConfigMap data extraction logic to handle mixed data types correctly
+
+  ### Improvements
+  - Better YAML formatting in state values files for improved readability
+  - More reliable helmfile integration with proper data type handling
+  - Enhanced debugging output for state values file content
+
+  ### Technical Changes
+  - Improved `cmd_helmfile()` function ConfigMap processing (lines 486-509)
+  - Added regex-based detection for JSON vs simple values
+  - Integrated `yq` for reliable YAML conversion of complex structures
+  - Enhanced temporary file processing workflow
+
+  This release fixes critical issues with StateValueConfigmap data expansion, ensuring all ConfigMap data types are properly formatted and available in helmfile templates.
+
 "v0.3.1": |
   ## What's New in HYPE CLI v0.3.1
 
