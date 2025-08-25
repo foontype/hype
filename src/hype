@@ -169,9 +169,15 @@ get_default_resources() {
 create_resource() {
     local name="$1"
     local type="$2"
-    local values="$3"
+    local values_yaml="$3"
+    local tmpdir
     
     debug "Creating resource: $name (type: $type)"
+    
+    # Create temporary directory for complex values
+    tmpdir=$(mktemp -d)
+    # shellcheck disable=SC2064
+    trap "rm -rf '$tmpdir'" EXIT
     
     case "$type" in
         "StateValueConfigmap"|"Configmap")
@@ -180,11 +186,11 @@ create_resource() {
                 return
             fi
             
-            # Create configmap from values
+            # Create configmap from values using new logic
             local kubectl_args=("create" "configmap" "$name")
-            while IFS='=' read -r key value; do
-                kubectl_args+=("--from-literal=$key=$value")
-            done <<< "$values"
+            while IFS= read -r arg; do
+                [[ -n "$arg" ]] && kubectl_args+=("$arg")
+            done < <(get_resource_values "$values_yaml" "$tmpdir")
             
             kubectl "${kubectl_args[@]}"
             info "Created ConfigMap: $name"
@@ -195,11 +201,11 @@ create_resource() {
                 return
             fi
             
-            # Create secret from values
+            # Create secret from values using new logic
             local kubectl_args=("create" "secret" "generic" "$name")
-            while IFS='=' read -r key value; do
-                kubectl_args+=("--from-literal=$key=$value")
-            done <<< "$values"
+            while IFS= read -r arg; do
+                [[ -n "$arg" ]] && kubectl_args+=("$arg")
+            done < <(get_resource_values "$values_yaml" "$tmpdir")
             
             kubectl "${kubectl_args[@]}"
             info "Created Secret: $name"
@@ -266,16 +272,34 @@ check_resource_status() {
     esac
 }
 
-# Get values as key=value pairs
+# Get values as kubectl arguments for complex YAML structures
 get_resource_values() {
     local values_yaml="$1"
+    local tmpdir="$2"
     
-    # For now, use a simple approach that works with basic YAML structures
-    # Convert YAML to key=value format suitable for kubectl create configmap
-    echo "$values_yaml" | yq eval -o=json | jq -r 'to_entries[] | "\(.key)=\(.value)"' 2>/dev/null || {
-        # Fallback: treat as simple key-value pairs
-        echo "$values_yaml" | yq eval 'to_entries | .[] | .key + "=" + (.value | @json)' -
-    }
+    debug "Processing values_yaml with tmpdir: $tmpdir"
+    
+    # ① Create YAML files for complex structures (arrays/objects/multiline)
+    echo "$values_yaml" \
+      | yq eval -o=json - \
+      | jq -r '
+          to_entries[]
+          | select((.value|type) != "string" and (.value|type) != "number" and (.value|type) != "boolean")
+          | "cat > \"'"$tmpdir"'/\(.key).yaml\" <<'\''EOF'\''\n\(.value|@yaml)\nEOF"
+        ' \
+      | bash
+    
+    # ② Generate kubectl arguments for all keys
+    echo "$values_yaml" \
+      | yq eval -o=json - \
+      | jq -r '
+          to_entries[]
+          | if (.value|type=="string" or .value|type=="number" or .value|type=="boolean") then
+              "--from-literal=\(.key)=\(.value|tostring)"
+            else
+              "--from-file=\(.key)='"$tmpdir"'/\(.key).yaml"
+            end
+        '
 }
 
 # Initialize default resources
@@ -311,9 +335,7 @@ cmd_init() {
         debug "Processing resource $i: name=$name, type=$type"
         
         if [[ "$name" != "null" && "$type" != "null" && "$values_yaml" != "null" ]]; then
-            local values
-            values=$(get_resource_values "$values_yaml")
-            create_resource "$name" "$type" "$values"
+            create_resource "$name" "$type" "$values_yaml"
         fi
     done
     
