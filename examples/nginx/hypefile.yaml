@@ -17,6 +17,9 @@ defaultResources:
               paths:
                 - path: /
                   pathType: Prefix
+      strValue: "This is a pen."
+      numberValue: 12345
+      boolValue: true
 
   - name: "{{ .Hype.Name }}-nginx-secrets"
     type: Secrets
