@@ -180,13 +180,12 @@ create_resource() {
                 return
             fi
             
-            # Create configmap from values
-            local kubectl_args=("create" "configmap" "$name")
-            while IFS='=' read -r key value; do
-                kubectl_args+=("--from-literal=$key=$value")
-            done <<< "$values"
-            
-            kubectl "${kubectl_args[@]}"
+            # Create configmap from values with YAML structure
+            local temp_yaml_file
+            temp_yaml_file=$(mktemp --suffix=.yaml)
+            echo "$values" > "$temp_yaml_file"
+            kubectl create configmap "$name" --from-file=values="$temp_yaml_file"
+            rm -f "$temp_yaml_file"
             info "Created ConfigMap: $name"
             ;;
         "Secrets")
@@ -195,13 +194,12 @@ create_resource() {
                 return
             fi
             
-            # Create secret from values
-            local kubectl_args=("create" "secret" "generic" "$name")
-            while IFS='=' read -r key value; do
-                kubectl_args+=("--from-literal=$key=$value")
-            done <<< "$values"
-            
-            kubectl "${kubectl_args[@]}"
+            # Create secret from values with YAML structure
+            local temp_yaml_file
+            temp_yaml_file=$(mktemp --suffix=.yaml)
+            echo "$values" > "$temp_yaml_file"
+            kubectl create secret generic "$name" --from-file=values="$temp_yaml_file"
+            rm -f "$temp_yaml_file"
             info "Created Secret: $name"
             ;;
         *)
@@ -267,16 +265,6 @@ check_resource_status() {
 }
 
 # Get values as key=value pairs
-get_resource_values() {
-    local values_yaml="$1"
-    
-    # For now, use a simple approach that works with basic YAML structures
-    # Convert YAML to key=value format suitable for kubectl create configmap
-    echo "$values_yaml" | yq eval -o=json | jq -r 'to_entries[] | "\(.key)=\(.value)"' 2>/dev/null || {
-        # Fallback: treat as simple key-value pairs
-        echo "$values_yaml" | yq eval 'to_entries | .[] | .key + "=" + (.value | @json)' -
-    }
-}
 
 # Initialize default resources
 cmd_init() {
@@ -311,9 +299,8 @@ cmd_init() {
         debug "Processing resource $i: name=$name, type=$type"
         
         if [[ "$name" != "null" && "$type" != "null" && "$values_yaml" != "null" ]]; then
-            local values
-            values=$(get_resource_values "$values_yaml")
-            create_resource "$name" "$type" "$values"
+            # Pass YAML structure directly without conversion
+            create_resource "$name" "$type" "$values_yaml"
         fi
     done
     
@@ -482,11 +469,24 @@ EOF
                 # Create temporary state values file
                 local state_file
                 state_file=$(mktemp --suffix=.yaml)
-                # Extract ConfigMap data and extract values content directly
-                local configmap_data
-                configmap_data=$(kubectl get configmap "$name" -o jsonpath='{.data.values}' 2>/dev/null || echo "{}")
-                # Parse JSON and convert to YAML, ensuring proper structure
-                echo "$configmap_data" | jq '.' | yq eval -P - > "$state_file"
+                # Extract all ConfigMap data keys and merge them into a single YAML structure
+                local temp_merge_file
+                temp_merge_file=$(mktemp --suffix=.yaml)
+                
+                # Get all data keys from ConfigMap and merge them
+                kubectl get configmap "$name" -o json 2>/dev/null | jq -r '.data // {} | to_entries[] | .value' | while IFS= read -r yaml_content; do
+                    if [[ -n "$yaml_content" ]]; then
+                        echo "$yaml_content" >> "$temp_merge_file"
+                    fi
+                done
+                
+                # If temp file has content, use it; otherwise create empty YAML
+                if [[ -s "$temp_merge_file" ]]; then
+                    cp "$temp_merge_file" "$state_file"
+                else
+                    echo "{}" > "$state_file"
+                fi
+                rm -f "$temp_merge_file"
                 cmd+=("--state-values-file" "$state_file")
                 
                 debug "Added state-values-file: $state_file for ConfigMap: $name"
