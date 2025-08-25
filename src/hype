@@ -152,6 +152,8 @@ cleanup() {
     if [[ -n "${HELMFILE_SECTION_FILE:-}" && -f "$HELMFILE_SECTION_FILE" ]]; then
         rm -f "$HELMFILE_SECTION_FILE"
     fi
+    # Clean up temporary YAML files created for complex values
+    rm -f /tmp/tmp_*.yaml 2>/dev/null || true
 }
 
 trap cleanup EXIT
@@ -182,8 +184,16 @@ create_resource() {
             
             # Create configmap from values
             local kubectl_args=("create" "configmap" "$name")
-            while IFS='=' read -r key value; do
-                kubectl_args+=("--from-literal=$key=$value")
+            
+            # Process values which can be either --from-literal or --from-file with echo commands
+            while IFS= read -r line; do
+                if [[ "$line" =~ ^echo\ .+\ \>\ /tmp/tmp_.+\.yaml$ ]]; then
+                    # Execute the echo command to create temporary file
+                    eval "$line"
+                elif [[ "$line" =~ ^--from- ]]; then
+                    # Add kubectl argument
+                    kubectl_args+=("$line")
+                fi
             done <<< "$values"
             
             kubectl "${kubectl_args[@]}"
@@ -197,8 +207,16 @@ create_resource() {
             
             # Create secret from values
             local kubectl_args=("create" "secret" "generic" "$name")
-            while IFS='=' read -r key value; do
-                kubectl_args+=("--from-literal=$key=$value")
+            
+            # Process values which can be either --from-literal or --from-file with echo commands
+            while IFS= read -r line; do
+                if [[ "$line" =~ ^echo\ .+\ \>\ /tmp/tmp_.+\.yaml$ ]]; then
+                    # Execute the echo command to create temporary file
+                    eval "$line"
+                elif [[ "$line" =~ ^--from- ]]; then
+                    # Add kubectl argument
+                    kubectl_args+=("$line")
+                fi
             done <<< "$values"
             
             kubectl "${kubectl_args[@]}"
@@ -266,16 +284,22 @@ check_resource_status() {
     esac
 }
 
-# Get values as key=value pairs
+# Get values as kubectl arguments for configmap creation
 get_resource_values() {
     local values_yaml="$1"
     
-    # For now, use a simple approach that works with basic YAML structures
-    # Convert YAML to key=value format suitable for kubectl create configmap
-    echo "$values_yaml" | yq eval -o=json | jq -r 'to_entries[] | "\(.key)=\(.value)"' 2>/dev/null || {
-        # Fallback: treat as simple key-value pairs
-        echo "$values_yaml" | yq eval 'to_entries | .[] | .key + "=" + (.value | @json)' -
-    }
+    echo "$values_yaml" | yq eval -o=json - \
+    | jq -r '
+      to_entries[] |
+      if (.value | type == "string" or type == "number" or type == "boolean") then
+        "--from-literal=\(.key)=\(.value)"
+      else
+        (
+          "echo " + ((.value | @yaml) | @sh) + " > /tmp/tmp_\(.key).yaml\n" +
+          "--from-file=\(.key)=/tmp/tmp_\(.key).yaml"
+        )
+      end
+    '
 }
 
 # Initialize default resources
