@@ -192,6 +192,7 @@ create_resource() {
                 [[ -n "$arg" ]] && kubectl_args+=("$arg")
             done < <(get_resource_values "$values_yaml" "$tmpdir")
             
+            debug "Executing kubectl command: ${kubectl_args[*]}"
             kubectl "${kubectl_args[@]}"
             info "Created ConfigMap: $name"
             ;;
@@ -207,6 +208,7 @@ create_resource() {
                 [[ -n "$arg" ]] && kubectl_args+=("$arg")
             done < <(get_resource_values "$values_yaml" "$tmpdir")
             
+            debug "Executing kubectl command: ${kubectl_args[*]}"
             kubectl "${kubectl_args[@]}"
             info "Created Secret: $name"
             ;;
@@ -279,6 +281,13 @@ get_resource_values() {
     
     debug "Processing values_yaml with tmpdir: $tmpdir"
     
+    # Debug: Show input YAML structure
+    if [[ "$DEBUG" == "true" ]]; then
+        debug "=== INPUT YAML ==="
+        echo "$values_yaml" | yq eval -P - >&2
+        debug "=== END INPUT YAML ==="
+    fi
+    
     # ① Create YAML files for complex structures (arrays/objects/multiline)
     echo "$values_yaml" \
       | yq eval -o=json - \
@@ -289,8 +298,15 @@ get_resource_values() {
         ' \
       | bash
     
+    # Debug: List created files
+    if [[ "$DEBUG" == "true" ]] && [[ -d "$tmpdir" ]]; then
+        debug "Created temporary files in $tmpdir:"
+        ls -la "$tmpdir" >&2 || true
+    fi
+    
     # ② Generate kubectl arguments for all keys
-    echo "$values_yaml" \
+    local kubectl_args
+    kubectl_args=$(echo "$values_yaml" \
       | yq eval -o=json - \
       | jq -r '
           to_entries[]
@@ -299,7 +315,16 @@ get_resource_values() {
             else
               "--from-file=\(.key)='"$tmpdir"'/\(.key).yaml"
             end
-        '
+        ')
+    
+    # Debug: Show generated kubectl arguments
+    if [[ "$DEBUG" == "true" ]]; then
+        debug "=== GENERATED KUBECTL ARGUMENTS ==="
+        echo "$kubectl_args" >&2
+        debug "=== END KUBECTL ARGUMENTS ==="
+    fi
+    
+    echo "$kubectl_args"
 }
 
 # Initialize default resources
