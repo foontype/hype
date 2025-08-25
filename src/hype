@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-HYPE_VERSION="0.3.1"
+HYPE_VERSION="0.3.2"
 HYPEFILE="${HYPEFILE:-hypefile.yaml}"
 
 # Colors for output
@@ -482,8 +482,31 @@ EOF
                 # Create temporary state values file
                 local state_file
                 state_file=$(mktemp)
-                # Extract JSON data from ConfigMap and convert each YAML value to proper structure with indentation
-                kubectl get configmap "$name" -o json | jq -r '.data | to_entries[] | "\(.key):\n" + (.value | split("\n") | map("  " + .) | join("\n"))' > "$state_file"
+                # Extract JSON data from ConfigMap and convert to proper YAML format
+                {
+                    kubectl get configmap "$name" -o json | jq -r '.data | to_entries[] | 
+                        if (.value | test("^[{\\[]")) then
+                            # JSON object/array - convert to YAML using yq
+                            "\(.key)_JSON_START\n\(.value)\n\(.key)_JSON_END"
+                        else
+                            # Simple value
+                            "\(.key): \(.value)"
+                        end'
+                } | while IFS= read -r line; do
+                    if [[ "$line" == *"_JSON_START" ]]; then
+                        key="${line%_JSON_START}"
+                        echo "$key:"
+                        # Read JSON content until _JSON_END
+                        json_content=""
+                        while IFS= read -r json_line && [[ "$json_line" != "${key}_JSON_END" ]]; do
+                            json_content="$json_content$json_line"
+                        done
+                        # Convert JSON to YAML with proper indentation
+                        echo "$json_content" | yq eval -P - | sed 's/^/  /'
+                    else
+                        echo "$line"
+                    fi
+                done > "$state_file"
                 cmd+=("--state-values-file" "$state_file")
                 
                 debug "Added state-values-file: $state_file for ConfigMap: $name"
