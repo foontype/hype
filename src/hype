@@ -58,6 +58,11 @@ check_dependencies() {
         missing+=("yq (mikefarah version)")
     fi
     
+    # Check for helm diff plugin
+    if ! helm plugin list | grep -q "diff"; then
+        missing+=("helm-diff plugin")
+    fi
+    
     if [[ ${#missing[@]} -gt 0 ]]; then
         die "Missing required dependencies: ${missing[*]}"
     fi
