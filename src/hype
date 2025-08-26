@@ -169,9 +169,15 @@ get_default_resources() {
 create_resource() {
     local name="$1"
     local type="$2"
-    local values="$3"
+    local values_yaml="$3"
+    local tmpdir
     
     debug "Creating resource: $name (type: $type)"
+    
+    # Create temporary directory for complex values
+    tmpdir=$(mktemp -d)
+    # shellcheck disable=SC2064
+    trap "rm -rf '$tmpdir'" EXIT
     
     case "$type" in
         "StateValueConfigmap"|"Configmap")
@@ -180,11 +186,11 @@ create_resource() {
                 return
             fi
             
-            # Create configmap from values
+            # Create configmap from values using new logic
             local kubectl_args=("create" "configmap" "$name")
-            while IFS='=' read -r key value; do
-                kubectl_args+=("--from-literal=$key=$value")
-            done <<< "$values"
+            while IFS= read -r arg; do
+                [[ -n "$arg" ]] && kubectl_args+=("$arg")
+            done < <(get_resource_values "$values_yaml" "$tmpdir" "$type")
             
             kubectl "${kubectl_args[@]}"
             info "Created ConfigMap: $name"
@@ -195,11 +201,11 @@ create_resource() {
                 return
             fi
             
-            # Create secret from values
+            # Create secret from values using new logic
             local kubectl_args=("create" "secret" "generic" "$name")
-            while IFS='=' read -r key value; do
-                kubectl_args+=("--from-literal=$key=$value")
-            done <<< "$values"
+            while IFS= read -r arg; do
+                [[ -n "$arg" ]] && kubectl_args+=("$arg")
+            done < <(get_resource_values "$values_yaml" "$tmpdir" "$type")
             
             kubectl "${kubectl_args[@]}"
             info "Created Secret: $name"
@@ -266,16 +272,63 @@ check_resource_status() {
     esac
 }
 
-# Get values as key=value pairs
+# Get values as kubectl arguments with resource type specific handling
 get_resource_values() {
     local values_yaml="$1"
+    local tmpdir="$2"
+    local resource_type="$3"
     
-    # For now, use a simple approach that works with basic YAML structures
-    # Convert YAML to key=value format suitable for kubectl create configmap
-    echo "$values_yaml" | yq eval -o=json | jq -r 'to_entries[] | "\(.key)=\(.value)"' 2>/dev/null || {
-        # Fallback: treat as simple key-value pairs
-        echo "$values_yaml" | yq eval 'to_entries | .[] | .key + "=" + (.value | @json)' -
-    }
+    debug "Processing values_yaml with tmpdir: $tmpdir, resource_type: $resource_type"
+    
+    if [[ "$resource_type" == "StateValueConfigmap" ]]; then
+        # StateValueConfigmap: Save entire values as single YAML file
+        debug "StateValueConfigmap detected - saving entire values as YAML"
+        echo "$values_yaml" > "$tmpdir/values.yaml"
+        echo "--from-file=values=$tmpdir/values.yaml"
+    else
+        # Regular Configmap/Secrets: Validate against complex structures
+        debug "Regular $resource_type detected - validating for simple values only"
+        
+        # Check for complex structures (arrays/objects) and error if found
+        local complex_keys
+        complex_keys=$(echo "$values_yaml" \
+          | yq eval -o=json - \
+          | jq -r '
+              to_entries[]
+              | select((.value|type) == "array" or (.value|type) == "object")
+              | .key
+            ' \
+          | tr '\n' ' ')
+        
+        if [[ -n "${complex_keys// }" ]]; then
+            die "Error: Complex YAML structures (arrays/objects) not allowed in $resource_type. Found in keys: ${complex_keys// /,}"
+        fi
+        
+        # Process simple values only (string/number/boolean)
+        # ① Create files for multiline strings
+        echo "$values_yaml" \
+          | yq eval -o=json - \
+          | jq -r '
+              to_entries[]
+              | select((.value|type) == "string" and (.value|contains("\n")))
+              | "cat > \"'"$tmpdir"'/\(.key).txt\" <<'\''EOF'\''\n\(.value)\nEOF"
+            ' \
+          | bash
+        
+        # ② Generate kubectl arguments for all keys
+        echo "$values_yaml" \
+          | yq eval -o=json - \
+          | jq -r '
+              to_entries[]
+              | if (.value|type) == "string" and (.value|contains("\n")) then
+                  "--from-file=\(.key)='"$tmpdir"'/\(.key).txt"
+                elif (.value|type=="string" or .value|type=="number" or .value|type=="boolean") then
+                  "--from-literal=\(.key)=\(.value|tostring)"
+                else
+                  empty
+                end
+            '
+    fi
 }
 
 # Initialize default resources
@@ -311,9 +364,7 @@ cmd_init() {
         debug "Processing resource $i: name=$name, type=$type"
         
         if [[ "$name" != "null" && "$type" != "null" && "$values_yaml" != "null" ]]; then
-            local values
-            values=$(get_resource_values "$values_yaml")
-            create_resource "$name" "$type" "$values"
+            create_resource "$name" "$type" "$values_yaml"
         fi
     done
     
@@ -482,31 +533,18 @@ EOF
                 # Create temporary state values file
                 local state_file
                 state_file=$(mktemp)
-                # Extract JSON data from ConfigMap and convert to proper YAML format
-                {
-                    kubectl get configmap "$name" -o json | jq -r '.data | to_entries[] | 
-                        if (.value | test("^[{\\[]")) then
-                            # JSON object/array - convert to YAML using yq
-                            "\(.key)_JSON_START\n\(.value)\n\(.key)_JSON_END"
-                        else
-                            # Simple value
-                            "\(.key): \(.value)"
-                        end'
-                } | while IFS= read -r line; do
-                    if [[ "$line" == *"_JSON_START" ]]; then
-                        key="${line%_JSON_START}"
-                        echo "$key:"
-                        # Read JSON content until _JSON_END
-                        json_content=""
-                        while IFS= read -r json_line && [[ "$json_line" != "${key}_JSON_END" ]]; do
-                            json_content="$json_content$json_line"
-                        done
-                        # Convert JSON to YAML with proper indentation
-                        echo "$json_content" | yq eval -P - | sed 's/^/  /'
-                    else
-                        echo "$line"
-                    fi
-                done > "$state_file"
+                
+                # Extract YAML content directly from ConfigMap data.values key
+                if ! kubectl get configmap "$name" -o jsonpath='{.data.values}' > "$state_file" 2>/dev/null; then
+                    error "Failed to extract state values from StateValueConfigmap: $name"
+                    continue
+                fi
+                
+                # Verify the state file is not empty
+                if [[ ! -s "$state_file" ]]; then
+                    error "StateValueConfigmap $name contains no values data"
+                    continue
+                fi
                 cmd+=("--state-values-file" "$state_file")
                 
                 debug "Added state-values-file: $state_file for ConfigMap: $name"

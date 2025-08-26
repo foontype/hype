@@ -24,7 +24,7 @@ defaultResources:
   - name: "{{ .Hype.Name }}-nginx-secrets"
     type: Secrets
     values:
-      nginx:
+      nginx: |
         auth:
           username: "admin"
           password: "changeme123"
