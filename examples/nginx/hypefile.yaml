@@ -28,6 +28,9 @@ defaultResources:
         auth:
           username: "admin"
           password: "changeme123"
+      strValue: "This is a pen."
+      numberValue: 12345
+      boolValue: true
 
 ---
 releases:
