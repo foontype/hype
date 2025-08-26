@@ -1,3 +1,15 @@
+"v0.3.4": |
+  ## What's New in HYPE CLI v0.3.4
+
+  ### Technical Changes
+  - Version bump to 0.3.4
+  - Updated version string in main CLI script
+
+  ### Dependencies
+  - Bash 4.0+
+  - curl (for installation)
+  - helm-diff plugin (validated during runtime)
+
 "v0.3.3": |
   ## What's New in HYPE CLI v0.3.3
 
