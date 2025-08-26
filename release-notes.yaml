@@ -1,9 +1,24 @@
 "v0.3.4": |
   ## What's New in HYPE CLI v0.3.4
 
+  ### New Features
+  - **TRACE mode**: Added `TRACE` environment variable to enable bash trace mode with `set -x` for advanced debugging
+  - **Enhanced debugging**: Updated help documentation to include TRACE variable usage
+
+  ### Bug Fixes
+  - **ConfigMap/Secrets creation**: Fixed jq boolean value processing error in `get_resource_values` function
+    - Boolean values like `boolValue: true` in ConfigMap/Secret values now process correctly
+    - Fixed operator precedence issue: changed from `(.value|type=="boolean")` to `((.value|type) == "boolean")`
+    - Resolves errors during `hype init` when creating resources with boolean values
+
+  ### Improvements
+  - Better error handling for complex data type processing in resource values
+  - Enhanced debugging capabilities with both DEBUG and TRACE modes available
+
   ### Technical Changes
   - Version bump to 0.3.4
-  - Updated version string in main CLI script
+  - Added TRACE environment variable support with conditional `set -x` activation
+  - Fixed jq conditional expression syntax for proper boolean type detection
 
   ### Dependencies
   - Bash 4.0+
