@@ -1,3 +1,29 @@
+"v0.3.3": |
+  ## What's New in HYPE CLI v0.3.3
+
+  ### New Features
+  - **Helm diff dependency validation**: Added automatic check for helm-diff plugin during dependency validation to prevent runtime errors
+  - **Enhanced resource values handling**: Improved processing for complex YAML structures with type-specific validation
+
+  ### Improvements
+  - **StateValueConfigmap processing**: Simplified processing logic from 24 lines to 12 lines with direct kubectl data extraction
+  - **Resource type validation**: Added strict validation for Configmap/Secrets against complex structures with clear error messages
+  - **Multiline string support**: Enhanced handling of multiline strings in resource values
+  - **Error handling**: Improved error messages and validation for ConfigMap data extraction
+
+  ### Technical Changes
+  - Version bump to 0.3.3
+  - Updated version string in main CLI script
+  - Replaced complex JSON detection and YAML conversion with direct kubectl jsonpath extraction
+  - Added resource type parameter to `get_resource_values()` function for type-specific processing
+  - Enhanced temporary directory management with automatic cleanup
+  - StateValueConfigmap now saves entire values structure as single YAML file under `values` key
+
+  ### Dependencies
+  - Bash 4.0+
+  - curl (for installation)
+  - helm-diff plugin (validated during runtime)
+
 "v0.3.2": |
   ## What's New in HYPE CLI v0.3.2
 
