@@ -12,8 +12,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Debug mode
+# Debug and trace modes
 DEBUG="${DEBUG:-false}"
+TRACE="${TRACE:-false}"
+
+# Enable trace mode if requested
+if [[ "$TRACE" == "true" ]]; then
+    set -x
+fi
 
 debug() {
     if [[ "$DEBUG" == "true" ]]; then
@@ -90,6 +96,7 @@ Options:
 Environment Variables:
   HYPEFILE                 Path to hypefile.yaml (default: hypefile.yaml)
   DEBUG                    Enable debug output (default: false)
+  TRACE                    Enable bash trace mode with set -x (default: false)
 
 Examples:
   hype my-nginx init                           Create resources for my-nginx
@@ -327,7 +334,7 @@ get_resource_values() {
               to_entries[]
               | if (.value|type) == "string" and (.value|contains("\n")) then
                   "--from-file=\(.key)='"$tmpdir"'/\(.key).txt"
-                elif (.value|type=="string" or .value|type=="number" or .value|type=="boolean") then
+                elif ((.value|type) == "string" or (.value|type) == "number" or (.value|type) == "boolean") then
                   "--from-literal=\(.key)=\(.value|tostring)"
                 else
                   empty
