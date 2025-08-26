@@ -1,20 +1,132 @@
-version: "0.3.3"
-release_date: "2025-08-26"
-title: "Version 0.3.3 Release"
+"v0.3.3": |
+  ## What's New in HYPE CLI v0.3.3
 
-changes:
-  - type: "update"
-    description: "Version bump to 0.3.3"
-    category: "maintenance"
+  ### Technical Changes
+  - Version bump to 0.3.3
+  - Updated version string in main CLI script
 
-notes: |
   This is a maintenance release that updates the version number to 0.3.3.
-  
-  For more details about previous changes, see the git commit history.
 
-compatibility:
-  - bash: "4.0+"
-  - kubectl: "required"
-  - helmfile: "required"
-  - yq: "required (mikefarah version)"
-  - helm-diff: "required plugin"
+"v0.3.2": |
+  ## What's New in HYPE CLI v0.3.2
+
+  ### Bug Fixes
+  - **State Values YAML Format**: Fixed state values file generation to properly handle all ConfigMap data types
+    - Simple values (strings, numbers, booleans) now output in correct `key: value` format
+    - Complex JSON objects are converted to proper YAML with correct indentation
+    - All ConfigMap entries are now properly expanded when passed to helmfile
+  - **ConfigMap Data Processing**: Enhanced ConfigMap data extraction logic to handle mixed data types correctly
+
+  ### Improvements
+  - Better YAML formatting in state values files for improved readability
+  - More reliable helmfile integration with proper data type handling
+  - Enhanced debugging output for state values file content
+
+  ### Technical Changes
+  - Improved `cmd_helmfile()` function ConfigMap processing (lines 486-509)
+  - Added regex-based detection for JSON vs simple values
+  - Integrated `yq` for reliable YAML conversion of complex structures
+  - Enhanced temporary file processing workflow
+
+  This release fixes critical issues with StateValueConfigmap data expansion, ensuring all ConfigMap data types are properly formatted and available in helmfile templates.
+
+"v0.3.1": |
+  ## What's New in HYPE CLI v0.3.1
+
+  ### Bug Fixes
+  - **ConfigMap Data Extraction**: Fixed StateValueConfigmap processing to extract all data from ConfigMaps instead of only `.data.nginx` field
+  - Improved ConfigMap integration for helmfile state values
+
+  ### Technical Changes
+  - Updated kubectl jsonpath query from `{.data.nginx}` to `{.data}` for complete ConfigMap data extraction
+  - Enhanced ConfigMap to YAML conversion workflow
+
+  This is a patch release that fixes ConfigMap data extraction for more flexible state value management.
+
+"v0.3.0": |
+  ## What's New in HYPE CLI v0.3.0
+
+  ### New Features
+  - **Current Directory State Values**: Added automatic injection of current directory path as `hype.currentDirectory` in helmfile state values
+  - **Enhanced Template Support**: Improved Go template (.yaml.gotmpl) file extension support for helmfile sections
+  - **Version-Specific Installation**: Added support for installing specific versions using `INSTALL_VERSION` environment variable
+
+  ### Improvements
+  - Enhanced installation script with version control capabilities
+  - Better temporary file handling with appropriate file extensions
+  - Improved debugging output for helmfile template operations
+  - Updated documentation with proper repository URLs
+
+  ### Technical Changes
+  - Modified temporary file creation to use `.yaml.gotmpl` extension for helmfile sections
+  - Added current directory state value injection in `cmd_helmfile()` function
+  - Enhanced install script with version-specific download support
+  - Updated repository references in README.md
+
+  This release improves template processing capabilities and provides better installation flexibility with version control.
+
+"v0.2.2": |
+  ## What's New in HYPE CLI v0.2.2
+
+  ### New Features
+  - **Enhanced Debug Logging**: Added detailed debug output for temporary files when DEBUG=true
+    - Show hype section content during parsing
+    - Show helmfile section content during parsing
+    - Show state values file content during helmfile operations
+  
+  ### Improvements
+  - Better debugging experience for troubleshooting hypefile processing
+  - More visibility into internal file processing workflows
+  - Improved development and testing capabilities
+
+  ### Technical Changes
+  - Added debug content display in parse_hypefile() function
+  - Added debug content display in cmd_helmfile() for state values files
+  - Enhanced temporary file content visibility for debugging
+
+  This release improves the debugging experience by providing detailed visibility into temporary file contents when running in debug mode.
+
+"v0.0.1": |
+  Initial release of HYPE CLI
+
+"v0.2.1": |
+  ## What's New in HYPE CLI v0.2.1
+
+  ### Bug Fixes
+  - **StateValueConfigmap Processing**: Fixed StateValueConfigmap resource handling and data extraction from Kubernetes ConfigMaps
+  - **Multiple Resource Support**: Improved resource processing to correctly handle multiple defaultResources in hypefile configurations
+  - **yq Compatibility**: Added version compatibility fixes for mikefarah/yq and improved YAML processing
+  - **Helmfile Integration**: Fixed `--state-values-file` option name for proper helmfile compatibility
+
+  ### Improvements
+  - Enhanced debug logging and error reporting for troubleshooting
+  - Better ConfigMap data conversion from JSON to YAML format
+  - Improved Go template variable substitution in configuration files
+  - More robust error handling throughout the application
+
+  ### Technical Changes
+  - Fixed broken while-read loop with proper array indexing for resource iteration
+  - Enhanced JSON-to-YAML conversion for helmfile state values
+  - Improved resource creation and deletion workflows
+  - Better cleanup of temporary files
+
+  This release focuses on stability and reliability improvements, ensuring StateValueConfigmap functionality works correctly with Kubernetes deployments.
+
+"v0.2.0": |
+  ## What's New in HYPE CLI v0.2.0
+
+  ### New Features
+  - **Section Command**: Added `hype section` subcommand to display raw hype and helmfile sections from configuration files
+  - **Enhanced Configuration Support**: Better support for parsing YAML configuration files with section-based organization
+
+  ### Improvements
+  - Improved error handling and user feedback
+  - Better command structure and help documentation
+  - Enhanced CLI argument parsing
+
+  ### Technical Changes
+  - Version bump to 0.2.0
+  - Updated project structure following development best practices
+  - Improved testing and validation workflows
+
+  This release focuses on expanding HYPE CLI's configuration management capabilities, making it easier to work with sectioned configuration files in development workflows.
