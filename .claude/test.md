@@ -8,6 +8,9 @@ cd examples/nginx
 ../../src/hype test check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-value, test-nginx-secrets があることを確認
 
+../../src/hype test template state-value test-nginx-configmap
+  * configmap に保存された data.values 以下の構造が表示できること
+
 ../../src/hype test helmfile template
   * デバッグログで helmfile template 実行時の引数に、--state-value-file オプションで state value configmap の一時ファイルが指定されていること
   * デバッグログで helmfile template 実行時の引数に、--state-value-file オプションで hype.currentDirectory を含む一時ファイルが指定されていること
