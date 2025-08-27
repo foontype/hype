@@ -80,14 +80,15 @@ show_help() {
 HYPE CLI - Helmfile Wrapper Tool for Kubernetes AI Deployments
 
 Usage:
-  hype <hype-name> init                         Create default resources
-  hype <hype-name> deinit                       Delete default resources  
-  hype <hype-name> check                        List default resources status
-  hype <hype-name> template                     Show rendered hype section YAML
-  hype <hype-name> section [hype|helmfile]      Show raw section without headers
-  hype <hype-name> helmfile <helmfile-options>  Run helmfile command
-  hype --version                                Show version
-  hype --help                                   Show this help
+  hype <hype-name> init                                          Create default resources
+  hype <hype-name> deinit                                        Delete default resources  
+  hype <hype-name> check                                         List default resources status
+  hype <hype-name> template                                      Show rendered hype section YAML
+  hype <hype-name> template state-value <configmap-name>        Show state-value file content
+  hype <hype-name> section [hype|helmfile]                      Show raw section without headers
+  hype <hype-name> helmfile <helmfile-options>                  Run helmfile command
+  hype --version                                                 Show version
+  hype --help                                                    Show this help
 
 Options:
   --version                Show version information
@@ -99,14 +100,15 @@ Environment Variables:
   TRACE                    Enable bash trace mode with set -x (default: false)
 
 Examples:
-  hype my-nginx init                           Create resources for my-nginx
-  hype my-nginx template                       Show rendered YAML for my-nginx
-  hype my-nginx section hype                   Show raw hype section
-  hype my-nginx section helmfile               Show raw helmfile section
-  hype my-nginx section                        Show raw hype section (default)
-  hype my-nginx helmfile apply                 Apply helmfile for my-nginx
-  hype my-nginx check                          Check resource status
-  hype my-nginx deinit                         Remove all resources
+  hype my-nginx init                                             Create resources for my-nginx
+  hype my-nginx template                                         Show rendered YAML for my-nginx
+  hype my-nginx template state-value my-nginx-state-values      Show state-value content
+  hype my-nginx section hype                                     Show raw hype section
+  hype my-nginx section helmfile                                Show raw helmfile section
+  hype my-nginx section                                          Show raw hype section (default)
+  hype my-nginx helmfile apply                                   Apply helmfile for my-nginx
+  hype my-nginx check                                            Check resource status
+  hype my-nginx deinit                                           Remove all resources
 
 EOF
 }
@@ -175,6 +177,66 @@ get_default_resources() {
     fi
     
     yq eval '.defaultResources[]' "$HYPE_SECTION_FILE" 2>/dev/null || true
+}
+
+# Validate state value configmap
+validate_state_value_configmap() {
+    local hype_name="$1"
+    local configmap_name="$2"
+    
+    debug "Validating StateValueConfigmap: $configmap_name for hype: $hype_name"
+    
+    # Parse hypefile first
+    parse_hypefile "$hype_name"
+    
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        error "No hype section found in hypefile"
+        return 1
+    fi
+    
+    # Get resource count and validate
+    local resource_count
+    resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
+    
+    if [[ "$resource_count" -eq 0 ]]; then
+        error "No default resources found in hypefile"
+        return 1
+    fi
+    
+    # Check if configmap exists in defaultResources and is StateValueConfigmap type
+    local found=false
+    for (( i=0; i<resource_count; i++ )); do
+        local name type
+        
+        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
+        type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+        
+        debug "Checking resource $i: name=$name, type=$type"
+        
+        if [[ "$name" == "$configmap_name" ]]; then
+            found=true
+            if [[ "$type" != "StateValueConfigmap" ]]; then
+                error "ConfigMap $configmap_name is not a StateValueConfigmap (type: $type)"
+                return 1
+            fi
+            break
+        fi
+    done
+    
+    if [[ "$found" != "true" ]]; then
+        error "ConfigMap $configmap_name not found in hypefile defaultResources"
+        return 1
+    fi
+    
+    # Check if configmap exists in Kubernetes cluster
+    if ! kubectl get configmap "$configmap_name" >/dev/null 2>&1; then
+        error "ConfigMap $configmap_name does not exist in Kubernetes cluster"
+        error "Run 'hype $hype_name init' first to create default resources"
+        return 1
+    fi
+    
+    debug "StateValueConfigmap validation successful: $configmap_name"
+    return 0
 }
 
 # Create kubernetes resource
@@ -458,8 +520,8 @@ cmd_check_resources() {
     done
 }
 
-# Show rendered hype section template
-cmd_template() {
+# Show rendered hype section template (original functionality)
+cmd_template_hype_section() {
     local hype_name="$1"
     
     info "Rendered hype section for: $hype_name"
@@ -473,6 +535,65 @@ cmd_template() {
     else
         warn "No hype section found in hypefile"
     fi
+}
+
+# Template command router
+cmd_template() {
+    local hype_name="$1"
+    local subcommand="${2:-}"
+    
+    case "$subcommand" in
+        "state-value")
+            local configmap_name="${3:-}"
+            cmd_template_state_value "$hype_name" "$configmap_name"
+            ;;
+        "")
+            cmd_template_hype_section "$hype_name"
+            ;;
+        *)
+            error "Unknown template subcommand: $subcommand"
+            error "Valid options: state-value"
+            exit 1
+            ;;
+    esac
+}
+
+# Show state-value file content for StateValueConfigmap
+cmd_template_state_value() {
+    local hype_name="$1"
+    local configmap_name="$2"
+    
+    if [[ -z "$configmap_name" ]]; then
+        error "ConfigMap name is required"
+        error "Usage: hype <hype-name> template state-value <configmap-name>"
+        exit 1
+    fi
+    
+    info "State-value file content for ConfigMap: $configmap_name"
+    echo
+    
+    # Validate the configmap
+    if ! validate_state_value_configmap "$hype_name" "$configmap_name"; then
+        exit 1
+    fi
+    
+    # Extract YAML content from ConfigMap data.values key
+    local state_values
+    if ! state_values=$(kubectl get configmap "$configmap_name" -o jsonpath='{.data.values}' 2>/dev/null); then
+        error "Failed to extract state values from ConfigMap: $configmap_name"
+        exit 1
+    fi
+    
+    # Verify the state values are not empty
+    if [[ -z "$state_values" ]]; then
+        error "ConfigMap $configmap_name contains no values data"
+        exit 1
+    fi
+    
+    debug "Successfully extracted state values from ConfigMap: $configmap_name"
+    
+    # Output the state values content
+    echo "$state_values"
 }
 
 # Show raw sections without rendering info headers
@@ -625,7 +746,7 @@ main() {
                     cmd_check_resources "$hype_name"
                     ;;
                 "template")
-                    cmd_template "$hype_name"
+                    cmd_template "$hype_name" "$@"
                     ;;
                 "section")
                     cmd_section "$hype_name" "$@"
