@@ -1,3 +1,34 @@
+"v0.3.5": |
+  ## What's New in HYPE CLI v0.3.5
+
+  ### New Features
+  - **Template State-Value Subcommand**: Added `hype <name> template state-value <configmap-name>` for StateValueConfigmap inspection
+    - Allows users to view the actual YAML content that would be passed to helmfile as state-value-file
+    - Validates ConfigMap exists and is StateValueConfigmap type
+    - Extracts and displays YAML content from data.values key
+    - Provides helpful error messages for debugging
+
+  ### Improvements
+  - Enhanced debugging capabilities for StateValueConfigmap troubleshooting
+  - Better validation and error handling for ConfigMap inspection
+  - Backward compatibility maintained for existing 'template' command
+
+  ### Technical Changes
+  - Version bump to 0.3.5
+  - Added template state-value subcommand functionality
+  - Enhanced ConfigMap validation logic
+  - Improved YAML content extraction from StateValueConfigmap resources
+
+  ### Use Cases
+  - Debug state-value content before helmfile execution
+  - Verify StateValueConfigmap YAML structure
+  - Troubleshoot helmfile template issues with state values
+
+  ### Dependencies
+  - Bash 4.0+
+  - curl (for installation)
+  - helm-diff plugin (validated during runtime)
+
 "v0.3.4": |
   ## What's New in HYPE CLI v0.3.4
 
