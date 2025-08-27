@@ -86,6 +86,7 @@ Usage:
   hype <hype-name> template                     Show rendered hype section YAML
   hype <hype-name> section [hype|helmfile]      Show raw section without headers
   hype <hype-name> helmfile <helmfile-options>  Run helmfile command
+  hype <hype-name> test template state-value <name>  Generate state-value test template
   hype --version                                Show version
   hype --help                                   Show this help
 
@@ -107,6 +108,7 @@ Examples:
   hype my-nginx helmfile apply                 Apply helmfile for my-nginx
   hype my-nginx check                          Check resource status
   hype my-nginx deinit                         Remove all resources
+  hype my-nginx test template state-value app  Generate state-value template for 'app'
 
 EOF
 }
@@ -501,6 +503,76 @@ cmd_section() {
     esac
 }
 
+# Generate and show state-value test template
+cmd_test_template_state_value() {
+    local name="$1"
+    
+    if [[ -z "$name" ]]; then
+        die "State-value name is required"
+    fi
+    
+    info "Generated state-value template for: $name"
+    echo
+    
+    cat << EOF
+# State-value test template for: $name
+# Copy and modify this template for your use case
+
+stateValues:
+  $name:
+    # Basic configuration
+    enabled: true
+    replicas: 3
+    version: "1.0.0"
+    
+    # Environment settings
+    environment: "development"
+    debug: false
+    
+    # Resource limits
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+    
+    # Application configuration
+    config:
+      database:
+        host: "localhost"
+        port: 5432
+        name: "${name}_db"
+      
+      api:
+        endpoint: "https://api.${name}.example.com"
+        timeout: 30
+        retries: 3
+      
+      features:
+        - "feature1"
+        - "feature2"
+        - "feature3"
+    
+    # Secret references (use actual secrets in production)
+    secrets:
+      apiKey: "your-api-key-here"
+      dbPassword: "your-db-password-here"
+      
+    # Custom labels and annotations
+    metadata:
+      labels:
+        app: "$name"
+        version: "1.0.0"
+        environment: "development"
+      annotations:
+        description: "State-value template for $name"
+        generated-by: "hype test template state-value"
+
+EOF
+}
+
 # Run helmfile command
 cmd_helmfile() {
     local hype_name="$1"
@@ -632,6 +704,30 @@ main() {
                     ;;
                 "helmfile")
                     cmd_helmfile "$hype_name" "$@"
+                    ;;
+                "test")
+                    if [[ $# -lt 2 ]]; then
+                        error "Missing required arguments for test command"
+                        error "Usage: hype <hype-name> test template state-value <name>"
+                        exit 1
+                    fi
+                    
+                    local subcommand="$1"
+                    local subsubcommand="$2"
+                    shift 2
+                    
+                    if [[ "$subcommand" == "template" && "$subsubcommand" == "state-value" ]]; then
+                        if [[ $# -lt 1 ]]; then
+                            error "State-value name is required"
+                            error "Usage: hype <hype-name> test template state-value <name>"
+                            exit 1
+                        fi
+                        cmd_test_template_state_value "$1"
+                    else
+                        error "Unknown test subcommand: $subcommand $subsubcommand"
+                        error "Available: test template state-value <name>"
+                        exit 1
+                    fi
                     ;;
                 *)
                     error "Unknown command: $command"
