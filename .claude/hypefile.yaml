@@ -5,6 +5,11 @@ defaultResources:
     values:
       hoge: 12345
 
+  - type: DefaultStateValues
+    values:
+      hoge: 98765
+      fuga: 87654
+
   - name: {{ .Hype.Name }}-configmap
     type: Configmap
     values:
