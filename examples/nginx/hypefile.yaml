@@ -1,6 +1,6 @@
 
 defaultResources:
-  - name: "{{ .Hype.Name }}-nginx-state-value"
+  - name: "{{ .Hype.Name }}-nginx-state-values"
     type: StateValuesConfigmap
     values:
       nginx:

@@ -2,8 +2,8 @@
   ## What's New in HYPE CLI v0.3.5
 
   ### New Features
-  - **Template State-Value Subcommand**: Added `hype <name> template state-value <configmap-name>` for StateValueConfigmap inspection
-    - Allows users to view the actual YAML content that would be passed to helmfile as state-value-file
+  - **Template State-Value Subcommand**: Added `hype <name> template state-values <configmap-name>` for StateValueConfigmap inspection
+    - Allows users to view the actual YAML content that would be passed to helmfile as state-values-file
     - Validates ConfigMap exists and is StateValueConfigmap type
     - Extracts and displays YAML content from data.values key
     - Provides helpful error messages for debugging
@@ -15,12 +15,12 @@
 
   ### Technical Changes
   - Version bump to 0.3.5
-  - Added template state-value subcommand functionality
+  - Added template state-values subcommand functionality
   - Enhanced ConfigMap validation logic
   - Improved YAML content extraction from StateValueConfigmap resources
 
   ### Use Cases
-  - Debug state-value content before helmfile execution
+  - Debug state-values content before helmfile execution
   - Verify StateValueConfigmap YAML structure
   - Troubleshoot helmfile template issues with state values
 
@@ -171,7 +171,7 @@
   - **StateValueConfigmap Processing**: Fixed StateValueConfigmap resource handling and data extraction from Kubernetes ConfigMaps
   - **Multiple Resource Support**: Improved resource processing to correctly handle multiple defaultResources in hypefile configurations
   - **yq Compatibility**: Added version compatibility fixes for mikefarah/yq and improved YAML processing
-  - **Helmfile Integration**: Fixed `--state-values-file` option name for proper helmfile compatibility
+  - **Helmfile Integration**: Fixed `--state-valuess-file` option name for proper helmfile compatibility
 
   ### Improvements
   - Enhanced debug logging and error reporting for troubleshooting

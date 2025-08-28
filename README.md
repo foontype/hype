@@ -91,7 +91,7 @@ The `hypefile.yaml` file consists of two sections separated by `---`:
 
 ```yaml
 defaultResources:
-  - name: "{{ .Hype.Name }}-nginx-state-value"
+  - name: "{{ .Hype.Name }}-nginx-state-values"
     type: StateValuesConfigmap
     values:
       nginx:

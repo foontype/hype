@@ -1,6 +1,6 @@
 # hype section
 defaultResources:
-  - name: {{ .Hype.Name }}-state-value
+  - name: {{ .Hype.Name }}-state-values
     type: StateValuesConfigmap
     values:
       hoge: 12345

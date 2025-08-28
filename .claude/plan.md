@@ -56,7 +56,7 @@ Implementation of HYPE CLI - a Helmfile wrapper tool for Kubernetes deployments 
 
 #### 3.1 Helmfile Command Processing
 - [ ] Implement `helmfile` subcommand
-- [ ] Create temporary state-value files from StateValuesConfigmap
+- [ ] Create temporary state-values files from StateValuesConfigmap
 - [ ] Pass hype name as environment variable (`-e` option)
 - [ ] Forward all helmfile options properly
 
@@ -68,7 +68,7 @@ Implementation of HYPE CLI - a Helmfile wrapper tool for Kubernetes deployments 
 #### 3.3 Integration Testing
 - [ ] Test full workflow with sample hypefile.yaml
 - [ ] Validate helmfile integration
-- [ ] Test state-value-file passing
+- [ ] Test state-values-file passing
 
 ### Phase 4: Polish & Documentation (Finalization)
 **Estimated Time: 2-3 hours**
