@@ -11,6 +11,12 @@ cd examples/nginx
 ../../src/hype test template state-values test-nginx-configmap
   * configmap に保存された data.values 以下の構造が表示できること
 
+../../src/hype test helmfile build
+  * test-discord-bot のリリースの values.strValue の値が "This is a pen." であること
+  * test-discord-bot のリリースの values.numberValue の値が 12345 であること
+  * test-discord-bot のリリースの values.boolValue の値が true であること
+  * test-discord-bot のリリースの values.extraValue の値が "extra value" であること
+
 ../../src/hype test helmfile template
   * デバッグログで helmfile template 実行時の引数に、--state-values-file オプションで state value configmap の一時ファイルが指定されていること
   * デバッグログで helmfile template 実行時の引数に、--state-values-file オプションで hype.currentDirectory を含む一時ファイルが指定されていること

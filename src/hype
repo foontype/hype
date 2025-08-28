@@ -254,6 +254,10 @@ create_resource() {
     trap "rm -rf '$tmpdir'" EXIT
     
     case "$type" in
+        "DefaultStateValues")
+            debug "DefaultStateValues detected - skipping resource creation (local processing only)"
+            return
+            ;;
         "StateValuesConfigmap"|"Configmap")
             if kubectl get configmap "$name" >/dev/null 2>&1; then
                 info "ConfigMap $name already exists"
@@ -298,6 +302,10 @@ delete_resource() {
     debug "Deleting resource: $name (type: $type)"
     
     case "$type" in
+        "DefaultStateValues")
+            debug "DefaultStateValues detected - no resource to delete (local processing only)"
+            return
+            ;;
         "StateValuesConfigmap"|"Configmap")
             if kubectl get configmap "$name" >/dev/null 2>&1; then
                 kubectl delete configmap "$name"
@@ -326,6 +334,9 @@ check_resource_status() {
     local type="$2"
     
     case "$type" in
+        "DefaultStateValues")
+            echo -e "${GREEN}✓${NC} DefaultStateValues (local processing)"
+            ;;
         "StateValuesConfigmap"|"Configmap")
             if kubectl get configmap "$name" >/dev/null 2>&1; then
                 echo -e "${GREEN}✓${NC} ConfigMap $name exists"
@@ -514,8 +525,13 @@ cmd_check_resources() {
         name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
         type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
         
-        if [[ "$name" != "null" && "$type" != "null" ]]; then
-            check_resource_status "$name" "$type"
+        if [[ "$type" != "null" ]]; then
+            if [[ "$type" == "DefaultStateValues" ]]; then
+                # DefaultStateValues doesn't have a name, use type for status
+                check_resource_status "" "$type"
+            elif [[ "$name" != "null" ]]; then
+                check_resource_status "$name" "$type"
+            fi
         fi
     done
 }
@@ -651,11 +667,51 @@ EOF
     # shellcheck disable=SC2064
     trap "rm -f '$current_dir_state_file'" EXIT
     
-    # Add state-values-file for StateValuesConfigmap resources
+    # Add state-values-file for DefaultStateValues and StateValuesConfigmap resources
     if [[ -f "$HYPE_SECTION_FILE" ]]; then
         local resource_count
         resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
         
+        # First pass: Process DefaultStateValues (highest priority)
+        for (( i=0; i<resource_count; i++ )); do
+            local type
+            type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+            
+            if [[ "$type" == "DefaultStateValues" ]]; then
+                # Create temporary state values file for DefaultStateValues
+                local default_state_file
+                default_state_file=$(mktemp --suffix=.yaml)
+                
+                # Extract values directly from the YAML resource
+                if ! yq eval ".defaultResources[$i].values" "$HYPE_SECTION_FILE" > "$default_state_file" 2>/dev/null; then
+                    error "Failed to extract values from DefaultStateValues resource"
+                    continue
+                fi
+                
+                # Verify the state file is not empty
+                if [[ ! -s "$default_state_file" ]]; then
+                    error "DefaultStateValues resource contains no values data"
+                    continue
+                fi
+                
+                cmd+=("--state-values-file" "$default_state_file")
+                
+                debug "Added DefaultStateValues state-values-file: $default_state_file"
+                
+                # Debug: Show contents of DefaultStateValues file
+                if [[ "$DEBUG" == "true" ]]; then
+                    debug "=== DEFAULT STATE VALUES FILE CONTENT ==="
+                    cat "$default_state_file" >&2
+                    debug "=== END DEFAULT STATE VALUES FILE ==="
+                fi
+                
+                # Clean up default state file when done
+                # shellcheck disable=SC2064
+                trap "rm -f '$default_state_file'" EXIT
+            fi
+        done
+        
+        # Second pass: Process StateValuesConfigmap resources
         for (( i=0; i<resource_count; i++ )); do
             local name type
             
@@ -665,7 +721,7 @@ EOF
             if [[ "$type" == "StateValuesConfigmap" && "$name" != "null" ]]; then
                 # Create temporary state values file
                 local state_file
-                state_file=$(mktemp)
+                state_file=$(mktemp --suffix=.yaml)
                 
                 # Extract YAML content directly from ConfigMap data.values key
                 if ! kubectl get configmap "$name" -o jsonpath='{.data.values}' > "$state_file" 2>/dev/null; then

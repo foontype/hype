@@ -32,13 +32,24 @@ defaultResources:
       numberValue: 12345
       boolValue: true
 
+  - type: DefaultStateValues
+    values:
+      strValue: "This is apple."
+      numberValue: 54321
+      boolValue: false
+      extraValue: "extra value"
+
 ---
 releases:
   - name: nginx
     namespace: default
     chart: bitnami/nginx
     version: "13.2.23"
-    values: []
+    values:
+      - strValue: {{ .StateValues.strValue }}
+        numberValue: {{ .StateValues.numberValue }}
+        boolValue: {{ .StateValues.boolValue }}
+        extraValue: {{ .StateValues.extraValue }}
 
 repositories:
   - name: bitnami
