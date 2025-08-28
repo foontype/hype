@@ -46,6 +46,9 @@ releases:
     chart: bitnami/nginx
     version: "13.2.23"
     values:
+      strValue: {{ .StateValues.strValue }}
+      numberValue: {{ .StateValues.numberValue }}
+      boolValue: {{ .StateValues.boolValue }}
       extraValue: {{ .StateValues.extraValue }}
 
 repositories:
