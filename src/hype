@@ -102,7 +102,7 @@ Environment Variables:
 Examples:
   hype my-nginx init                                             Create resources for my-nginx
   hype my-nginx template                                         Show rendered YAML for my-nginx
-  hype my-nginx template state-values my-nginx-state-valuess      Show state-values content
+  hype my-nginx template state-values my-nginx-state-values      Show state-values content
   hype my-nginx section hype                                     Show raw hype section
   hype my-nginx section helmfile                                Show raw helmfile section
   hype my-nginx section                                          Show raw hype section (default)
@@ -643,7 +643,7 @@ cmd_helmfile() {
 hype:
   currentDirectory: "$(pwd)"
 EOF
-    cmd+=("--state-valuess-file" "$current_dir_state_file")
+    cmd+=("--state-values-file" "$current_dir_state_file")
     
     debug "Added current directory state values: $(pwd)"
     
@@ -678,9 +678,9 @@ EOF
                     error "StateValuesConfigmap $name contains no values data"
                     continue
                 fi
-                cmd+=("--state-valuess-file" "$state_file")
+                cmd+=("--state-values-file" "$state_file")
                 
-                debug "Added state-valuess-file: $state_file for ConfigMap: $name"
+                debug "Added state-values-file: $state_file for ConfigMap: $name"
                 
                 # Debug: Show contents of state values file
                 if [[ "$DEBUG" == "true" ]]; then

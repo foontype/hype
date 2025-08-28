@@ -171,7 +171,7 @@
   - **StateValueConfigmap Processing**: Fixed StateValueConfigmap resource handling and data extraction from Kubernetes ConfigMaps
   - **Multiple Resource Support**: Improved resource processing to correctly handle multiple defaultResources in hypefile configurations
   - **yq Compatibility**: Added version compatibility fixes for mikefarah/yq and improved YAML processing
-  - **Helmfile Integration**: Fixed `--state-valuess-file` option name for proper helmfile compatibility
+  - **Helmfile Integration**: Fixed `--state-values-file` option name for proper helmfile compatibility
 
   ### Improvements
   - Enhanced debug logging and error reporting for troubleshooting
