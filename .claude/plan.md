@@ -31,7 +31,7 @@ Implementation of HYPE CLI - a Helmfile wrapper tool for Kubernetes deployments 
 #### 2.1 Kubernetes Resource Operations
 - [ ] Implement ConfigMap creation/deletion functions
 - [ ] Implement Secret creation/deletion functions  
-- [ ] Implement StateValueConfigmap handling
+- [ ] Implement StateValuesConfigmap handling
 - [ ] Add resource existence checking
 
 #### 2.2 Subcommand Implementation
@@ -56,7 +56,7 @@ Implementation of HYPE CLI - a Helmfile wrapper tool for Kubernetes deployments 
 
 #### 3.1 Helmfile Command Processing
 - [ ] Implement `helmfile` subcommand
-- [ ] Create temporary state-value files from StateValueConfigmap
+- [ ] Create temporary state-value files from StateValuesConfigmap
 - [ ] Pass hype name as environment variable (`-e` option)
 - [ ] Forward all helmfile options properly
 
@@ -115,12 +115,12 @@ tests/
 #### Resource Management Functions
 - `create_configmap()` - Create Kubernetes ConfigMap
 - `create_secret()` - Create Kubernetes Secret  
-- `create_state_value_configmap()` - Create StateValueConfigmap
+- `create_state_values_configmap()` - Create StateValuesConfigmap
 - `delete_resources()` - Remove resources by hype name
 - `list_resources()` - List and check resource status
 
 #### Helmfile Integration Functions
-- `prepare_state_value_file()` - Extract StateValueConfigmap to temp file
+- `prepare_state_value_file()` - Extract StateValuesConfigmap to temp file
 - `execute_helmfile()` - Run helmfile with proper options
 - `cleanup_temp_files()` - Clean up temporary files
 

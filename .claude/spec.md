@@ -25,7 +25,7 @@ The configuration file is divided into two sections separated by `---`:
 
 #### Default Resources Types
 
-**StateValueConfigmap**
+**StateValuesConfigmap**
 - Created during `hype <name> init`
 - Kubernetes ConfigMap with specified name and values
 - Contents passed to Helmfile via `--state-value-file` option
@@ -74,7 +74,7 @@ hype <hype name> check
 hype <hype name> helmfile <helmfile options>
 ```
 - Executes Helmfile commands using the Helmfile section configuration
-- StateValueConfigmap contents passed via `--state-value-file`
+- StateValuesConfigmap contents passed via `--state-value-file`
 - Hype name passed as environment variable via `-e` option
 
 ## Usage Examples
