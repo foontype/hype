@@ -13,7 +13,7 @@ cd examples/nginx
 
 ../../src/hype test helmfile build
   * test-discord-bot のリリースの values.strValue の値が "This is a pen." であること
-  * test-discord-bot のリリースの values.intValue の値が 12345 であること
+  * test-discord-bot のリリースの values.numberValue の値が 12345 であること
   * test-discord-bot のリリースの values.boolValue の値が true であること
   * test-discord-bot のリリースの values.extraValue の値が "extra value" であること
 
