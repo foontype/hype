@@ -30,7 +30,7 @@ helmfile セクションは、 helmfile サブコマンド時に処理します�
 
 defaultResources には次のタイプがあります。
 
-StateValueConfigmap = hype <hype name> init 時、name の名前、values の内容で kubernetes コンフィグマップリソースが作成されます。コンフィグマップの内容は hype <hype name> helmfile 時に --state-value-file オプションでファイルとして渡されます。
+StateValuesConfigmap = hype <hype name> init 時、name の名前、values の内容で kubernetes コンフィグマップリソースが作成されます。コンフィグマップの内容は hype <hype name> helmfile 時に --state-values-file オプションでファイルとして渡されます。
 
 ConfigMap = hype <hype name> init 時、name の名前、values の内容で kubernetes コンフィグマップリソースが作成されます。
 
@@ -56,7 +56,7 @@ hype <hype name> resources
   
 hype <hype name> helmfile <helmfile options>
   helmfile コマンド実行します
-  StateValueConfigmap が示すコンフィグマップ設定が --state-value-file で helmfile コマンドに渡されます。
+  StateValuesConfigmap が示すコンフィグマップ設定が --state-values-file で helmfile コマンドに渡されます。
   また、<hype name> が -e オプションとして helmfile コマンドに渡されます。
 
 ```

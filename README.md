@@ -91,8 +91,8 @@ The `hypefile.yaml` file consists of two sections separated by `---`:
 
 ```yaml
 defaultResources:
-  - name: "{{ .Hype.Name }}-nginx-state-value"
-    type: StateValueConfigmap
+  - name: "{{ .Hype.Name }}-nginx-state-values"
+    type: StateValuesConfigmap
     values:
       nginx:
         replicaCount: 2
@@ -174,7 +174,7 @@ DEBUG=true hype my-nginx init
 
 HYPE supports the following default resource types:
 
-### StateValueConfigmap / Configmap
+### StateValuesConfigmap / Configmap
 Creates Kubernetes ConfigMaps that can be used as state values in Helmfile templates.
 
 ### Secrets

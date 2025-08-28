@@ -1,7 +1,7 @@
 
 defaultResources:
-  - name: "{{ .Hype.Name }}-nginx-state-value"
-    type: StateValueConfigmap
+  - name: "{{ .Hype.Name }}-nginx-state-values"
+    type: StateValuesConfigmap
     values:
       nginx:
         replicaCount: 2

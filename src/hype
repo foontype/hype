@@ -84,7 +84,7 @@ Usage:
   hype <hype-name> deinit                                        Delete default resources  
   hype <hype-name> check                                         List default resources status
   hype <hype-name> template                                      Show rendered hype section YAML
-  hype <hype-name> template state-value <configmap-name>        Show state-value file content
+  hype <hype-name> template state-values <configmap-name>        Show state-values file content
   hype <hype-name> section [hype|helmfile]                      Show raw section without headers
   hype <hype-name> helmfile <helmfile-options>                  Run helmfile command
   hype --version                                                 Show version
@@ -102,7 +102,7 @@ Environment Variables:
 Examples:
   hype my-nginx init                                             Create resources for my-nginx
   hype my-nginx template                                         Show rendered YAML for my-nginx
-  hype my-nginx template state-value my-nginx-state-values      Show state-value content
+  hype my-nginx template state-values my-nginx-state-values      Show state-values content
   hype my-nginx section hype                                     Show raw hype section
   hype my-nginx section helmfile                                Show raw helmfile section
   hype my-nginx section                                          Show raw hype section (default)
@@ -180,11 +180,11 @@ get_default_resources() {
 }
 
 # Validate state value configmap
-validate_state_value_configmap() {
+validate_state_values_configmap() {
     local hype_name="$1"
     local configmap_name="$2"
     
-    debug "Validating StateValueConfigmap: $configmap_name for hype: $hype_name"
+    debug "Validating StateValuesConfigmap: $configmap_name for hype: $hype_name"
     
     # Parse hypefile first
     parse_hypefile "$hype_name"
@@ -203,7 +203,7 @@ validate_state_value_configmap() {
         return 1
     fi
     
-    # Check if configmap exists in defaultResources and is StateValueConfigmap type
+    # Check if configmap exists in defaultResources and is StateValuesConfigmap type
     local found=false
     for (( i=0; i<resource_count; i++ )); do
         local name type
@@ -215,8 +215,8 @@ validate_state_value_configmap() {
         
         if [[ "$name" == "$configmap_name" ]]; then
             found=true
-            if [[ "$type" != "StateValueConfigmap" ]]; then
-                error "ConfigMap $configmap_name is not a StateValueConfigmap (type: $type)"
+            if [[ "$type" != "StateValuesConfigmap" ]]; then
+                error "ConfigMap $configmap_name is not a StateValuesConfigmap (type: $type)"
                 return 1
             fi
             break
@@ -235,7 +235,7 @@ validate_state_value_configmap() {
         return 1
     fi
     
-    debug "StateValueConfigmap validation successful: $configmap_name"
+    debug "StateValuesConfigmap validation successful: $configmap_name"
     return 0
 }
 
@@ -254,7 +254,7 @@ create_resource() {
     trap "rm -rf '$tmpdir'" EXIT
     
     case "$type" in
-        "StateValueConfigmap"|"Configmap")
+        "StateValuesConfigmap"|"Configmap")
             if kubectl get configmap "$name" >/dev/null 2>&1; then
                 info "ConfigMap $name already exists"
                 return
@@ -298,7 +298,7 @@ delete_resource() {
     debug "Deleting resource: $name (type: $type)"
     
     case "$type" in
-        "StateValueConfigmap"|"Configmap")
+        "StateValuesConfigmap"|"Configmap")
             if kubectl get configmap "$name" >/dev/null 2>&1; then
                 kubectl delete configmap "$name"
                 info "Deleted ConfigMap: $name"
@@ -326,7 +326,7 @@ check_resource_status() {
     local type="$2"
     
     case "$type" in
-        "StateValueConfigmap"|"Configmap")
+        "StateValuesConfigmap"|"Configmap")
             if kubectl get configmap "$name" >/dev/null 2>&1; then
                 echo -e "${GREEN}✓${NC} ConfigMap $name exists"
             else
@@ -354,9 +354,9 @@ get_resource_values() {
     
     debug "Processing values_yaml with tmpdir: $tmpdir, resource_type: $resource_type"
     
-    if [[ "$resource_type" == "StateValueConfigmap" ]]; then
-        # StateValueConfigmap: Save entire values as single YAML file
-        debug "StateValueConfigmap detected - saving entire values as YAML"
+    if [[ "$resource_type" == "StateValuesConfigmap" ]]; then
+        # StateValuesConfigmap: Save entire values as single YAML file
+        debug "StateValuesConfigmap detected - saving entire values as YAML"
         echo "$values_yaml" > "$tmpdir/values.yaml"
         echo "--from-file=values=$tmpdir/values.yaml"
     else
@@ -543,7 +543,7 @@ cmd_template() {
     local subcommand="${2:-}"
     
     case "$subcommand" in
-        "state-value")
+        "state-values")
             local configmap_name="${3:-}"
             cmd_template_state_value "$hype_name" "$configmap_name"
             ;;
@@ -552,20 +552,20 @@ cmd_template() {
             ;;
         *)
             error "Unknown template subcommand: $subcommand"
-            error "Valid options: state-value"
+            error "Valid options: state-values"
             exit 1
             ;;
     esac
 }
 
-# Show state-value file content for StateValueConfigmap
+# Show state-values file content for StateValuesConfigmap
 cmd_template_state_value() {
     local hype_name="$1"
     local configmap_name="$2"
     
     if [[ -z "$configmap_name" ]]; then
         error "ConfigMap name is required"
-        error "Usage: hype <hype-name> template state-value <configmap-name>"
+        error "Usage: hype <hype-name> template state-values <configmap-name>"
         exit 1
     fi
     
@@ -573,7 +573,7 @@ cmd_template_state_value() {
     echo
     
     # Validate the configmap
-    if ! validate_state_value_configmap "$hype_name" "$configmap_name"; then
+    if ! validate_state_values_configmap "$hype_name" "$configmap_name"; then
         exit 1
     fi
     
@@ -651,7 +651,7 @@ EOF
     # shellcheck disable=SC2064
     trap "rm -f '$current_dir_state_file'" EXIT
     
-    # Add state-value-file for StateValueConfigmap resources
+    # Add state-values-file for StateValuesConfigmap resources
     if [[ -f "$HYPE_SECTION_FILE" ]]; then
         local resource_count
         resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
@@ -662,20 +662,20 @@ EOF
             name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
             type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
             
-            if [[ "$type" == "StateValueConfigmap" && "$name" != "null" ]]; then
+            if [[ "$type" == "StateValuesConfigmap" && "$name" != "null" ]]; then
                 # Create temporary state values file
                 local state_file
                 state_file=$(mktemp)
                 
                 # Extract YAML content directly from ConfigMap data.values key
                 if ! kubectl get configmap "$name" -o jsonpath='{.data.values}' > "$state_file" 2>/dev/null; then
-                    error "Failed to extract state values from StateValueConfigmap: $name"
+                    error "Failed to extract state values from StateValuesConfigmap: $name"
                     continue
                 fi
                 
                 # Verify the state file is not empty
                 if [[ ! -s "$state_file" ]]; then
-                    error "StateValueConfigmap $name contains no values data"
+                    error "StateValuesConfigmap $name contains no values data"
                     continue
                 fi
                 cmd+=("--state-values-file" "$state_file")
