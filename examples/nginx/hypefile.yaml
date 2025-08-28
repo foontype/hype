@@ -32,7 +32,7 @@ defaultResources:
       numberValue: 12345
       boolValue: true
 
-  - type: Secrets
+  - type: DefaultStateValues
     values:
       strValue: "This is apple."
       numberValue: 54321
