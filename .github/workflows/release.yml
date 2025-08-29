@@ -45,7 +45,7 @@ jobs:
         echo "Validating release notes for version: $VERSION"
         
         # Run validation script
-        ./scripts/validate-release-notes.sh "$VERSION"
+        ./.github/scripts/validate-release-notes.sh "$VERSION"
         
     - name: Get release notes
       id: get_release_notes
