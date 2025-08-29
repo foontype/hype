@@ -85,7 +85,7 @@ Usage:
   hype <hype-name> check                                         List default resources status
   hype <hype-name> template                                      Show rendered hype section YAML
   hype <hype-name> template state-values <configmap-name>        Show state-values file content
-  hype <hype-name> section [hype|helmfile]                      Show raw section without headers
+  hype <hype-name> parse section <hype|helmfile>                Show raw section without headers
   hype <hype-name> helmfile <helmfile-options>                  Run helmfile command
   hype --version                                                 Show version
   hype --help                                                    Show this help
@@ -103,9 +103,8 @@ Examples:
   hype my-nginx init                                             Create resources for my-nginx
   hype my-nginx template                                         Show rendered YAML for my-nginx
   hype my-nginx template state-values my-nginx-state-values      Show state-values content
-  hype my-nginx section hype                                     Show raw hype section
-  hype my-nginx section helmfile                                Show raw helmfile section
-  hype my-nginx section                                          Show raw hype section (default)
+  hype my-nginx parse section hype                              Show raw hype section
+  hype my-nginx parse section helmfile                          Show raw helmfile section
   hype my-nginx helmfile apply                                   Apply helmfile for my-nginx
   hype my-nginx check                                            Check resource status
   hype my-nginx deinit                                           Remove all resources
@@ -614,10 +613,39 @@ cmd_template_state_value() {
     echo "$state_values"
 }
 
-# Show raw sections without rendering info headers
-cmd_section() {
+# Parse command router
+cmd_parse() {
     local hype_name="$1"
-    local section_type="${2:-hype}"
+    local subcommand="${2:-}"
+    
+    case "$subcommand" in
+        "section")
+            local section_type="${3:-}"
+            cmd_parse_section "$hype_name" "$section_type"
+            ;;
+        "")
+            error "Missing parse subcommand"
+            error "Usage: hype <hype-name> parse section [hype|helmfile]"
+            exit 1
+            ;;
+        *)
+            error "Unknown parse subcommand: $subcommand"
+            error "Valid options: section"
+            exit 1
+            ;;
+    esac
+}
+
+# Show raw sections without rendering info headers
+cmd_parse_section() {
+    local hype_name="$1"
+    local section_type="$2"
+    
+    if [[ -z "$section_type" ]]; then
+        error "Section type is required"
+        error "Usage: hype <hype-name> parse section [hype|helmfile]"
+        exit 1
+    fi
     
     parse_hypefile "$hype_name"
     
@@ -807,8 +835,8 @@ main() {
                 "template")
                     cmd_template "$hype_name" "$@"
                     ;;
-                "section")
-                    cmd_section "$hype_name" "$@"
+                "parse")
+                    cmd_parse "$hype_name" "$@"
                     ;;
                 "helmfile")
                     cmd_helmfile "$hype_name" "$@"
