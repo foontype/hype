@@ -140,9 +140,11 @@ parse_hypefile() {
     section == "helmfile" { print > helmfile_file }
     ' "$HYPEFILE"
     
-    # Replace {{ .Hype.Name }} with actual hype name
+    # Replace {{ .Hype.Name }} with actual hype name and {{ .Hype.CurrentDirectory }} with current directory
     sed -i "s/{{ \.Hype\.Name }}/$hype_name/g" "$HYPE_SECTION_FILE"
     sed -i "s/{{ \.Hype\.Name }}/$hype_name/g" "$HELMFILE_SECTION_FILE"
+    sed -i "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g" "$HYPE_SECTION_FILE"
+    sed -i "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g" "$HELMFILE_SECTION_FILE"
     
     debug "Created temporary files: $HYPE_SECTION_FILE, $HELMFILE_SECTION_FILE"
     
@@ -208,7 +210,7 @@ validate_state_values_configmap() {
     for (( i=0; i<resource_count; i++ )); do
         local name type
         
-        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
+        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
         type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
         
         debug "Checking resource $i: name=$name, type=$type"
@@ -442,7 +444,7 @@ cmd_init() {
     for (( i=0; i<resource_count; i++ )); do
         local name type values_yaml
         
-        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
+        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
         type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
         values_yaml=$(yq eval ".defaultResources[$i].values" "$HYPE_SECTION_FILE")
         
@@ -482,7 +484,7 @@ cmd_deinit() {
     for (( i=0; i<resource_count; i++ )); do
         local name type
         
-        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
+        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
         type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
         
         debug "Processing resource $i for deletion: name=$name, type=$type"
@@ -522,7 +524,7 @@ cmd_check_resources() {
     for (( i=0; i<resource_count; i++ )); do
         local name type
         
-        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
+        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
         type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
         
         if [[ "$type" != "null" ]]; then
@@ -716,7 +718,7 @@ EOF
         for (( i=0; i<resource_count; i++ )); do
             local name type
             
-            name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g")
+            name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
             type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
             
             if [[ "$type" == "StateValuesConfigmap" && "$name" != "null" ]]; then
