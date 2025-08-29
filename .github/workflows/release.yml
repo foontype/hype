@@ -38,20 +38,24 @@ jobs:
         sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
         sudo chmod +x /usr/local/bin/yq
         
+    - name: Validate release notes
+      run: |
+        # Extract version from tag 
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "Validating release notes for version: $VERSION"
+        
+        # Run validation script
+        ./.github/scripts/validate-release-notes.sh "$VERSION"
+        
     - name: Get release notes
       id: get_release_notes
       run: |
-        # Extract version from tag (remove 'v' prefix)
-        VERSION=v${GITHUB_REF#refs/tags/v}
+        # Extract version from tag
+        VERSION=${GITHUB_REF#refs/tags/}
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         
-        # Get release notes from YAML
-        if yq eval ".\"$VERSION\"" release-notes.yaml | grep -q "null"; then
-          echo "No release notes found for version $VERSION"
-          echo "Release $VERSION" > release_notes.md
-        else
-          yq eval ".\"$VERSION\"" release-notes.yaml > release_notes.md
-        fi
+        # Get release notes from YAML (validation already passed)
+        yq eval ".\"$VERSION\"" release-notes.yaml > release_notes.md
         
         # Set release name
         echo "release_name=Release $VERSION" >> $GITHUB_OUTPUT
