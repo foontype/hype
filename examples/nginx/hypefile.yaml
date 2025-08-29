@@ -46,8 +46,8 @@ releases:
     chart: bitnami/nginx
     version: "13.2.23"
     values:
-      - hypeCurrentDirectory: {{ .StateValues.Hype.CurrentDirectory }}
-        hypeName: {{ .StateValues.Hype.Name }}
+      - autoHypeCurrentDirectory: {{ .StateValues.Hype.CurrentDirectory }}
+        autoHypeName: {{ .StateValues.Hype.Name }}
         strValue: {{ .StateValues.strValue }}
         numberValue: {{ .StateValues.numberValue }}
         boolValue: {{ .StateValues.boolValue }}
