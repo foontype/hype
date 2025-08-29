@@ -10,7 +10,7 @@ echo "Setting up HYPE development environment..."
 # (Currently no additional tools required)
 
 # Make sure hype script is executable
-chmod +x src/hype
+sudo chmod +x src/hype
 
 # Add src directory to PATH for current session
 # shellcheck disable=SC2016
