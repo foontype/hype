@@ -1,3 +1,33 @@
+"v0.4.0": |
+  ## What's New in HYPE CLI v0.4.0
+
+  ### New Features
+  - **Current Directory Template Variable**: Added support for `{{ .Hype.CurrentDirectory }}` template variable in hypefile.yaml configurations
+    - Allows dynamic replacement of current working directory path in templates
+    - Works in both hype and helmfile sections of hypefile.yaml
+    - Enables location-independent configuration files for better portability
+
+  ### Improvements
+  - **Enhanced State Values Structure**: Updated StateValues structure with improved naming consistency across the codebase
+  - **Better Template Processing**: Improved template variable substitution logic for both Name and CurrentDirectory variables
+  - **Configuration Flexibility**: Hypefile configurations can now reference the current directory dynamically
+
+  ### Technical Changes
+  - Version bump to 0.4.0
+  - Added CurrentDirectory template variable processing in parse_hypefile() function (lines 146-147)
+  - Enhanced sed-based template replacement for both hype and helmfile sections
+  - Updated StateValues data structure for better consistency
+
+  ### Use Cases
+  - Create portable hypefile configurations that work regardless of directory location
+  - Reference current directory in file paths and volume mounts
+  - Enable CI/CD pipelines with location-independent configurations
+
+  ### Dependencies
+  - Bash 4.0+
+  - curl (for installation)
+  - helm-diff plugin (validated during runtime)
+
 "v0.3.5": |
   ## What's New in HYPE CLI v0.3.5
 
