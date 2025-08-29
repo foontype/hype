@@ -116,13 +116,38 @@ Include:
 - Environment details if relevant
 
 ### Creating Releases
-1. Update version in `src/hype` script
-2. Create and push tag:
+
+#### Version Update Process
+1. **Update version in `src/hype` script**:
+   - Locate `HYPE_VERSION="x.x.x"` line in `src/hype`
+   - Update to new version number (e.g., `HYPE_VERSION="0.5.0"`)
+
+2. **Create/Update release notes in `release-notes.yaml`**:
+   - Add new version key (e.g., `v0.5.0:`)
+   - Generate release notes from recent git log:
+     ```bash
+     git log --oneline --since="last release date" --format="- %s"
+     ```
+   - Add generated notes under the version key in YAML format
+
+3. **Create and push tag**:
    ```bash
-   git tag v0.2.0
-   git push origin v0.2.0
+   git tag v0.5.0
+   git push origin v0.5.0
    ```
-3. GitHub Actions automatically creates release via `.github/workflows/release.yml`
+
+4. **GitHub Actions automatically creates release** via `.github/workflows/release.yml`
+
+#### Example release-notes.yaml structure:
+```yaml
+v0.5.0:
+  - Add new feature X
+  - Fix bug in command Y  
+  - Improve error handling
+  - Update documentation
+v0.4.0:
+  - Previous release notes
+```
 
 ## Adding New Features
 
