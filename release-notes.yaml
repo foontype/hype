@@ -1,3 +1,20 @@
+"v0.4.1": |
+  ## What's New in HYPE CLI v0.4.1
+
+  ### Improvements
+  - **Documentation Updates**: Updated version and release process documentation for better maintainability
+  - **Section Parsing Refactoring**: Refactored section subcommand to improve parse section structure handling
+  
+  ### Technical Changes
+  - Version bump to 0.4.1
+  - Enhanced release process documentation
+  - Improved section parsing structure for better code maintainability
+
+  ### Dependencies
+  - Bash 4.0+
+  - curl (for installation)
+  - helm-diff plugin (validated during runtime)
+
 "v0.4.0": |
   ## What's New in HYPE CLI v0.4.0
 
