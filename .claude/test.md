@@ -3,6 +3,12 @@ cd examples/nginx
 ../../src/hype test check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets がないことを確認
 
+../../src/hype test parse section hype
+  * hypefile.yaml の hype セクションが表示されること
+
+../../src/hype test parse section helmfile
+  * hypefile.yaml の helmfile セクションが表示されること
+
 ../../src/hype test init
 
 ../../src/hype test check
