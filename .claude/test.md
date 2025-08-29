@@ -12,6 +12,8 @@ cd examples/nginx
   * configmap に保存された data.values 以下の構造が表示できること
 
 ../../src/hype test helmfile build
+  * test-discord-bot のリリースの values.autoHypeCurrentDirectory の値がカレントディレクトリであること
+  * test-discord-bot のリリースの values.autoHypeName の値が test であること
   * test-discord-bot のリリースの values.strValue の値が "This is a pen." であること
   * test-discord-bot のリリースの values.numberValue の値が 12345 であること
   * test-discord-bot のリリースの values.boolValue の値が true であること
