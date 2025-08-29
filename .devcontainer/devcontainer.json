@@ -16,7 +16,7 @@
     "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
     "ghcr.io/edouard-lopez/devcontainer-features/bats:0": {}
   },
-  "postCreateCommand": ".devcontainer/post-create-command.sh",
+  "postCreateCommand": "bash .devcontainer/post-create-command.sh",
   "remoteUser": "vscode",
   "remoteEnv": {
     "PATH": "/workspaces/hype/src:${containerEnv:PATH}"
