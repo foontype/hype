@@ -18,6 +18,7 @@ defaultResources:
                   pathType: Prefix
       hypeCurrentDirectoryValue: {{ .Hype.CurrentDirectory }}
       hypeNameValue: {{ .Hype.Name }}
+      hypeTraitValue: {{ .Hype.Trait }}
       strValue: "This is a pen."
       numberValue: 12345
       boolValue: true
@@ -50,8 +51,10 @@ releases:
     values:
       - autoHypeCurrentDirectory: {{ .StateValues.Hype.CurrentDirectory }}
         autoHypeName: {{ .StateValues.Hype.Name }}
+        autoTraitName: {{ .StateValues.Hype.Trait }}
         hypeCurrentDirectoryValue: {{ .StateValues.hypeCurrentDirectoryValue }}
         hypeNameValue: {{ .StateValues.hypeNameValue }}
+        hypeTraitValue: {{ .StateValues.hypeTraitValue }}
         strValue: {{ .StateValues.strValue }}
         numberValue: {{ .StateValues.numberValue }}
         boolValue: {{ .StateValues.boolValue }}
