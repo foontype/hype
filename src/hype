@@ -656,12 +656,13 @@ cmd_helmfile() {
     local current_dir_state_file
     current_dir_state_file=$(mktemp --suffix=.yaml)
     cat > "$current_dir_state_file" << EOF
-hype:
-  currentDirectory: "$(pwd)"
+Hype:
+  CurrentDirectory: "$(pwd)"
+  Name: "$hype_name"
 EOF
     cmd+=("--state-values-file" "$current_dir_state_file")
     
-    debug "Added current directory state values: $(pwd)"
+    debug "Added Hype state values - CurrentDirectory: $(pwd), Name: $hype_name"
     
     # Clean up current directory state file when done
     # shellcheck disable=SC2064
