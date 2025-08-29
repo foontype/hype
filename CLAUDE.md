@@ -130,13 +130,22 @@ Include:
      ```
    - Add generated notes under the version key in YAML format
 
-3. **Create and push tag**:
+3. **Create pull request for version update**:
+   - Create feature branch for version update (e.g., `feature/version-0.5.0`)
+   - Commit version and release notes changes
+   - Create PR using GitHub MCP:
+     ```
+     mcp__github__create_pull_request
+     ```
+   - Wait for user to review and merge the PR
+
+4. **Create and push tag** (only after PR is merged):
    ```bash
    git tag v0.5.0
    git push origin v0.5.0
    ```
 
-4. **GitHub Actions automatically creates release** via `.github/workflows/release.yml`
+5. **GitHub Actions automatically creates release** via `.github/workflows/release.yml`
 
 #### Example release-notes.yaml structure:
 ```yaml
