@@ -86,6 +86,9 @@ Usage:
   hype <hype-name> template                                      Show rendered hype section YAML
   hype <hype-name> template state-values <configmap-name>        Show state-values file content
   hype <hype-name> parse section <hype|helmfile>                Show raw section without headers
+  hype <hype-name> trait                                         Show current trait
+  hype <hype-name> trait set <trait-type>                       Set trait type
+  hype <hype-name> trait unset                                   Remove trait
   hype <hype-name> helmfile <helmfile-options>                  Run helmfile command
   hype --version                                                 Show version
   hype --help                                                    Show this help
@@ -105,6 +108,9 @@ Examples:
   hype my-nginx template state-values my-nginx-state-values      Show state-values content
   hype my-nginx parse section hype                              Show raw hype section
   hype my-nginx parse section helmfile                          Show raw helmfile section
+  hype my-nginx trait                                            Show current trait for my-nginx
+  hype my-nginx trait set web-server                            Set web-server trait for my-nginx
+  hype my-nginx trait unset                                      Remove trait for my-nginx
   hype my-nginx helmfile apply                                   Apply helmfile for my-nginx
   hype my-nginx check                                            Check resource status
   hype my-nginx deinit                                           Remove all resources
@@ -139,11 +145,23 @@ parse_hypefile() {
     section == "helmfile" { print > helmfile_file }
     ' "$HYPEFILE"
     
-    # Replace {{ .Hype.Name }} with actual hype name and {{ .Hype.CurrentDirectory }} with current directory
+    # Replace template variables with actual values
     sed -i "s/{{ \.Hype\.Name }}/$hype_name/g" "$HYPE_SECTION_FILE"
     sed -i "s/{{ \.Hype\.Name }}/$hype_name/g" "$HELMFILE_SECTION_FILE"
     sed -i "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g" "$HYPE_SECTION_FILE"
     sed -i "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g" "$HELMFILE_SECTION_FILE"
+    
+    # Replace {{ .Hype.Trait }} with actual trait value
+    local trait_value
+    if trait_value=$(get_hype_trait "$hype_name" 2>/dev/null); then
+        debug "Found trait for template replacement: $trait_value"
+        sed -i "s/{{ \.Hype\.Trait }}/$trait_value/g" "$HYPE_SECTION_FILE"
+        sed -i "s/{{ \.Hype\.Trait }}/$trait_value/g" "$HELMFILE_SECTION_FILE"
+    else
+        debug "No trait found, removing trait template variables"
+        sed -i "s/{{ \.Hype\.Trait }}//g" "$HYPE_SECTION_FILE"
+        sed -i "s/{{ \.Hype\.Trait }}//g" "$HELMFILE_SECTION_FILE"
+    fi
     
     debug "Created temporary files: $HYPE_SECTION_FILE, $HELMFILE_SECTION_FILE"
     
@@ -356,6 +374,83 @@ check_resource_status() {
             echo -e "${YELLOW}?${NC} Unknown resource type: $type"
             ;;
     esac
+}
+
+# Get trait for hype name from hype-traits ConfigMap
+get_hype_trait() {
+    local hype_name="$1"
+    
+    debug "Getting trait for hype: $hype_name"
+    
+    # Check if hype-traits ConfigMap exists
+    if ! kubectl get configmap hype-traits >/dev/null 2>&1; then
+        debug "hype-traits ConfigMap does not exist"
+        return 1
+    fi
+    
+    # Get trait from ConfigMap
+    local trait
+    trait=$(kubectl get configmap hype-traits -o jsonpath="{.data.$hype_name}" 2>/dev/null || echo "")
+    
+    if [[ -n "$trait" ]]; then
+        debug "Found trait for $hype_name: $trait"
+        echo "$trait"
+        return 0
+    else
+        debug "No trait found for hype: $hype_name"
+        return 1
+    fi
+}
+
+# Set trait for hype name in hype-traits ConfigMap
+set_hype_trait() {
+    local hype_name="$1"
+    local trait_type="$2"
+    
+    debug "Setting trait for hype: $hype_name to: $trait_type"
+    
+    # Validate trait type format (alphanumeric + hyphens only)
+    if [[ ! "$trait_type" =~ ^[a-zA-Z0-9-]+$ ]]; then
+        die "Invalid trait type: $trait_type (only alphanumeric characters and hyphens allowed)"
+    fi
+    
+    # Create or patch the hype-traits ConfigMap
+    if kubectl get configmap hype-traits >/dev/null 2>&1; then
+        # ConfigMap exists, patch it
+        debug "Patching existing hype-traits ConfigMap"
+        kubectl patch configmap hype-traits --patch "{\"data\":{\"$hype_name\":\"$trait_type\"}}"
+    else
+        # ConfigMap doesn't exist, create it
+        debug "Creating new hype-traits ConfigMap"
+        kubectl create configmap hype-traits --from-literal="$hype_name=$trait_type"
+    fi
+    
+    info "Set trait '$trait_type' for hype: $hype_name"
+}
+
+# Remove trait for hype name from hype-traits ConfigMap
+unset_hype_trait() {
+    local hype_name="$1"
+    
+    debug "Removing trait for hype: $hype_name"
+    
+    # Check if hype-traits ConfigMap exists
+    if ! kubectl get configmap hype-traits >/dev/null 2>&1; then
+        warn "hype-traits ConfigMap does not exist"
+        return 1
+    fi
+    
+    # Check if trait exists for this hype
+    if ! kubectl get configmap hype-traits -o jsonpath="{.data.$hype_name}" >/dev/null 2>&1; then
+        warn "No trait set for hype: $hype_name"
+        return 1
+    fi
+    
+    # Remove the trait by patching the ConfigMap
+    debug "Removing trait from hype-traits ConfigMap"
+    kubectl patch configmap hype-traits --type json -p "[{\"op\": \"remove\", \"path\": \"/data/$hype_name\"}]"
+    
+    info "Removed trait for hype: $hype_name"
 }
 
 # Get values as kubectl arguments with resource type specific handling
@@ -668,6 +763,43 @@ cmd_parse_section() {
     esac
 }
 
+# Handle trait commands
+cmd_trait() {
+    local hype_name="$1"
+    local subcommand="${2:-}"
+    local trait_type="${3:-}"
+    
+    case "$subcommand" in
+        "")
+            # Show current trait
+            local current_trait
+            if current_trait=$(get_hype_trait "$hype_name" 2>/dev/null); then
+                echo "$current_trait"
+            else
+                echo "No trait set"
+            fi
+            ;;
+        "set")
+            if [[ -z "$trait_type" ]]; then
+                error "Trait type is required"
+                error "Usage: hype <hype-name> trait set <trait-type>"
+                exit 1
+            fi
+            set_hype_trait "$hype_name" "$trait_type"
+            ;;
+        "unset")
+            if ! unset_hype_trait "$hype_name"; then
+                exit 1
+            fi
+            ;;
+        *)
+            error "Unknown trait subcommand: $subcommand"
+            error "Valid options: set, unset"
+            exit 1
+            ;;
+    esac
+}
+
 # Run helmfile command
 cmd_helmfile() {
     local hype_name="$1"
@@ -682,14 +814,29 @@ cmd_helmfile() {
     # Build helmfile command
     local cmd=("helmfile" "-f" "$HELMFILE_SECTION_FILE" "-e" "$hype_name")
     
-    # Add current directory as state value
+    # Add current directory and trait as state values
     local current_dir_state_file
     current_dir_state_file=$(mktemp --suffix=.yaml)
-    cat > "$current_dir_state_file" << EOF
+    
+    # Get trait value if available
+    local trait_value
+    if trait_value=$(get_hype_trait "$hype_name" 2>/dev/null); then
+        debug "Adding trait to state values: $trait_value"
+        cat > "$current_dir_state_file" << EOF
+Hype:
+  CurrentDirectory: "$(pwd)"
+  Name: "$hype_name"
+  Trait: "$trait_value"
+EOF
+    else
+        debug "No trait found, using default state values"
+        cat > "$current_dir_state_file" << EOF
 Hype:
   CurrentDirectory: "$(pwd)"
   Name: "$hype_name"
 EOF
+    fi
+    
     cmd+=("--state-values-file" "$current_dir_state_file")
     
     debug "Added Hype state values - CurrentDirectory: $(pwd), Name: $hype_name"
@@ -837,6 +984,9 @@ main() {
                     ;;
                 "parse")
                     cmd_parse "$hype_name" "$@"
+                    ;;
+                "trait")
+                    cmd_trait "$hype_name" "$@"
                     ;;
                 "helmfile")
                     cmd_helmfile "$hype_name" "$@"
