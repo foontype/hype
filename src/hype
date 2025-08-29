@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-HYPE_VERSION="0.4.0"
+HYPE_VERSION="0.4.1"
 HYPEFILE="${HYPEFILE:-hypefile.yaml}"
 
 # Colors for output
