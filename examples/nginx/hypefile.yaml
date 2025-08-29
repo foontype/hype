@@ -17,6 +17,8 @@ defaultResources:
               paths:
                 - path: /
                   pathType: Prefix
+      hypeCurrentDirectoryValue: {{ .Hype.CurrentDirectory }}
+      hypeNameValue: {{ .Hype.Name }}
       strValue: "This is a pen."
       numberValue: 12345
       boolValue: true
@@ -34,6 +36,7 @@ defaultResources:
 
   - type: DefaultStateValues
     values:
+      
       strValue: "This is apple."
       numberValue: 54321
       boolValue: false
@@ -48,6 +51,8 @@ releases:
     values:
       - autoHypeCurrentDirectory: {{ .StateValues.Hype.CurrentDirectory }}
         autoHypeName: {{ .StateValues.Hype.Name }}
+        hypeCurrentDirectoryValue: {{ .StateValues.hypeCurrentDirectoryValue }}
+        hypeNameValue: {{ .StateValues.hypeNameValue }}
         strValue: {{ .StateValues.strValue }}
         numberValue: {{ .StateValues.numberValue }}
         boolValue: {{ .StateValues.boolValue }}
