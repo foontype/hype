@@ -7,8 +7,10 @@ set -euo pipefail
 # Configuration
 INSTALL_DIR="/usr/local/bin"
 SCRIPT_NAME="hype"
-REPO_URL="https://raw.githubusercontent.com/foontype/hype/main/src/hype"
-RELEASE_URL="https://github.com/foontype/hype/releases/download"
+REPO_OWNER="${HYPE_REPO_OWNER:-foontype}"
+REPO_NAME="${HYPE_REPO_NAME:-hype}"
+REPO_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/src/hype"
+RELEASE_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download"
 
 # Colors for output
 RED='\033[0;31m'

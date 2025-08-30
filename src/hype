@@ -817,7 +817,9 @@ cmd_upgrade() {
     fi
     
     # Get latest release information from GitHub API
-    local api_url="https://api.github.com/repos/foontype/hype/releases/latest"
+    local repo_owner="${HYPE_REPO_OWNER:-foontype}"
+    local repo_name="${HYPE_REPO_NAME:-hype}"
+    local api_url="https://api.github.com/repos/${repo_owner}/${repo_name}/releases/latest"
     local release_info
     
     if [[ "$download_tool" == "curl" ]]; then
