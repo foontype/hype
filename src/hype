@@ -85,10 +85,11 @@ Usage:
   hype <hype-name> check                                         List default resources status
   hype <hype-name> template                                      Show rendered hype section YAML
   hype <hype-name> template state-values <configmap-name>        Show state-values file content
-  hype <hype-name> parse section <hype|helmfile>                Show raw section without headers
+  hype <hype-name> parse section <hype|helmfile|taskfile>       Show raw section without headers
   hype <hype-name> trait                                         Show current trait
   hype <hype-name> trait set <trait-type>                       Set trait type
   hype <hype-name> trait unset                                   Remove trait
+  hype <hype-name> task <task-name> [args...]                   Run task from taskfile section
   hype <hype-name> helmfile <helmfile-options>                  Run helmfile command
   hype upgrade                                                   Upgrade HYPE CLI to latest version
   hype --version                                                 Show version
@@ -103,15 +104,23 @@ Environment Variables:
   DEBUG                    Enable debug output (default: false)
   TRACE                    Enable bash trace mode with set -x (default: false)
 
+Task Variables (auto-set when running tasks):
+  HYPE_NAME                Hype name passed to tasks
+  HYPE_TRAIT               Current trait value (if set)
+  HYPE_CURRENT_DIRECTORY   Current working directory
+
 Examples:
   hype my-nginx init                                             Create resources for my-nginx
   hype my-nginx template                                         Show rendered YAML for my-nginx
   hype my-nginx template state-values my-nginx-state-values      Show state-values content
   hype my-nginx parse section hype                              Show raw hype section
   hype my-nginx parse section helmfile                          Show raw helmfile section
+  hype my-nginx parse section taskfile                          Show raw taskfile section
   hype my-nginx trait                                            Show current trait for my-nginx
   hype my-nginx trait set web-server                            Set web-server trait for my-nginx
   hype my-nginx trait unset                                      Remove trait for my-nginx
+  hype my-nginx task build                                       Run build task for my-nginx
+  hype my-nginx task deploy --dry-run                           Run deploy task with arguments
   hype my-nginx helmfile apply                                   Apply helmfile for my-nginx
   hype my-nginx check                                            Check resource status
   hype my-nginx deinit                                           Remove all resources
@@ -125,7 +134,7 @@ show_version() {
     echo "HYPE CLI version $HYPE_VERSION"
 }
 
-# Parse hypefile.yaml and split into hype and helmfile sections
+# Parse hypefile.yaml and split into hype, helmfile, and taskfile sections
 parse_hypefile() {
     local hype_name="$1"
     
@@ -138,22 +147,29 @@ parse_hypefile() {
     # Create temporary files
     HYPE_SECTION_FILE=$(mktemp)
     HELMFILE_SECTION_FILE=$(mktemp --suffix=.yaml.gotmpl)
+    TASKFILE_SECTION_FILE=$(mktemp --suffix=.yaml)
     
-    # Split file on "---" separator
-    awk -v hype_file="$HYPE_SECTION_FILE" -v helmfile_file="$HELMFILE_SECTION_FILE" '
-    BEGIN { section = "hype" }
-    /^---$/ { section = "helmfile"; next }
+    # Split file on "---" separator (supports up to 3 sections)
+    awk -v hype_file="$HYPE_SECTION_FILE" -v helmfile_file="$HELMFILE_SECTION_FILE" -v taskfile_file="$TASKFILE_SECTION_FILE" '
+    BEGIN { section = "hype"; section_count = 0 }
+    /^---$/ { 
+        section_count++
+        if (section_count == 1) section = "helmfile"
+        else if (section_count == 2) section = "taskfile"
+        next 
+    }
     section == "hype" { print > hype_file }
     section == "helmfile" { print > helmfile_file }
+    section == "taskfile" { print > taskfile_file }
     ' "$HYPEFILE"
     
-    # Replace template variables with actual values
+    # Replace template variables with actual values (hype and helmfile sections only)
     sed -i "s/{{ \.Hype\.Name }}/$hype_name/g" "$HYPE_SECTION_FILE"
     sed -i "s/{{ \.Hype\.Name }}/$hype_name/g" "$HELMFILE_SECTION_FILE"
     sed -i "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g" "$HYPE_SECTION_FILE"
     sed -i "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g" "$HELMFILE_SECTION_FILE"
     
-    # Replace {{ .Hype.Trait }} with actual trait value
+    # Replace {{ .Hype.Trait }} with actual trait value (hype and helmfile sections only)
     local trait_value
     if trait_value=$(get_hype_trait "$hype_name" 2>/dev/null); then
         debug "Found trait for template replacement: $trait_value"
@@ -165,7 +181,10 @@ parse_hypefile() {
         sed -i "s/{{ \.Hype\.Trait }}//g" "$HELMFILE_SECTION_FILE"
     fi
     
-    debug "Created temporary files: $HYPE_SECTION_FILE, $HELMFILE_SECTION_FILE"
+    # Note: TASKFILE_SECTION_FILE is not processed here - it keeps its original template variables
+    # for go-task to process with environment variables
+    
+    debug "Created temporary files: $HYPE_SECTION_FILE, $HELMFILE_SECTION_FILE, $TASKFILE_SECTION_FILE"
     
     # Debug: Show contents of temporary files
     if [[ "$DEBUG" == "true" ]]; then
@@ -176,6 +195,10 @@ parse_hypefile() {
         debug "=== HELMFILE SECTION CONTENT ==="
         cat "$HELMFILE_SECTION_FILE" >&2
         debug "=== END HELMFILE SECTION ==="
+        
+        debug "=== TASKFILE SECTION CONTENT ==="
+        cat "$TASKFILE_SECTION_FILE" >&2
+        debug "=== END TASKFILE SECTION ==="
     fi
 }
 
@@ -186,6 +209,9 @@ cleanup() {
     fi
     if [[ -n "${HELMFILE_SECTION_FILE:-}" && -f "$HELMFILE_SECTION_FILE" ]]; then
         rm -f "$HELMFILE_SECTION_FILE"
+    fi
+    if [[ -n "${TASKFILE_SECTION_FILE:-}" && -f "$TASKFILE_SECTION_FILE" ]]; then
+        rm -f "$TASKFILE_SECTION_FILE"
     fi
 }
 
@@ -590,6 +616,7 @@ cmd_deinit() {
         fi
     done
     
+    
     info "Deinitialization completed for: $hype_name"
 }
 
@@ -757,9 +784,14 @@ cmd_parse_section() {
                 cat "$HELMFILE_SECTION_FILE"
             fi
             ;;
+        "taskfile")
+            if [[ -f "$TASKFILE_SECTION_FILE" ]]; then
+                cat "$TASKFILE_SECTION_FILE"
+            fi
+            ;;
         *)
             error "Unknown section type: $section_type"
-            error "Valid options: hype, helmfile"
+            error "Valid options: hype, helmfile, taskfile"
             exit 1
             ;;
     esac
@@ -928,6 +960,79 @@ cmd_upgrade() {
     info "Successfully updated HYPE CLI to version $latest_version_clean"
     info "Backup of previous version saved as: $backup_path"
     info "Run 'hype --version' to verify the update"
+}
+
+# Run task command
+cmd_task() {
+    local hype_name="$1"
+    local task_name="$2"
+    shift 2
+    local task_args=("$@")
+    
+    if [[ -z "$task_name" ]]; then
+        error "Task name is required"
+        error "Usage: hype <hype-name> task <task-name> [args...]"
+        exit 1
+    fi
+    
+    info "Running task '$task_name' for: $hype_name"
+    debug "Task args: ${task_args[*]}"
+    
+    parse_hypefile "$hype_name"
+    
+    # Check if taskfile section exists
+    if [[ ! -f "$TASKFILE_SECTION_FILE" || ! -s "$TASKFILE_SECTION_FILE" ]]; then
+        error "No taskfile section found in hypefile"
+        error "Add a taskfile section after the second '---' separator"
+        exit 1
+    fi
+    
+    # Validate task exists in taskfile using task command itself
+    if ! task --taskfile "$TASKFILE_SECTION_FILE" --list-all 2>/dev/null | grep -E "^\\\* $task_name:" >/dev/null 2>&1; then
+        # Fallback: show all available tasks
+        local all_tasks
+        all_tasks=$(task --taskfile "$TASKFILE_SECTION_FILE" --list-all 2>/dev/null | grep -E "^\\\*" | sed 's/^\\\* //' | cut -d: -f1 | tr '\n' ' ' | sed 's/ $//')
+        
+        error "Task '$task_name' not found in taskfile section"
+        if [[ -n "$all_tasks" ]]; then
+            error "Available tasks: ${all_tasks// /, }"
+        fi
+        exit 1
+    fi
+    
+    # Check if task command is available
+    if ! command -v task >/dev/null 2>&1; then
+        die "Task runner 'task' not found. Please install go-task: https://taskfile.dev/installation/"
+    fi
+    
+    # Set up environment variables for the task
+    export HYPE_NAME="$hype_name"
+    local current_dir
+    current_dir="$(pwd)"
+    export HYPE_CURRENT_DIRECTORY="$current_dir"
+    
+    # Set trait if available
+    local trait_value
+    if trait_value=$(get_hype_trait "$hype_name" 2>/dev/null); then
+        export HYPE_TRAIT="$trait_value"
+        debug "Set HYPE_TRAIT environment variable: $trait_value"
+    else
+        unset HYPE_TRAIT
+        debug "No trait set, HYPE_TRAIT environment variable unset"
+    fi
+    
+    debug "Set environment variables - HYPE_NAME: $hype_name, HYPE_CURRENT_DIRECTORY: $(pwd)"
+    
+    # Run task with the temporary taskfile
+    local cmd=("task" "--taskfile" "$TASKFILE_SECTION_FILE" "$task_name")
+    
+    # Add user-provided arguments
+    if [[ ${#task_args[@]} -gt 0 ]]; then
+        cmd+=("--" "${task_args[@]}")
+    fi
+    
+    debug "Executing: ${cmd[*]}"
+    "${cmd[@]}"
 }
 
 # Run helmfile command
@@ -1121,6 +1226,9 @@ main() {
                     ;;
                 "trait")
                     cmd_trait "$hype_name" "$@"
+                    ;;
+                "task")
+                    cmd_task "$hype_name" "$@"
                     ;;
                 "helmfile")
                     cmd_helmfile "$hype_name" "$@"
