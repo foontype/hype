@@ -1019,8 +1019,9 @@ EOF
             fi
         done
         
-        # Second pass: Process StateValuesConfigmap resources
-        for (( i=0; i<resource_count; i++ )); do
+        # Second pass: Process StateValuesConfigmap resources in reverse order
+        # (later resources in hypefile get higher priority in state-values-file)
+        for (( i=resource_count-1; i>=0; i-- )); do
             local name type
             
             name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
