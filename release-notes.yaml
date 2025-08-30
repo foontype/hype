@@ -1,3 +1,35 @@
+"v0.5.1": |
+  ## What's New in HYPE CLI v0.5.1
+
+  ### New Features
+  - **Self-Upgrade Functionality**: Added `hype upgrade` command for automatic CLI updates
+    - Automatically downloads and installs the latest version from GitHub releases
+    - Creates backup of current version before upgrade for safety
+    - Validates download integrity and script format before installation
+    - Supports both curl and wget for download operations
+    - Version comparison to prevent unnecessary upgrades
+
+  ### Improvements
+  - **Environment Variable Configuration**: Replaced hardcoded foontype/hype URLs with configurable environment variables
+    - Added `HYPE_REPO_OWNER` and `HYPE_REPO_NAME` environment variables for repository customization
+    - Improves flexibility for forked or custom repositories
+    - Maintains backward compatibility with default foontype/hype repository
+
+  ### Technical Changes
+  - Version bump to 0.5.1
+  - Added `cmd_upgrade()` function with comprehensive download and installation logic
+  - Enhanced error handling and validation for upgrade process
+  - Added backup and restore functionality for failed upgrades
+  - Improved GitHub API integration for release information fetching
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - curl or wget (for upgrade functionality)
+
 "v0.5.0": |
   ## What's New in HYPE CLI v0.5.0
 
