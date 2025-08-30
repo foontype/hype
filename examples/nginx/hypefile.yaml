@@ -63,3 +63,20 @@ releases:
 repositories:
   - name: bitnami
     url: https://charts.bitnami.com/bitnami
+
+---
+version: '3'
+
+env:
+  TASK_TEMP_DIR: .cache
+
+tasks:
+  vars:
+    desc: Show Hype vars
+    requires:
+      vars: [HYPE_NAME, HYPE_TRAIT, HYPE_CURRENT_DIRECTORY]
+    cmds:
+      - |
+        echo "HYPE_NAME=$HYPE_NAME"
+        echo "HYPE_TRAIT=$HYPE_TRAIT"
+        echo "HYPE_CURRENT_DIRECTORY=$HYPE_CURRENT_DIRECTORY"
