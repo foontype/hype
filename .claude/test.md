@@ -44,6 +44,11 @@ cd examples/nginx
   * デバッグログで helmfile section の一時ファイルの拡張子が .yaml.gotmpl であること
   * デバッグログで hype section の一時ファイルに、hypefile.yaml の hype section の内容が出力されていること
 
+../../src/hype test task vars
+  * タスク出力の HYPE_NAME の値が test であること
+  * タスク出力の HYPE_CURRENT_DIRECTORY の値が test であること
+  * タスク出力の HYPE_TRAIT の値が test-trait であること
+
 ../../src/hype test helmfile apply
   * kubectl を使って nginx がアップしていること
 
@@ -59,3 +64,4 @@ cd examples/nginx
 
 ../../src/hype test trait
   * test-trait と表示されないこと
+
