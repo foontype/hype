@@ -1,3 +1,43 @@
+"v0.5.0": |
+  ## What's New in HYPE CLI v0.5.0
+
+  ### New Features
+  - **Trait Functionality**: Added comprehensive trait support for HYPE configurations
+    - New `hype <name> trait` command to show current trait
+    - New `hype <name> trait set <trait-type>` command to set trait types
+    - New `hype <name> trait unset` command to remove traits
+    - Trait values are automatically injected into template variables as `{{ .Hype.Trait }}`
+    - Traits are stored in `hype-traits` ConfigMap for persistence across deployments
+
+  ### Improvements
+  - **Enhanced Template Processing**: Template variables now support trait-based configuration
+    - `{{ .Hype.Trait }}` template variable available in both hype and helmfile sections
+    - Automatic trait value substitution during hypefile parsing
+    - Better error handling when traits are not set
+  - **Configuration Management**: Improved hypefile configuration flexibility with trait-based customization
+  - **Developer Experience**: Enhanced development container configuration
+
+  ### Technical Changes
+  - Version bump to 0.5.0
+  - Added trait management functions: `get_hype_trait()`, `set_hype_trait()`, `unset_hype_trait()`
+  - Enhanced template variable replacement logic in `parse_hypefile()` function
+  - Added trait validation with alphanumeric and hyphen character restrictions
+  - Improved ConfigMap patch operations for trait management
+  - Updated help documentation to include trait commands
+
+  ### Use Cases
+  - Configure different deployment behaviors based on application types (web-server, database, api)
+  - Environment-specific customizations without separate configuration files
+  - Dynamic helmfile template rendering based on trait characteristics
+  - Simplified deployment pattern management across multiple services
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+
 "v0.4.1": |
   ## What's New in HYPE CLI v0.4.1
 
