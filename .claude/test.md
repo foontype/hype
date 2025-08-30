@@ -1,5 +1,10 @@
 cd examples/nginx
 
+../../src/hype test trait set test-trait
+
+../../src/hype test trait
+  * test-trait と表示されること
+
 ../../src/hype test check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets がないことを確認
 
@@ -21,8 +26,11 @@ cd examples/nginx
   * test-discord-bot のリリースの values.autoHypeCurrentDirectory の値がカレントディレクトリであること
   * test-discord-bot のリリースの values.autoHypeName の値が test であること
 ../../src/hype test helmfile build
+  * test-discord-bot のリリースの values.autoHypeTrait の値が test-trait であること
+../../src/hype test helmfile build
   * test-discord-bot のリリースの values.hypeCurrentDirectoryValue の値がカレントディレクトリであること
   * test-discord-bot のリリースの values.hypeNameValue の値が test であること
+  * test-discord-bot のリリースの values.hypeTraitValue の値が test-trait であること
   * test-discord-bot のリリースの values.strValue の値が "This is a pen." であること
   * test-discord-bot のリリースの values.numberValue の値が 12345 であること
   * test-discord-bot のリリースの values.boolValue の値が true であること
@@ -46,3 +54,8 @@ cd examples/nginx
 
 ../../src/hype test check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets がないことを確認
+
+../../src/hype test trait unset
+
+../../src/hype test trait
+  * test-trait と表示されないこと
