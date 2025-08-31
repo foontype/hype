@@ -4,6 +4,7 @@ set -euo pipefail
 
 HYPE_VERSION="0.5.4"
 HYPEFILE="${HYPEFILE:-hypefile.yaml}"
+HYPE_LOG="${HYPE_LOG:-stdout}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -23,20 +24,44 @@ fi
 
 debug() {
     if [[ "$DEBUG" == "true" ]]; then
-        echo -e "${BLUE}[DEBUG]${NC} $*" >&2
+        if [[ -z "$HYPE_LOG" ]]; then
+            return
+        elif [[ "$HYPE_LOG" == "stdout" ]]; then
+            echo -e "${BLUE}[DEBUG]${NC} $*" >&2
+        else
+            echo -e "${BLUE}[DEBUG]${NC} $*" >> "$HYPE_LOG"
+        fi
     fi
 }
 
 info() {
-    echo -e "${GREEN}[INFO]${NC} $*"
+    if [[ -z "$HYPE_LOG" ]]; then
+        return
+    elif [[ "$HYPE_LOG" == "stdout" ]]; then
+        echo -e "${GREEN}[INFO]${NC} $*"
+    else
+        echo -e "${GREEN}[INFO]${NC} $*" >> "$HYPE_LOG"
+    fi
 }
 
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $*"
+    if [[ -z "$HYPE_LOG" ]]; then
+        return
+    elif [[ "$HYPE_LOG" == "stdout" ]]; then
+        echo -e "${YELLOW}[WARN]${NC} $*"
+    else
+        echo -e "${YELLOW}[WARN]${NC} $*" >> "$HYPE_LOG"
+    fi
 }
 
 error() {
-    echo -e "${RED}[ERROR]${NC} $*" >&2
+    if [[ -z "$HYPE_LOG" ]]; then
+        return
+    elif [[ "$HYPE_LOG" == "stdout" ]]; then
+        echo -e "${RED}[ERROR]${NC} $*" >&2
+    else
+        echo -e "${RED}[ERROR]${NC} $*" >> "$HYPE_LOG"
+    fi
 }
 
 die() {
@@ -103,6 +128,7 @@ Environment Variables:
   HYPEFILE                 Path to hypefile.yaml (default: hypefile.yaml)
   DEBUG                    Enable debug output (default: false)
   TRACE                    Enable bash trace mode with set -x (default: false)
+  HYPE_LOG                 Log output destination: empty=no output, stdout=stdout (default), file=path to file
 
 Task Variables (auto-set when running tasks):
   HYPE_NAME                Hype name passed to tasks
