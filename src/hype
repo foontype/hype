@@ -1055,8 +1055,11 @@ cmd_task() {
     
     debug "Executing: ${cmd[*]} (in directory: $HYPE_CURRENT_DIRECTORY)"
     
-    # Execute task with --dir option
+    # Execute task with --dir option and temporarily disable HYPE_LOG
+    local original_hype_log="$HYPE_LOG"
+    export HYPE_LOG=""
     "${cmd[@]}"
+    export HYPE_LOG="$original_hype_log"
 }
 
 # Run helmfile command
@@ -1194,7 +1197,12 @@ EOF
     cmd+=("${helmfile_args[@]}")
     
     debug "Executing: ${cmd[*]}"
+    
+    # Execute helmfile and temporarily disable HYPE_LOG
+    local original_hype_log="$HYPE_LOG"
+    export HYPE_LOG=""
     "${cmd[@]}"
+    export HYPE_LOG="$original_hype_log"
 }
 
 # Main function
