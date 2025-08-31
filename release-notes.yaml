@@ -1,3 +1,32 @@
+"v0.5.4": |
+  ## What's New in HYPE CLI v0.5.4
+
+  ### Bug Fixes
+  - **Task Execution Directory Fixes**: Fixed critical issues with working directory handling during task execution
+    - Replaced directory change (`cd`) with `--dir` option in task execution to prevent working directory corruption
+    - Fixed HYPEFILE_PATH undefined variable errors by using HYPE_CURRENT_DIRECTORY consistently
+    - Improved task execution reliability and directory state management
+
+  ### Improvements
+  - **Enhanced Task Runner Integration**: Better integration with go-task runner using proper directory options
+  - **Variable Consistency**: Standardized environment variable naming across task execution functions
+  - **Error Prevention**: Eliminated unbound variable errors that could occur during task execution
+
+  ### Technical Changes
+  - Version bump to 0.5.4
+  - Updated task execution command to use `--dir` option instead of directory changes
+  - Fixed variable references in task execution functions (lines 1030 and 1033)
+  - Enhanced working directory preservation during task operations
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for taskfile integration)
+  - curl or wget (for upgrade functionality)
+
 "v0.5.3": |
   ## What's New in HYPE CLI v0.5.3
 
