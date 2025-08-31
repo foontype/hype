@@ -71,7 +71,7 @@ env:
   TASK_TEMP_DIR: .cache
 
 tasks:
-  test:
+  vars:
     desc: Hype Smoke Testing
     requires:
       vars: [HYPE_NAME, HYPE_TRAIT, HYPE_CURRENT_DIRECTORY]
