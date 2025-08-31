@@ -997,7 +997,7 @@ cmd_task() {
         exit 1
     fi
     
-    info "Running task '$task_name' for: $hype_name"
+    debug "Running task '$task_name' for: $hype_name"
     debug "Task args: ${task_args[*]}"
     
     parse_hypefile "$hype_name"
@@ -1054,12 +1054,7 @@ cmd_task() {
     fi
     
     debug "Executing: ${cmd[*]} (in directory: $HYPE_CURRENT_DIRECTORY)"
-    
-    # Execute task with --dir option and temporarily disable HYPE_LOG
-    local original_hype_log="$HYPE_LOG"
-    export HYPE_LOG=""
     "${cmd[@]}"
-    export HYPE_LOG="$original_hype_log"
 }
 
 # Run helmfile command
@@ -1068,7 +1063,7 @@ cmd_helmfile() {
     shift
     local helmfile_args=("$@")
     
-    info "Running helmfile for: $hype_name"
+    debug "Running helmfile for: $hype_name"
     debug "Helmfile args: ${helmfile_args[*]}"
     
     parse_hypefile "$hype_name"
@@ -1197,12 +1192,7 @@ EOF
     cmd+=("${helmfile_args[@]}")
     
     debug "Executing: ${cmd[*]}"
-    
-    # Execute helmfile and temporarily disable HYPE_LOG
-    local original_hype_log="$HYPE_LOG"
-    export HYPE_LOG=""
     "${cmd[@]}"
-    export HYPE_LOG="$original_hype_log"
 }
 
 # Main function
