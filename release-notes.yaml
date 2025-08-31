@@ -1,3 +1,27 @@
+"v0.5.6": |
+  ## What's New in HYPE CLI v0.5.6
+
+  ### Improvements
+  - **Enhanced Logging Control**: Further improvements to the silent proxy method for better external command execution
+    - Enhanced the `silent()` function to properly handle external tool output without HYPE log interference
+    - Improved integration with task and helmfile commands for cleaner output
+    - Better preservation of original HYPE_LOG settings during command execution
+
+  ### Technical Changes
+  - Version bump to 0.5.6
+  - Updated hypefile.yaml configuration examples
+  - Enhanced logging proxy functionality for external command integration
+  - Improved silent execution method implementation
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for taskfile integration)
+  - curl or wget (for upgrade functionality)
+
 "v0.5.5": |
   ## What's New in HYPE CLI v0.5.5
 
