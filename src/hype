@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-HYPE_VERSION="0.5.5"
+HYPE_VERSION="0.5.6"
 HYPEFILE="${HYPEFILE:-hypefile.yaml}"
 HYPE_LOG="${HYPE_LOG:-stdout}"
 
