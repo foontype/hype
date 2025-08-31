@@ -1,3 +1,31 @@
+"v0.5.5": |
+  ## What's New in HYPE CLI v0.5.5
+
+  ### Improvements
+  - **Log Output Control**: Enhanced logging system with configurable output destinations
+    - Added HYPE_LOG environment variable for controlling log output behavior
+    - Supports empty (no output), stdout (default), or file path destinations
+    - All logging functions (debug, info, warn, error) respect HYPE_LOG setting
+  - **Task and Helmfile Execution**: Improved external command execution by temporarily disabling HYPE_LOG
+    - Task and helmfile commands now run with clean output without HYPE log interference
+    - Original HYPE_LOG value is restored after command execution
+    - Better integration with external tools and cleaner command output
+
+  ### Technical Changes
+  - Version bump to 0.5.5
+  - Enhanced logging functions to check HYPE_LOG environment variable
+  - Added temporary HYPE_LOG disabling in task and helmfile execution
+  - Improved output handling for better user experience
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for taskfile integration)
+  - curl or wget (for upgrade functionality)
+
 "v0.5.4": |
   ## What's New in HYPE CLI v0.5.4
 
