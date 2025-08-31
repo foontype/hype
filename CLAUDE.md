@@ -29,6 +29,17 @@ shellcheck install.sh
 shellcheck .devcontainer/post-create-command.sh
 ```
 
+### Smoke Testing
+```bash
+# Run comprehensive smoke test following .claude/test.md
+# Note: This test should be run from the examples/nginx directory
+# and requires kubectl and helmfile to be properly configured
+
+# Follow the complete test sequence in .claude/test.md for smoke testing
+# This covers trait management, parsing, initialization, templating,
+# and deployment/destruction workflows
+```
+
 ### Development Installation
 ```bash
 # Test the install script locally
