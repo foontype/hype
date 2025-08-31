@@ -1,3 +1,49 @@
+"v0.5.2": |
+  ## What's New in HYPE CLI v0.5.2
+
+  ### New Features
+  - **Smoke Testing Documentation**: Added comprehensive smoke testing documentation to CLAUDE.md
+    - Provides detailed testing procedures for trait management, parsing, and templating
+    - Includes step-by-step testing workflows for developers and CI/CD
+    - Covers integration testing for Kubernetes deployments
+
+  ### Improvements
+  - **Task Validation Enhancement**: Fixed task validation regex pattern for better compatibility
+    - Improved task name pattern matching in taskfile integration
+    - Enhanced task validation logic for more reliable task execution
+    - Better error handling for invalid task names
+  - **Taskfile Integration**: Enhanced taskfile integration support
+    - Improved task execution workflow with better environment variable handling
+    - Enhanced task validation and error reporting
+    - Better integration with go-task runner
+
+  ### Bug Fixes
+  - **State Values Priority Control**: Fixed StateValuesConfigmap processing order
+    - Reversed processing order to ensure proper priority control
+    - Later resources in hypefile now get higher priority in state-values-file
+    - Improved state values merging logic for consistent behavior
+
+  ### Documentation
+  - **Testing Documentation**: Updated test.md with enhanced testing procedures
+  - **Configuration Examples**: Updated hypefile.yaml examples for better clarity
+  - **Development Guide**: Enhanced CLAUDE.md with detailed smoke testing instructions
+
+  ### Technical Changes
+  - Version bump to 0.5.2
+  - Enhanced task validation regex patterns
+  - Improved StateValuesConfigmap processing logic
+  - Better documentation structure and testing procedures
+  - Enhanced taskfile integration with environment variable support
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for taskfile integration)
+  - curl or wget (for upgrade functionality)
+
 "v0.5.1": |
   ## What's New in HYPE CLI v0.5.1
 
