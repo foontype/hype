@@ -1019,7 +1019,7 @@ cmd_task() {
     
     debug "Set environment variables - HYPE_NAME: $hype_name, HYPE_CURRENT_DIRECTORY: $(pwd)"
     
-    # Run task with the temporary taskfile
+    # Run task with the temporary taskfile in the hype project directory
     local cmd=("task" "--taskfile" "$TASKFILE_SECTION_FILE" "$task_name")
     
     # Add user-provided arguments
@@ -1027,8 +1027,10 @@ cmd_task() {
         cmd+=("--" "${task_args[@]}")
     fi
     
-    debug "Executing: ${cmd[*]}"
-    "${cmd[@]}"
+    debug "Executing: ${cmd[*]} (in directory: $(dirname "$HYPEFILE_PATH"))"
+    
+    # Change to hype project directory and execute task
+    (cd "$(dirname "$HYPEFILE_PATH")" && "${cmd[@]}")
 }
 
 # Run helmfile command
