@@ -24,7 +24,7 @@ fi
 
 debug() {
     if [[ "$DEBUG" == "true" ]]; then
-        if [[ -z "$HYPE_LOG" ]]; then
+        if [[ "$HYPE_LOG" == "false" ]]; then
             return
         elif [[ "$HYPE_LOG" == "stdout" ]]; then
             echo -e "${BLUE}[DEBUG]${NC} $*" >&2
@@ -35,7 +35,7 @@ debug() {
 }
 
 info() {
-    if [[ -z "$HYPE_LOG" ]]; then
+    if [[ "$HYPE_LOG" == "false" ]]; then
         return
     elif [[ "$HYPE_LOG" == "stdout" ]]; then
         echo -e "${GREEN}[INFO]${NC} $*"
@@ -45,7 +45,7 @@ info() {
 }
 
 warn() {
-    if [[ -z "$HYPE_LOG" ]]; then
+    if [[ "$HYPE_LOG" == "false" ]]; then
         return
     elif [[ "$HYPE_LOG" == "stdout" ]]; then
         echo -e "${YELLOW}[WARN]${NC} $*"
@@ -55,7 +55,7 @@ warn() {
 }
 
 error() {
-    if [[ -z "$HYPE_LOG" ]]; then
+    if [[ "$HYPE_LOG" == "false" ]]; then
         return
     elif [[ "$HYPE_LOG" == "stdout" ]]; then
         echo -e "${RED}[ERROR]${NC} $*" >&2
@@ -67,6 +67,15 @@ error() {
 die() {
     error "$@"
     exit 1
+}
+
+silent() {
+    local original_hype_log="$HYPE_LOG"
+    export HYPE_LOG="false"
+    "$@"
+    local exit_code=$?
+    export HYPE_LOG="$original_hype_log"
+    return $exit_code
 }
 
 # Check if required tools are available
@@ -128,7 +137,7 @@ Environment Variables:
   HYPEFILE                 Path to hypefile.yaml (default: hypefile.yaml)
   DEBUG                    Enable debug output (default: false)
   TRACE                    Enable bash trace mode with set -x (default: false)
-  HYPE_LOG                 Log output destination: empty=no output, stdout=stdout (default), file=path to file
+  HYPE_LOG                 Log output destination: false=no output, stdout=stdout (default), file=path to file
 
 Task Variables (auto-set when running tasks):
   HYPE_NAME                Hype name passed to tasks
@@ -997,7 +1006,7 @@ cmd_task() {
         exit 1
     fi
     
-    info "Running task '$task_name' for: $hype_name"
+    debug "Running task '$task_name' for: $hype_name"
     debug "Task args: ${task_args[*]}"
     
     parse_hypefile "$hype_name"
@@ -1054,12 +1063,7 @@ cmd_task() {
     fi
     
     debug "Executing: ${cmd[*]} (in directory: $HYPE_CURRENT_DIRECTORY)"
-    
-    # Execute task with --dir option and temporarily disable HYPE_LOG
-    local original_hype_log="$HYPE_LOG"
-    export HYPE_LOG=""
     "${cmd[@]}"
-    export HYPE_LOG="$original_hype_log"
 }
 
 # Run helmfile command
@@ -1068,7 +1072,7 @@ cmd_helmfile() {
     shift
     local helmfile_args=("$@")
     
-    info "Running helmfile for: $hype_name"
+    debug "Running helmfile for: $hype_name"
     debug "Helmfile args: ${helmfile_args[*]}"
     
     parse_hypefile "$hype_name"
@@ -1197,12 +1201,7 @@ EOF
     cmd+=("${helmfile_args[@]}")
     
     debug "Executing: ${cmd[*]}"
-    
-    # Execute helmfile and temporarily disable HYPE_LOG
-    local original_hype_log="$HYPE_LOG"
-    export HYPE_LOG=""
     "${cmd[@]}"
-    export HYPE_LOG="$original_hype_log"
 }
 
 # Main function
@@ -1260,10 +1259,10 @@ main() {
                     cmd_trait "$hype_name" "$@"
                     ;;
                 "task")
-                    cmd_task "$hype_name" "$@"
+                    silent cmd_task "$hype_name" "$@"
                     ;;
                 "helmfile")
-                    cmd_helmfile "$hype_name" "$@"
+                    silent cmd_helmfile "$hype_name" "$@"
                     ;;
                 *)
                     error "Unknown command: $command"
