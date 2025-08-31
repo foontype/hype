@@ -1,3 +1,28 @@
+"v0.5.3": |
+  ## What's New in HYPE CLI v0.5.3
+
+  ### Improvements
+  - **Template Variable Scope Enhancement**: Limited template variable replacement to hype section only
+    - Template variables like `{{ .Hype.Name }}`, `{{ .Hype.CurrentDirectory }}`, and `{{ .Hype.Trait }}` are now replaced only in the hype section
+    - Prevents unintended variable replacement in helmfile and taskfile sections where Go templating should be preserved
+    - Improves compatibility with helmfile's Go template processing
+    - Better separation of concerns between HYPE CLI preprocessing and Go template rendering
+
+  ### Technical Changes
+  - Version bump to 0.5.3
+  - Enhanced `parse_hypefile()` function to limit template replacement scope
+  - Improved template variable processing logic for better section isolation
+  - Maintains backward compatibility for existing hypefile configurations
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for taskfile integration)
+  - curl or wget (for upgrade functionality)
+
 "v0.5.2": |
   ## What's New in HYPE CLI v0.5.2
 
