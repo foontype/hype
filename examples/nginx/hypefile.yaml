@@ -72,7 +72,7 @@ env:
 
 tasks:
   vars:
-    desc: Show Hype vars
+    desc: Hype Smoke Testing
     requires:
       vars: [HYPE_NAME, HYPE_TRAIT, HYPE_CURRENT_DIRECTORY]
     cmds:
@@ -80,3 +80,5 @@ tasks:
         echo "HYPE_NAME=$HYPE_NAME"
         echo "HYPE_TRAIT=$HYPE_TRAIT"
         echo "HYPE_CURRENT_DIRECTORY=$HYPE_CURRENT_DIRECTORY"
+        pwd
+        hype $HYPE_NAME template
