@@ -80,5 +80,4 @@ tasks:
         echo "HYPE_NAME=$HYPE_NAME"
         echo "HYPE_TRAIT=$HYPE_TRAIT"
         echo "HYPE_CURRENT_DIRECTORY=$HYPE_CURRENT_DIRECTORY"
-        pwd
-        hype $HYPE_NAME template
+        hype $HYPE_NAME template | jq .
