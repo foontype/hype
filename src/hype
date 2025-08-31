@@ -988,10 +988,10 @@ cmd_task() {
     fi
     
     # Validate task exists in taskfile using task command itself
-    if ! task --taskfile "$TASKFILE_SECTION_FILE" --list-all 2>/dev/null | grep -E "^\\\* $task_name:" >/dev/null 2>&1; then
+    if ! task --taskfile "$TASKFILE_SECTION_FILE" --list-all 2>/dev/null | grep -E "^\* $task_name:" >/dev/null 2>&1; then
         # Fallback: show all available tasks
         local all_tasks
-        all_tasks=$(task --taskfile "$TASKFILE_SECTION_FILE" --list-all 2>/dev/null | grep -E "^\\\*" | sed 's/^\\\* //' | cut -d: -f1 | tr '\n' ' ' | sed 's/ $//')
+        all_tasks=$(task --taskfile "$TASKFILE_SECTION_FILE" --list-all 2>/dev/null | grep -E "^\*" | sed 's/^\* //' | cut -d: -f1 | tr '\n' ' ' | sed 's/ $//')
         
         error "Task '$task_name' not found in taskfile section"
         if [[ -n "$all_tasks" ]]; then
