@@ -4,7 +4,7 @@ This document provides guidance to Claude Code (claude.ai/code) when working wit
 
 ## Project Overview
 
-HYPE is a simple command-line tool written in Bash that demonstrates basic CLI patterns. It's inspired by the navarch project structure and follows similar development practices.
+HYPE is a plugin-based command-line tool written in Bash for Kubernetes AI deployments. It uses a modular architecture with separate core modules and plugins for different commands. The tool follows a build system approach where individual components are combined into a single executable.
 
 ## Language Guidelines
 - **Chat responses**: 日本語で応答してください (Respond in Japanese)
@@ -14,19 +14,21 @@ HYPE is a simple command-line tool written in Bash that demonstrates basic CLI p
 
 ### Testing
 ```bash
-# Run the main script
-./src/hype
+# Build and test the CLI
+make build
+make test
 
-# Test all functionality
-./src/hype hello
-./src/hype world
-./src/hype --version
-./src/hype --help
+# Test built binary functionality
+./build/hype --version
+./build/hype --help
 
-# Run linting
-shellcheck src/hype
-shellcheck install.sh
-shellcheck .devcontainer/post-create-command.sh
+# Run linting on all components
+make lint
+
+# Individual component testing
+shellcheck src/core/*.sh
+shellcheck src/plugins/*.sh
+shellcheck src/main.sh
 ```
 
 ### Smoke Testing
@@ -42,30 +44,40 @@ shellcheck .devcontainer/post-create-command.sh
 
 ### Development Installation
 ```bash
-# Test the install script locally
+# Build and install locally
+make build
+make install
+
+# Or test the install script
 ./install.sh
 
-# Make script executable and create symlink for development
-chmod +x src/hype
-ln -s $(pwd)/src/hype ~/.local/bin/hype
+# For development work, use built binary
+./build/hype --version
 ```
 
 ### Code Quality
 ```bash
-# Lint bash scripts
-shellcheck src/hype
+# Lint all components
+make lint
 
 # Format bash scripts (if shfmt is available)
-shfmt -w -ci src/hype
+shfmt -w -ci src/core/*.sh src/plugins/*.sh src/main.sh
+
+# Clean build artifacts
+make clean
 ```
 
 ## Project Structure
 
-- `src/hype` - Main CLI script (Bash)
-- `install.sh` - Installation script following navarch pattern
-- `.devcontainer/` - Development container setup with Ubuntu + claude-code
+- `src/core/` - Core modules (config, common, hypefile, dependencies)
+- `src/plugins/` - Plugin modules (init, template, parse, trait, upgrade, task, helmfile)
+- `src/main.sh` - Main entry point and command routing
+- `src/hype` - Legacy monolithic script (to be deprecated)
+- `build/` - Build artifacts (generated executable)
+- `test/` - Test framework and unit tests
+- `Makefile` - Build system configuration
+- `install.sh` - Installation script
 - `.github/workflows/` - CI/CD pipelines for testing and release
-- `tests/` - Test scripts (future)
 
 ## Code Style
 
@@ -129,9 +141,9 @@ Include:
 ### Creating Releases
 
 #### Version Update Process
-1. **Update version in `src/hype` script**:
-   - Locate `HYPE_VERSION="x.x.x"` line in `src/hype`
-   - Update to new version number (e.g., `HYPE_VERSION="0.5.0"`)
+1. **Update version in `src/core/config.sh` script**:
+   - Locate `HYPE_VERSION="x.x.x"` line in `src/core/config.sh`
+   - Update to new version number (e.g., `HYPE_VERSION="0.6.0"`)
 
 2. **Create/Update release notes in `release-notes.yaml`**:
    - Add new version key (e.g., `v0.5.0:`)
@@ -171,17 +183,27 @@ v0.4.0:
 
 ## Adding New Features
 
-When adding new subcommands:
-1. Add the function (e.g., `cmd_newfeature()`)
-2. Add the case statement in main()
-3. Update help text
-4. Add tests
-5. Update README.md
-6. Create PR using the workflow above
+### Adding New Plugins
+1. Create new plugin file in `src/plugins/` (e.g., `src/plugins/newfeature.sh`)
+2. Follow the plugin template structure in `src/plugins/plugin-template.sh`
+3. Add plugin metadata and command functions
+4. Update main command routing in `src/main.sh`
+5. Add tests in `test/unit/`
+6. Run `make build` and `make test`
+7. Update help text if needed
+8. Create PR using the workflow above
+
+### Adding Core Functionality
+1. Add functions to appropriate core module in `src/core/`
+2. Update other modules that depend on the new functionality
+3. Add unit tests
+4. Run `make build` and `make test`
+5. Create PR using the workflow above
 
 ## Important Implementation Notes
 - POSIX compatible, requires Bash 4.0+
-- No build process - direct script execution
-- Version defined in script: `HYPE_VERSION="0.1.0"`
+- Plugin-based architecture with build system
+- Version defined in `src/core/config.sh`: `HYPE_VERSION="0.6.0"`
 - Error handling uses consistent exit codes
-- Follow navarch patterns for argument parsing
+- Modular design allows independent development of features
+- Built executable is single self-contained file

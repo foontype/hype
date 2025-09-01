@@ -1,0 +1,45 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup dependencies
+      run: |
+        # Install shellcheck
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+        
+        # Install yq
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+    
+    - name: Lint with ShellCheck
+      run: make lint
+    
+    - name: Build HYPE CLI
+      run: make build
+    
+    - name: Run tests
+      run: make test
+    
+    - name: Verify build artifact
+      run: |
+        ./build/hype --version
+        ./build/hype --help
+    
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: hype-cli
+        path: build/hype
+        retention-days: 30

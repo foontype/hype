@@ -26,3 +26,7 @@ node_modules/
 
 # Logs
 *.log
+
+# Build artifacts
+build/
+*.tmp
