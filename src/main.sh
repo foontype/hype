@@ -60,7 +60,7 @@ show_version() {
 main() {
     if [[ $# -eq 0 ]]; then
         show_help
-        exit 1
+        exit 0
     fi
     
     case "${1:-}" in

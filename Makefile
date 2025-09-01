@@ -30,7 +30,8 @@ all: build
 # Build the final executable
 build: $(TARGET)
 
-$(TARGET): $(CORE_FILES) $(PLUGIN_FILES) $(MAIN_FILE) | $(BUILD_DIR)
+$(TARGET): $(CORE_FILES) $(PLUGIN_FILES) $(MAIN_FILE)
+	@mkdir -p $(BUILD_DIR)
 	@echo "Building HYPE CLI..."
 	@echo "#!/bin/bash" > $(TARGET)
 	@echo "" >> $(TARGET)
@@ -54,9 +55,6 @@ $(TARGET): $(CORE_FILES) $(PLUGIN_FILES) $(MAIN_FILE) | $(BUILD_DIR)
 	@chmod +x $(TARGET)
 	@echo "Build complete: $(TARGET)"
 
-# Create build directory
-$(BUILD_DIR):
-	@mkdir -p $(BUILD_DIR)
 
 # Lint all shell scripts
 lint:
