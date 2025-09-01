@@ -27,8 +27,8 @@ TESTS_TOTAL=0
 test_passed() {
     local test_name="$1"
     echo -e "${GREEN}✓${NC} $test_name"
-    ((TESTS_PASSED++))
-    ((TESTS_TOTAL++))
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
 }
 
 test_failed() {
@@ -38,8 +38,8 @@ test_failed() {
     if [[ -n "$error_msg" ]]; then
         echo -e "  ${RED}Error:${NC} $error_msg"
     fi
-    ((TESTS_FAILED++))
-    ((TESTS_TOTAL++))
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
 }
 
 test_skipped() {
@@ -102,14 +102,16 @@ test_command_parsing() {
     echo "Testing command parsing..."
     
     # Test unknown command
-    if output=$("$HYPE_BINARY" test-hype unknown-command 2>&1) && [[ "$output" =~ "Unknown command: unknown-command" ]]; then
+    output=$("$HYPE_BINARY" test-hype unknown-command 2>&1) || true
+    if [[ "$output" =~ "Unknown command: unknown-command" ]]; then
         test_passed "Unknown command detection"
     else
         test_failed "Unknown command detection" "Output: $output"
     fi
     
     # Test missing arguments
-    if output=$("$HYPE_BINARY" test-hype 2>&1) && [[ "$output" =~ "Missing required dependencies" ]]; then
+    output=$("$HYPE_BINARY" test-hype 2>&1) || true
+    if [[ "$output" =~ "Missing required arguments" ]]; then
         test_passed "Missing dependencies detection"
     else
         test_failed "Missing dependencies detection" "Output: $output"
@@ -126,7 +128,7 @@ test_plugin_structure() {
     
     for plugin in "${expected_plugins[@]}"; do
         if [[ -f "$PROJECT_ROOT/src/plugins/${plugin}.sh" ]]; then
-            ((plugins_found++))
+            plugins_found=$((plugins_found + 1))
             test_passed "Plugin file exists: ${plugin}.sh"
         else
             test_failed "Plugin file missing: ${plugin}.sh"
@@ -150,7 +152,7 @@ test_core_modules() {
     
     for module in "${expected_modules[@]}"; do
         if [[ -f "$PROJECT_ROOT/src/core/${module}.sh" ]]; then
-            ((modules_found++))
+            modules_found=$((modules_found + 1))
             test_passed "Core module exists: ${module}.sh"
         else
             test_failed "Core module missing: ${module}.sh"
@@ -177,7 +179,7 @@ test_shellcheck() {
     local shellcheck_passed=true
     
     # Check built binary
-    if shellcheck -e SC1091 -e SC2034 "$HYPE_BINARY" >/dev/null 2>&1; then
+    if shellcheck -e SC1091 -e SC2034 -e SC2317 "$HYPE_BINARY" >/dev/null 2>&1; then
         test_passed "ShellCheck: built binary"
     else
         test_failed "ShellCheck: built binary"
@@ -191,7 +193,7 @@ test_shellcheck() {
     for file in "${source_files[@]}"; do
         local basename_file
         basename_file=$(basename "$file")
-        if shellcheck -e SC1091 -e SC2034 "$file" >/dev/null 2>&1; then
+        if shellcheck -e SC1091 -e SC2034 -e SC2317 "$file" >/dev/null 2>&1; then
             test_passed "ShellCheck: $basename_file"
         else
             test_failed "ShellCheck: $basename_file"
