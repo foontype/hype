@@ -19,7 +19,7 @@ cd examples/nginx
 ../../src/hype test check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets があることを確認
 
-../../src/hype test template state-values test-nginx-configmap
+../../src/hype test template state-values test-nginx-state-values
   * configmap に保存された data.values 以下の構造が表示できること
 
 ../../src/hype test helmfile build
