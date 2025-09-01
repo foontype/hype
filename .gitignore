@@ -15,6 +15,9 @@ Thumbs.db
 .cache/
 node_modules/
 
+# Claude Code generated directories
+.claude/
+
 # IDE files
 .vscode/settings.json
 .idea/
