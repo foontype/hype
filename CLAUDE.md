@@ -72,7 +72,6 @@ task clean
 - `src/core/` - Core modules (config, common, hypefile, dependencies)
 - `src/plugins/` - Plugin modules (init, template, parse, trait, upgrade, task, helmfile)
 - `src/main.sh` - Main entry point and command routing
-- `src/hype` - Legacy monolithic script (to be deprecated)
 - `build/` - Build artifacts (generated executable)
 - `tests/` - Test framework and unit tests
 - `Taskfile.yml` - Build system configuration
@@ -112,7 +111,7 @@ task clean
 
 3. Format code before push:
    ```bash
-   shellcheck src/hype
+   task lint
    # Fix any shellcheck issues before committing
    ```
 

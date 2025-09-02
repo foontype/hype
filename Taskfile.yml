@@ -38,7 +38,6 @@ tasks:
     desc: Run ShellCheck on all scripts
     cmds:
       - echo "Running ShellCheck..."
-      - shellcheck -e SC1091 -e SC2034 src/hype || true
       - find src -name "*.sh" -exec shellcheck -e SC1091 -e SC2034 {} \;
       - shellcheck -e SC1091 -e SC2034 install.sh || true
 
