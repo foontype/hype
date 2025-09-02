@@ -8,7 +8,7 @@ BUILD_DIR := build
 SRC_DIR := src
 CORE_DIR := $(SRC_DIR)/core
 PLUGINS_DIR := $(SRC_DIR)/plugins
-TEST_DIR := test
+TEST_DIR := tests
 
 # Target executable
 TARGET := $(BUILD_DIR)/hype

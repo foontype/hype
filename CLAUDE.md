@@ -74,7 +74,7 @@ make clean
 - `src/main.sh` - Main entry point and command routing
 - `src/hype` - Legacy monolithic script (to be deprecated)
 - `build/` - Build artifacts (generated executable)
-- `test/` - Test framework and unit tests
+- `tests/` - Test framework and unit tests
 - `Makefile` - Build system configuration
 - `install.sh` - Installation script
 - `.github/workflows/` - CI/CD pipelines for testing and release
@@ -188,7 +188,7 @@ v0.4.0:
 2. Follow the plugin template structure in `src/plugins/plugin-template.sh`
 3. Add plugin metadata and command functions
 4. Update main command routing in `src/main.sh`
-5. Add tests in `test/unit/`
+5. Add tests in `tests/unit/`
 6. Run `make build` and `make test`
 7. Update help text if needed
 8. Create PR using the workflow above

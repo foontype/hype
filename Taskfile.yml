@@ -54,7 +54,7 @@ tasks:
     deps: [build]
     cmds:
       - echo "Running test suite..."
-      - bash -c "if [ -f test/test-suite.sh ]; then bash test/test-suite.sh; else echo 'Test suite not yet implemented'; fi"
+      - bash -c "if [ -f tests/test-suite.sh ]; then bash tests/test-suite.sh; else echo 'Test suite not yet implemented'; fi"
 
   install:
     desc: Install to local bin directory
