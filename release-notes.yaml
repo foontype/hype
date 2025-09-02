@@ -1,3 +1,54 @@
+"v0.6.0": |
+  ## What's New in HYPE CLI v0.6.0
+
+  ### Major Architecture Changes
+  - **Plugin Architecture Migration**: Complete migration from monolithic structure to modular plugin-based architecture
+    - Extracted core modules: config, common, hypefile, dependencies
+    - Created 7 independent plugins: init, template, parse, trait, upgrade, task, helmfile
+    - Added plugin template (plugin-template.sh) for future development
+    - Maintained 100% backward compatibility with all existing commands
+
+  ### Build System Overhaul
+  - **Taskfile Integration**: Migrated from Makefile to Taskfile for modern build system
+    - Added comprehensive Taskfile.yml with build, test, lint, and clean targets
+    - Single executable output combining all modules and plugins
+    - Better dependency management and parallel execution support
+
+  ### Enhanced Testing Framework
+  - **Comprehensive Test Suite**: Added robust testing framework with test-suite.sh
+    - Integration with ShellCheck for code quality validation
+    - CI/CD pipeline updates for new architecture
+    - Smoke testing documentation and procedures
+
+  ### Installation Improvements
+  - **GitHub Releases Integration**: Enhanced install.sh to download from GitHub releases
+    - Automatic version detection and download
+    - Improved installation reliability and security
+    - Support for version-specific installations
+
+  ### Project Restructure
+  - **Better Organization**: Restructured project layout for improved maintainability
+    - Renamed docs to prompts directory
+    - Renamed scripts to tools directory  
+    - Renamed build-combine.sh to script-bundler.sh
+    - Moved examples and improved project structure
+
+  ### Technical Changes
+  - Version bump to 0.6.0
+  - Modular source code organization under src/ directory
+  - Build output in build/ directory with single executable
+  - Enhanced error handling and argument parsing
+  - Fixed build script comment parsing issues
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for build system)
+  - curl or wget (for upgrade functionality)
+
 "v0.5.6": |
   ## What's New in HYPE CLI v0.5.6
 
