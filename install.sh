@@ -18,17 +18,53 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Output control based on INSTALL_LOG environment variable
+output_log() {
+    local message="$1"
+    case "${INSTALL_LOG:-stdout}" in
+        "false") 
+            # Log disabled, do nothing
+            ;;
+        "stdout") 
+            echo -e "$message"
+            ;;
+        *) 
+            # Output to file specified in INSTALL_LOG
+            echo -e "$message" >> "$INSTALL_LOG"
+            ;;
+    esac
+}
+
 # Logging functions
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $*"
+    output_log "${GREEN}[INFO]${NC} $*"
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $*"
+    output_log "${YELLOW}[WARN]${NC} $*"
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $*"
+    output_log "${RED}[ERROR]${NC} $*"
+}
+
+# Silent function - temporarily disables logging and executes command
+silent() {
+    local original_install_log="${INSTALL_LOG:-}"
+    INSTALL_LOG="false"
+    
+    # Execute the command with all arguments
+    "$@"
+    local exit_code=$?
+    
+    # Restore original INSTALL_LOG setting
+    if [[ -n "$original_install_log" ]]; then
+        INSTALL_LOG="$original_install_log"
+    else
+        unset INSTALL_LOG
+    fi
+    
+    return $exit_code
 }
 
 # Check if running as root for system-wide installation
@@ -104,7 +140,7 @@ install_hype() {
             version_to_install="$INSTALL_VERSION"
             log_info "Installing specific version: $version_to_install"
         else
-            version_to_install=$(get_latest_release)
+            version_to_install=$(silent get_latest_release)
             log_info "Installing latest version: $version_to_install"
         fi
         
