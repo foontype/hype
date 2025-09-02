@@ -15,15 +15,15 @@ HYPE is a plugin-based command-line tool written in Bash for Kubernetes AI deplo
 ### Testing
 ```bash
 # Build and test the CLI
-make build
-make test
+task build
+task test
 
 # Test built binary functionality
 ./build/hype --version
 ./build/hype --help
 
 # Run linting on all components
-make lint
+task lint
 
 # Individual component testing
 shellcheck src/core/*.sh
@@ -45,8 +45,8 @@ shellcheck src/main.sh
 ### Development Installation
 ```bash
 # Build and install locally
-make build
-make install
+task build
+task install
 
 # Or test the install script
 ./install.sh
@@ -58,13 +58,13 @@ make install
 ### Code Quality
 ```bash
 # Lint all components
-make lint
+task lint
 
 # Format bash scripts (if shfmt is available)
 shfmt -w -ci src/core/*.sh src/plugins/*.sh src/main.sh
 
 # Clean build artifacts
-make clean
+task clean
 ```
 
 ## Project Structure
@@ -75,7 +75,7 @@ make clean
 - `src/hype` - Legacy monolithic script (to be deprecated)
 - `build/` - Build artifacts (generated executable)
 - `tests/` - Test framework and unit tests
-- `Makefile` - Build system configuration
+- `Taskfile.yml` - Build system configuration
 - `install.sh` - Installation script
 - `.github/workflows/` - CI/CD pipelines for testing and release
 
@@ -189,7 +189,7 @@ v0.4.0:
 3. Add plugin metadata and command functions
 4. Update main command routing in `src/main.sh`
 5. Add tests in `tests/unit/`
-6. Run `make build` and `make test`
+6. Run `task build` and `task test`
 7. Update help text if needed
 8. Create PR using the workflow above
 
@@ -197,7 +197,7 @@ v0.4.0:
 1. Add functions to appropriate core module in `src/core/`
 2. Update other modules that depend on the new functionality
 3. Add unit tests
-4. Run `make build` and `make test`
+4. Run `task build` and `task test`
 5. Create PR using the workflow above
 
 ## Important Implementation Notes

@@ -293,7 +293,7 @@ Each phase must meet the following criteria before proceeding:
 
 ### Required Tools
 - bash 4.0+
-- make
+- task
 - shellcheck
 - git
 

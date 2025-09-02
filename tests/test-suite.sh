@@ -57,7 +57,7 @@ check_build() {
     
     if [[ ! -f "$HYPE_BINARY" ]]; then
         echo -e "${RED}Error:${NC} Build artifact not found: $HYPE_BINARY"
-        echo "Run 'make build' first"
+        echo "Run 'task build' first"
         exit 1
     fi
     
