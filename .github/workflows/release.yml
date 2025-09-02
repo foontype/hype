@@ -16,22 +16,26 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Install ShellCheck
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y shellcheck
         
-    - name: Run tests
-      run: |
-        shellcheck src/hype
-        shellcheck install.sh
-        shellcheck .devcontainer/post-create-command.sh
+        # Install go-task
+        sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
         
-        chmod +x src/hype
+    - name: Build and test
+      run: |
+        # Build the project
+        task build
+        
+        # Run linting
+        task lint
         
         # Test commands
-        ./src/hype --help
-        ./src/hype --version
+        ./build/hype --help
+        ./build/hype --version
         
     - name: Install yq
       run: |
@@ -78,6 +82,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./src/hype
+        asset_path: ./build/hype
         asset_name: hype
         asset_content_type: application/octet-stream
