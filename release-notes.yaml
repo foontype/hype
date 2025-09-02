@@ -1,3 +1,41 @@
+"v0.6.1": |
+  ## What's New in HYPE CLI v0.6.1
+
+  ### New Features
+  - **Install Script Output Control**: Added flexible output control system for the install script
+    - `INSTALL_LOG=false`: Completely disable all logging output for silent installations
+    - `INSTALL_LOG=stdout`: Output to standard output (default behavior)  
+    - `INSTALL_LOG=/path/to/file`: Redirect all output to specified file for debugging
+    - Silent API calls during version fetching to prevent output noise
+
+  ### Improvements
+  - **Enhanced Installation Experience**: Better control over installation output
+    - Silent release version fetching using `silent()` wrapper function
+    - Centralized output handling through `output_log()` function
+    - Graceful handling of unset INSTALL_LOG environment variable
+    - Improved debugging capabilities with file-based logging
+
+  ### Technical Changes
+  - Version bump to 0.6.1
+  - Added `output_log()` function for centralized output handling
+  - Added `silent()` proxy function for temporary output suppression
+  - Updated `get_latest_release()` caller to use silent wrapper: `version_to_install=$(silent get_latest_release)`
+  - All log functions (log_info, log_warn, log_error) updated to use new output control system
+
+  ### Use Cases
+  - Silent CI/CD installations with `INSTALL_LOG=false ./install.sh`
+  - Debugging installation issues with `INSTALL_LOG=/tmp/install.log ./install.sh`
+  - Default interactive installations continue to work unchanged
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for build system)
+  - curl or wget (for upgrade functionality)
+
 "v0.6.0": |
   ## What's New in HYPE CLI v0.6.0
 
