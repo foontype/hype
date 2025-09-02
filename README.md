@@ -1,10 +1,10 @@
 # HYPE CLI
 
-A simple command-line tool that wraps Helmfile for Kubernetes AI deployments, providing streamlined management of default resources and configurations.
+A plugin-based command-line tool written in Bash for Kubernetes AI deployments, providing streamlined management of default resources and configurations through a modular architecture.
 
 ## Overview
 
-HYPE is a Bash-based CLI tool that simplifies the deployment and management of Kubernetes applications using Helmfile. It introduces the concept of "hypefile.yaml" - a structured configuration file that separates default resources from Helmfile configurations.
+HYPE is a Bash-based CLI tool that simplifies the deployment and management of Kubernetes applications using Helmfile. It uses a modular architecture with separate core modules and plugins for different commands, following a build system approach where individual components are combined into a single executable. The tool introduces the concept of "hypefile.yaml" - a structured configuration file that separates default resources from Helmfile configurations.
 
 ## Features
 
@@ -13,6 +13,17 @@ HYPE is a Bash-based CLI tool that simplifies the deployment and management of K
 - **Helmfile Integration**: Seamless integration with existing Helmfile workflows
 - **Resource Status Checking**: Monitor the status of managed resources
 - **Debug Support**: Built-in debug logging for troubleshooting
+
+## Project Structure
+
+- `src/core/` - Core modules (config, common, hypefile, dependencies)
+- `src/plugins/` - Plugin modules (init, template, parse, trait, upgrade, task, helmfile)
+- `src/main.sh` - Main entry point and command routing
+- `build/` - Build artifacts (generated executable)
+- `tests/` - Test framework and unit tests
+- `Taskfile.yml` - Build system configuration
+- `install.sh` - Installation script
+- `.github/workflows/` - CI/CD pipelines for testing and release
 
 ## Installation
 
@@ -28,11 +39,11 @@ You can install a specific version using the `INSTALL_VERSION` environment varia
 
 ```bash
 # Install specific version
-curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | INSTALL_VERSION=v0.2.1 bash
+curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | INSTALL_VERSION=v0.6.1 bash
 
 # Or download and run locally
 curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh -o install.sh
-INSTALL_VERSION=v0.2.1 ./install.sh
+INSTALL_VERSION=v0.6.1 ./install.sh
 ```
 
 ### Manual Install
@@ -46,8 +57,17 @@ cd hype
 ### Development Install
 
 ```bash
-chmod +x src/hype
-ln -s $(pwd)/src/hype ~/.local/bin/hype
+# Build and install locally
+git clone https://github.com/foontype/hype.git
+cd hype
+task build
+task install
+
+# Or test the install script
+./install.sh
+
+# For development work, use built binary
+./build/hype --version
 ```
 
 ## Usage
@@ -183,46 +203,83 @@ Creates Kubernetes Secrets for sensitive configuration data.
 ## Dependencies
 
 - Bash 4.0+
+- Git (for development)
 - kubectl
 - helmfile
 - yq
 
 ## Development
 
-### Running Tests
+### Essential Commands
 
 ```bash
-# Test the main script
-./src/hype --help
-./src/hype --version
+# Build and test the CLI
+task build
+task test
 
-# Test with example
-cd prompts/nginx-example
-../../src/hype test-nginx init
-../../src/hype test-nginx check
-../../src/hype test-nginx template
-../../src/hype test-nginx deinit
+# Test built binary functionality
+./build/hype --version
+./build/hype --help
+
+# Run linting on all components
+task lint
+
+# Individual component testing
+shellcheck src/core/*.sh
+shellcheck src/plugins/*.sh
+shellcheck src/main.sh
 ```
 
 ### Code Quality
 
 ```bash
-# Lint bash scripts
-shellcheck src/hype
-shellcheck install.sh
+# Lint all components
+task lint
 
-# Format (if shfmt is available)
-shfmt -w -ci src/hype
+# Format bash scripts (if shfmt is available)
+shfmt -w -ci src/core/*.sh src/plugins/*.sh src/main.sh
+
+# Clean build artifacts
+task clean
 ```
 
+### Smoke Testing
+
+Follow the comprehensive smoke test in `prompts/smoke-test.md` for complete workflow testing. This test should be run from the `prompts/nginx-example` directory and requires kubectl and helmfile to be properly configured.
+
 ## Contributing
+
+**IMPORTANT: Never push directly to main branch. Always use feature branches.**
+
+### Git Workflow
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
 3. Make changes and test thoroughly
-4. Run linting: `shellcheck src/hype`
-5. Commit with descriptive messages
-6. Push to your fork and create a pull request
+4. Run linting and tests:
+   ```bash
+   task lint
+   task build
+   task test
+   ```
+5. Commit with descriptive messages (must be in English)
+6. Push to your fork: `git push -u origin feature/my-feature`
+7. Create a pull request
+
+### Code Style Guidelines
+
+- Follow shellcheck recommendations
+- Use proper error handling with `set -euo pipefail`
+- Include debug logging capabilities
+- All commit messages and code comments must be written in English
+- Follow the argument parsing pattern from navarch
+
+### Adding New Features
+
+- For new plugins: Create files in `src/plugins/` following the plugin template structure
+- For core functionality: Add functions to appropriate core module in `src/core/`
+- Always add tests and update help text if needed
+- Run full test suite before submitting PR
 
 ## License
 
