@@ -36,7 +36,7 @@ This document outlines the step-by-step implementation plan for migrating HYPE C
 #### Tasks:
 1. **Create directory structure**
    ```bash
-   mkdir -p src/core src/plugins build test/unit test/integration
+   mkdir -p src/core src/plugins build tests/unit tests/integration
    ```
 
 2. **Create .gitignore updates**
@@ -178,7 +178,7 @@ This document outlines the step-by-step implementation plan for migrating HYPE C
    - Build artifact validation
 
 3. **Test runner implementation**
-   - `test/test-suite.sh` main runner
+   - `tests/test-suite.sh` main runner
    - Test result aggregation
    - CI-friendly output format
 
@@ -293,7 +293,7 @@ Each phase must meet the following criteria before proceeding:
 
 ### Required Tools
 - bash 4.0+
-- make
+- task
 - shellcheck
 - git
 

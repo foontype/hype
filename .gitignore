@@ -26,3 +26,10 @@ node_modules/
 
 # Logs
 *.log
+
+# Build artifacts
+build/
+*.tmp
+
+# Task runner cache
+.task/

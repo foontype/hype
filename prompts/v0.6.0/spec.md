@@ -45,7 +45,7 @@ src/
 └── hype                  # Current monolithic script (to be removed after refactor)
 build/
 └── hype                  # Build artifact (Git ignored)
-test/
+tests/
 ├── unit/                 # Unit tests for individual plugins
 ├── integration/          # Integration tests
 └── test-suite.sh         # Test runner
@@ -175,25 +175,25 @@ _<plugin-name>_helper_function() {
 
 ## Build System
 
-### Makefile Configuration
+### Taskfile Configuration
 
-```makefile
-# Build configuration
-CORE_FILES := src/core/common.sh src/core/config.sh src/core/hypefile.sh src/core/dependencies.sh
-PLUGIN_FILES := $(wildcard src/plugins/*.sh)
-BUILD_DIR := build
-TARGET := $(BUILD_DIR)/hype
+```yaml
+version: '3'
 
-# Build targets
-.PHONY: build lint clean test dev-run install ci-build
+vars:
+  BUILD_DIR: build
+  SRC_DIR: src
+  TARGET: "{{.BUILD_DIR}}/hype"
+  INSTALL_DIR: "{{.HOME}}/.local/bin"
 
-build: $(TARGET)
-lint: # ShellCheck validation on all source files
-test: build # Run test suite
-dev-run: # Run in development mode
-clean: # Remove build artifacts
-install: build # Install to ~/.local/bin
-ci-build: build lint test # CI/CD pipeline target
+tasks:
+  build:    # Build the final executable
+  lint:     # Run ShellCheck validation on all source files
+  test:     # Run test suite with build dependency
+  dev-run:  # Run in development mode
+  clean:    # Remove build artifacts
+  install:  # Install to ~/.local/bin with build dependency
+  validate: # CI/CD pipeline target (build + lint + test)
 ```
 
 ### Build Process
@@ -248,16 +248,17 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y shellcheck make
+        sudo apt-get install -y shellcheck
+        sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
     
     - name: Build hype
-      run: make build
+      run: task build
     
     - name: Run linting
-      run: make lint
+      run: task lint
     
     - name: Run tests  
-      run: make test
+      run: task test
     
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
@@ -286,10 +287,11 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y shellcheck make
+        sudo apt-get install -y shellcheck
+        sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
     
     - name: Build and test
-      run: make ci-build
+      run: task validate
     
     - name: Upload release asset
       uses: actions/upload-release-asset@v1
@@ -307,7 +309,7 @@ jobs:
 
 ```bash
 # Development mode execution
-make dev-run ARGS="my-nginx --help"
+task dev-run CLI_ARGS="my-nginx --help"
 export HYPE_DEV_MODE=true && bash src/main.sh my-nginx init
 
 # Individual plugin development
@@ -315,17 +317,17 @@ shellcheck src/plugins/init.sh
 bash -n src/plugins/init.sh  # Syntax check
 
 # Build and test cycle
-make build         # Build single script
-make lint         # Lint all files
-make test         # Run test suite
-make install      # Install to ~/.local/bin
+task build         # Build single script
+task lint         # Lint all files
+task test         # Run test suite
+task install      # Install to ~/.local/bin
 ```
 
 ### Plugin Development Process
 
 1. **Create Plugin File**: `src/plugins/<command>.sh`
 2. **Implement Interface**: Follow plugin structure template
-3. **Add Tests**: Create corresponding test in `test/unit/`
+3. **Add Tests**: Create corresponding test in `tests/unit/`
 4. **Lint and Test**: Validate individual plugin
 5. **Integration Test**: Test with full build
 6. **Documentation**: Update help text and README
