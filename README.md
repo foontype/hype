@@ -197,7 +197,7 @@ Creates Kubernetes Secrets for sensitive configuration data.
 ./src/hype --version
 
 # Test with example
-cd examples/nginx
+cd prompts/nginx-example
 ../../src/hype test-nginx init
 ../../src/hype test-nginx check
 ../../src/hype test-nginx template

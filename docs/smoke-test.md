@@ -1,1 +1,0 @@
-see docs/v0.6.0/test.md for smoke testing.
