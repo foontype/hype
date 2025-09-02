@@ -45,7 +45,7 @@ src/
 └── hype                  # Current monolithic script (to be removed after refactor)
 build/
 └── hype                  # Build artifact (Git ignored)
-test/
+tests/
 ├── unit/                 # Unit tests for individual plugins
 ├── integration/          # Integration tests
 └── test-suite.sh         # Test runner
@@ -325,7 +325,7 @@ make install      # Install to ~/.local/bin
 
 1. **Create Plugin File**: `src/plugins/<command>.sh`
 2. **Implement Interface**: Follow plugin structure template
-3. **Add Tests**: Create corresponding test in `test/unit/`
+3. **Add Tests**: Create corresponding test in `tests/unit/`
 4. **Lint and Test**: Validate individual plugin
 5. **Integration Test**: Test with full build
 6. **Documentation**: Update help text and README
