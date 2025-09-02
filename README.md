@@ -33,6 +33,11 @@ HYPE is a Bash-based CLI tool that simplifies the deployment and management of K
 curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | bash
 ```
 
+For system-wide installation (installs to `/usr/local/bin`):
+```bash
+curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | sudo bash
+```
+
 ### Install Specific Version
 
 You can install a specific version using the `INSTALL_VERSION` environment variable:
