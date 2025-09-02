@@ -98,8 +98,8 @@ check_dependencies() {
     log_info "All dependencies are satisfied"
 }
 
-# Get latest release version from GitHub API (internal implementation)
-_get_latest_release_impl() {
+# Get latest release version from GitHub API
+get_latest_release() {
     local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
     local latest_version
     
@@ -122,11 +122,6 @@ _get_latest_release_impl() {
     echo "$latest_version"
 }
 
-# Get latest release version from GitHub API (silent wrapper)
-get_latest_release() {
-    silent _get_latest_release_impl
-}
-
 # Download and install hype
 install_hype() {
     local target_path="$INSTALL_DIR/$SCRIPT_NAME"
@@ -145,7 +140,7 @@ install_hype() {
             version_to_install="$INSTALL_VERSION"
             log_info "Installing specific version: $version_to_install"
         else
-            version_to_install=$(get_latest_release)
+            version_to_install=$(silent get_latest_release)
             log_info "Installing latest version: $version_to_install"
         fi
         
