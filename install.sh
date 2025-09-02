@@ -4,6 +4,14 @@
 
 set -euo pipefail
 
+# Check for dry-run mode
+if [[ "${1:-}" == "--dry-run" ]]; then
+    DRY_RUN=true
+    shift
+else
+    DRY_RUN=false
+fi
+
 # Configuration
 INSTALL_DIR="/usr/local/bin"
 SCRIPT_NAME="hype"
@@ -12,23 +20,38 @@ REPO_NAME="${HYPE_REPO_NAME:-hype}"
 REPO_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/src/hype"
 RELEASE_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download"
 
-# Colors for output
+# Colors for output (disabled during downloads to prevent contamination)
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Flag to control color output during critical operations
+DISABLE_COLORS=false
+
 # Logging functions
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $*"
+    if [[ "$DISABLE_COLORS" == "true" ]]; then
+        echo "[INFO] $*"
+    else
+        echo -e "${GREEN}[INFO]${NC} $*"
+    fi
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $*"
+    if [[ "$DISABLE_COLORS" == "true" ]]; then
+        echo "[WARN] $*"
+    else
+        echo -e "${YELLOW}[WARN]${NC} $*"
+    fi
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $*"
+    if [[ "$DISABLE_COLORS" == "true" ]]; then
+        echo "[ERROR] $*"
+    else
+        echo -e "${RED}[ERROR]${NC} $*"
+    fi
 }
 
 # Check if running as root for system-wide installation
@@ -67,21 +90,30 @@ get_latest_release() {
     local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
     local latest_version
     
+    # Temporarily disable colors during API call to prevent contamination
+    DISABLE_COLORS=true
     log_info "Fetching latest release information..."
     
     if command -v curl >/dev/null 2>&1; then
-        latest_version=$(curl -fsSL "$api_url" | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
+        latest_version=$(curl -fsSL "$api_url" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
     elif command -v wget >/dev/null 2>&1; then
-        latest_version=$(wget -qO- "$api_url" | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
+        latest_version=$(wget -qO- "$api_url" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
     else
+        DISABLE_COLORS=false
         log_error "Neither curl nor wget is available. Cannot fetch release information."
         exit 1
     fi
+    
+    # Re-enable colors
+    DISABLE_COLORS=false
     
     if [[ -z "$latest_version" ]]; then
         log_error "Failed to get latest release version"
         exit 1
     fi
+    
+    # Clean the version string to ensure no contamination
+    latest_version=$(echo "$latest_version" | tr -d '\033' | sed 's/\[[0-9;]*m//g')
     
     echo "$latest_version"
 }
@@ -108,26 +140,53 @@ install_hype() {
             log_info "Installing latest version: $version_to_install"
         fi
         
-        download_url="$RELEASE_URL/$version_to_install/$SCRIPT_NAME"
+        # Disable colors during critical download operations to prevent URL contamination
+        DISABLE_COLORS=true
+        
+        # Construct download URL with clean variable substitution
+        download_url="${RELEASE_URL}/${version_to_install}/${SCRIPT_NAME}"
         
         # Download from GitHub release
         log_info "Downloading from $download_url"
-        if command -v curl >/dev/null 2>&1; then
-            if ! curl -fsSL "$download_url" -o "$target_path"; then
-                log_error "Failed to download from release. Falling back to main branch."
-                download_url="$REPO_URL"
-                curl -fsSL "$download_url" -o "$target_path"
-            fi
-        elif command -v wget >/dev/null 2>&1; then
-            if ! wget -q "$download_url" -O "$target_path"; then
-                log_error "Failed to download from release. Falling back to main branch."
-                download_url="$REPO_URL"
-                wget -q "$download_url" -O "$target_path"
-            fi
+        
+        # In dry-run mode, just verify URL construction
+        if [[ "$DRY_RUN" == "true" ]]; then
+            log_info "DRY RUN: Would download from URL: $download_url"
+            log_info "DRY RUN: Target path would be: $target_path"
+            # Create a dummy file for testing
+            echo "# HYPE CLI dry-run test" > "$target_path"
         else
-            log_error "Neither curl nor wget is available. Cannot download hype."
-            exit 1
+            if command -v curl >/dev/null 2>&1; then
+                # Use clean curl command without any potential variable contamination
+                if ! curl -fsSL "$download_url" -o "$target_path" 2>/dev/null; then
+                    log_error "Failed to download from release. Falling back to main branch."
+                    download_url="$REPO_URL"
+                    if ! curl -fsSL "$download_url" -o "$target_path" 2>/dev/null; then
+                        DISABLE_COLORS=false
+                        log_error "Failed to download hype from both release and main branch."
+                        exit 1
+                    fi
+                fi
+            elif command -v wget >/dev/null 2>&1; then
+                # Use clean wget command without any potential variable contamination
+                if ! wget -q "$download_url" -O "$target_path" 2>/dev/null; then
+                    log_error "Failed to download from release. Falling back to main branch."
+                    download_url="$REPO_URL"
+                    if ! wget -q "$download_url" -O "$target_path" 2>/dev/null; then
+                        DISABLE_COLORS=false
+                        log_error "Failed to download hype from both release and main branch."
+                        exit 1
+                    fi
+                fi
+            else
+                DISABLE_COLORS=false
+                log_error "Neither curl nor wget is available. Cannot download hype."
+                exit 1
+            fi
         fi
+        
+        # Re-enable colors after download
+        DISABLE_COLORS=false
     fi
     
     # Make executable
