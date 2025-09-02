@@ -62,10 +62,35 @@ check_dependencies() {
     log_info "All dependencies are satisfied"
 }
 
+# Get latest release version from GitHub API
+get_latest_release() {
+    local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest"
+    local latest_version
+    
+    log_info "Fetching latest release information..."
+    
+    if command -v curl >/dev/null 2>&1; then
+        latest_version=$(curl -fsSL "$api_url" | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
+    elif command -v wget >/dev/null 2>&1; then
+        latest_version=$(wget -qO- "$api_url" | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
+    else
+        log_error "Neither curl nor wget is available. Cannot fetch release information."
+        exit 1
+    fi
+    
+    if [[ -z "$latest_version" ]]; then
+        log_error "Failed to get latest release version"
+        exit 1
+    fi
+    
+    echo "$latest_version"
+}
+
 # Download and install hype
 install_hype() {
     local target_path="$INSTALL_DIR/$SCRIPT_NAME"
     local download_url
+    local version_to_install
     
     log_info "Installing hype to $target_path"
     
@@ -74,21 +99,31 @@ install_hype() {
         log_info "Using local development version"
         cp "src/hype" "$target_path"
     else
-        # Determine download URL based on INSTALL_VERSION
+        # Determine version and download URL
         if [[ -n "${INSTALL_VERSION:-}" ]]; then
-            download_url="$RELEASE_URL/$INSTALL_VERSION/$SCRIPT_NAME"
-            log_info "Installing specific version: $INSTALL_VERSION"
+            version_to_install="$INSTALL_VERSION"
+            log_info "Installing specific version: $version_to_install"
         else
-            download_url="$REPO_URL"
-            log_info "Installing latest version from main branch"
+            version_to_install=$(get_latest_release)
+            log_info "Installing latest version: $version_to_install"
         fi
         
-        # Download from repository
+        download_url="$RELEASE_URL/$version_to_install/$SCRIPT_NAME"
+        
+        # Download from GitHub release
         log_info "Downloading from $download_url"
         if command -v curl >/dev/null 2>&1; then
-            curl -fsSL "$download_url" -o "$target_path"
+            if ! curl -fsSL "$download_url" -o "$target_path"; then
+                log_error "Failed to download from release. Falling back to main branch."
+                download_url="$REPO_URL"
+                curl -fsSL "$download_url" -o "$target_path"
+            fi
         elif command -v wget >/dev/null 2>&1; then
-            wget -q "$download_url" -O "$target_path"
+            if ! wget -q "$download_url" -O "$target_path"; then
+                log_error "Failed to download from release. Falling back to main branch."
+                download_url="$REPO_URL"
+                wget -q "$download_url" -O "$target_path"
+            fi
         else
             log_error "Neither curl nor wget is available. Cannot download hype."
             exit 1
