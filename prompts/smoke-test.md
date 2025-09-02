@@ -1,0 +1,1 @@
+see prompts/v0.6.0/test.md for smoke testing.
