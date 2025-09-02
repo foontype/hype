@@ -51,7 +51,7 @@ releases:
     values:
       - autoHypeCurrentDirectory: {{ .StateValues.Hype.CurrentDirectory }}
         autoHypeName: {{ .StateValues.Hype.Name }}
-        autoTraitName: {{ .StateValues.Hype.Trait }}
+        autoHypeTrait: {{ .StateValues.Hype.Trait }}
         hypeCurrentDirectoryValue: {{ .StateValues.hypeCurrentDirectoryValue }}
         hypeNameValue: {{ .StateValues.hypeNameValue }}
         hypeTraitValue: {{ .StateValues.hypeTraitValue }}
