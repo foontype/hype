@@ -1,6 +1,6 @@
 # GitHub Workflow Guide
 
-This document provides detailed guidance for GitHub workflows in the HYPE CLI project.
+This document provides detailed guidance for GitHub workflows in project.
 
 ## Language Convention
 **All commit messages and code comments must be written in English.**
