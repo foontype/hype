@@ -1,3 +1,39 @@
+"v0.6.2": |
+  ## What's New in HYPE CLI v0.6.2
+
+  ### Improvements
+  - **Deployment Lifecycle Management**: Added convenient deployment lifecycle aliases
+    - Added `up`, `down`, and `restart` aliases for better deployment workflow
+    - Enhanced deployment lifecycle management capabilities
+    - Improved user experience with intuitive command aliases
+
+  ### Bug Fixes
+  - **Task Variables Command**: Fixed yq parsing error in task vars command
+    - Resolved parsing issues that could occur with complex task variable structures
+    - Improved reliability of task variable processing
+    - Enhanced error handling for task configuration parsing
+
+  ### Documentation
+  - **Project Documentation Updates**: Enhanced project documentation and structure
+    - Updated test.md and other documentation files
+    - Improved development guidance and project instructions
+    - Better documentation for contributors and users
+
+  ### Technical Changes
+  - Version bump to 0.6.2
+  - Fixed yq parsing error handling in task variable processing
+  - Enhanced deployment lifecycle command aliases (up, down, restart)
+  - Improved documentation structure and content
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for build system)
+  - curl or wget (for upgrade functionality)
+
 "v0.6.1": |
   ## What's New in HYPE CLI v0.6.1
 

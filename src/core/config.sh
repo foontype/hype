@@ -4,7 +4,7 @@
 # Core configuration settings and environment variables
 
 # Version information
-HYPE_VERSION="0.6.1"
+HYPE_VERSION="0.6.2"
 
 # Default configuration
 HYPEFILE="${HYPEFILE:-hypefile.yaml}"
