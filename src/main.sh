@@ -20,6 +20,9 @@ Usage:
   hype <hype-name> trait unset                                   Remove trait
   hype <hype-name> task <task-name> [args...]                   Run task from taskfile section
   hype <hype-name> helmfile <helmfile-options>                  Run helmfile command
+  hype <hype-name> up                                            Build and deploy (task build + helmfile apply)
+  hype <hype-name> down                                          Destroy deployment (helmfile destroy)
+  hype <hype-name> restart                                       Restart deployment (down + up)
   hype upgrade                                                   Upgrade HYPE CLI to latest version
   hype --version                                                 Show version
   hype --help                                                    Show this help
@@ -48,6 +51,9 @@ Examples:
   hype my-nginx trait set production                             Set trait to production
   hype my-nginx task deploy                                      Run deploy task
   hype my-nginx helmfile sync                                    Sync with helmfile
+  hype my-nginx up                                               Build and deploy my-nginx
+  hype my-nginx down                                             Destroy my-nginx deployment
+  hype my-nginx restart                                          Restart my-nginx deployment
 EOF
 }
 
@@ -118,6 +124,18 @@ main() {
                 "helmfile")
                     check_dependencies
                     cmd_helmfile "$hype_name" "$@"
+                    ;;
+                "up")
+                    check_dependencies
+                    cmd_up "$hype_name"
+                    ;;
+                "down")
+                    check_dependencies
+                    cmd_down "$hype_name"
+                    ;;
+                "restart")
+                    check_dependencies
+                    cmd_restart "$hype_name"
                     ;;
                 *)
                     error "Unknown command: $command"
