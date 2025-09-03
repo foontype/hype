@@ -2,6 +2,9 @@
 
 This document provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+* imports
+  * @prompts/agent-tomes/github
+
 ## Project Overview
 
 HYPE is a plugin-based command-line tool written in Bash for Kubernetes AI deployments. It uses a modular architecture with separate core modules and plugins for different commands. The tool follows a build system approach where individual components are combined into a single executable.
@@ -92,50 +95,6 @@ task clean
 - curl or wget (for installation)
 
 ## Git Workflow
-
-### Language Convention
-**All commit messages and code comments must be written in English.**
-
-### Creating Pull Requests
-**IMPORTANT: Never push directly to main branch. Always use feature branches.**
-
-1. Check existing PRs:
-   ```
-   mcp__github__list_pull_requests
-   ```
-
-2. Create new branch (naming: `feature/<description>`):
-   ```bash
-   git checkout -b feature/<feature-name>
-   ```
-
-3. Format code before push:
-   ```bash
-   task lint
-   # Fix any shellcheck issues before committing
-   ```
-
-4. Push branch:
-   ```bash
-   git push -u origin feature/<feature-name>
-   ```
-
-5. Create PR using GitHub MCP:
-   ```
-   mcp__github__create_pull_request
-   ```
-
-### Creating Issues
-Use GitHub MCP tools to create issues:
-```
-mcp__github__create_issue
-```
-
-Include:
-- Clear description of the problem or feature request
-- Steps to reproduce (for bugs)
-- Expected vs actual behavior
-- Environment details if relevant
 
 ### Creating Releases
 
