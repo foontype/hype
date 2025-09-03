@@ -3,7 +3,7 @@
 This document provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 * imports
-  * @prompts/tome/github-workflows.md
+  * @prompts/tomes/github
 
 ## Project Overview
 
