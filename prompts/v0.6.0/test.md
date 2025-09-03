@@ -50,10 +50,16 @@ cd prompts/nginx-example
   * タスク出力の HYPE_TRAIT の値が test-trait であること
 
 ../../build/hype test helmfile apply
-  * kubectl を使って nginx がアップしていること
+  * kubectl から nginx がアップしていることを確認する
 
 ../../build/hype test helmfile destroy
-  * kubectl を使って nginx がダウンしていること
+  * kubectl から nginx がダウンしていることを確認する
+
+../../build/hype test up
+  * kubectl から nginx がアップしていることを確認する
+
+../../build/hype test down
+  * kubectl から nginx がダウンしていることを確認する
 
 ../../build/hype test deinit
 
