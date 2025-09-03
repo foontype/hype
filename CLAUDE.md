@@ -91,6 +91,51 @@ task clean
 - Git (for development)
 - curl or wget (for installation)
 
+## Git Workflow
+
+### Creating Releases
+
+#### Version Update Process
+1. **Update version in `src/core/config.sh` script**:
+   - Locate `HYPE_VERSION="x.x.x"` line in `src/core/config.sh`
+   - Update to new version number (e.g., `HYPE_VERSION="0.6.0"`)
+
+2. **Create/Update release notes in `release-notes.yaml`**:
+   - Add new version key (e.g., `v0.5.0:`)
+   - Generate release notes from recent git log:
+     ```bash
+     git log --oneline --since="last release date" --format="- %s"
+     ```
+   - Add generated notes under the version key in YAML format
+
+3. **Create pull request for version update**:
+   - Create feature branch for version update (e.g., `feature/version-0.5.0`)
+   - Commit version and release notes changes
+   - Create PR using GitHub MCP:
+     ```
+     mcp__github__create_pull_request
+     ```
+   - Wait for user to review and merge the PR
+
+4. **Create and push tag** (only after PR is merged):
+   ```bash
+   git tag v0.5.0
+   git push origin v0.5.0
+   ```
+
+5. **GitHub Actions automatically creates release** via `.github/workflows/release.yml`
+
+#### Example release-notes.yaml structure:
+```yaml
+v0.5.0:
+  - Add new feature X
+  - Fix bug in command Y  
+  - Improve error handling
+  - Update documentation
+v0.4.0:
+  - Previous release notes
+```
+
 ## References
 
 For detailed workflow documentation, see:
