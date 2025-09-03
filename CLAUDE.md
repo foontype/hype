@@ -3,7 +3,7 @@
 This document provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 * imports
-  * @prompts/tomes/github
+  * @prompts/agent-tomes/github
 
 ## Project Overview
 
