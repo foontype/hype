@@ -2,6 +2,9 @@
 
 This document provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+* imports
+  * @prompts/tome/github-workflows.md
+
 ## Project Overview
 
 HYPE is a plugin-based command-line tool written in Bash for Kubernetes AI deployments. It uses a modular architecture with separate core modules and plugins for different commands. The tool follows a build system approach where individual components are combined into a single executable.
@@ -135,11 +138,6 @@ v0.5.0:
 v0.4.0:
   - Previous release notes
 ```
-
-## References
-
-For detailed workflow documentation, see:
-- [@prompts/knowhow/github-workflow.md](prompts/knowhow/github-workflow.md) - GitHub workflow guide
 
 ## Adding New Features
 
