@@ -26,8 +26,13 @@ Repository bindings are stored in a Kubernetes ConfigMap with the following stru
 /tmp/hype-repos/
 ├── <hype-name-1>/
 │   └── <repository-clone>/
+│       ├── main/          # main branch working directory
+│       ├── develop/       # develop branch working directory
+│       └── feature-xyz/   # feature branch working directory
 ├── <hype-name-2>/
 │   └── <repository-clone>/
+│       ├── main/
+│       └── staging/
 └── ...
 ```
 
@@ -37,20 +42,24 @@ Repository bindings are stored in a Kubernetes ConfigMap with the following stru
 
 #### `use repo`
 ```
-hype <hype name> use repo <repository>
+hype <hype name> use repo <repository> [--branch <branch>]
 ```
 - Binds a repository to the specified hype name
 - Updates the ConfigMap with the binding information
-- Clones the repository to `/tmp/hype-repos/<hype-name>/`
-- Creates working directory if it doesn't exist
+- Clones the repository to `/tmp/hype-repos/<hype-name>/<repository-name>/`
+- Creates branch-specific working directory
+- Switches to specified branch (defaults to repository's default branch)
 
 **Parameters:**
 - `<hype name>`: Environment identifier
 - `<repository>`: Git repository URL (supports HTTPS, SSH, local paths)
+- `--branch <branch>`: Optional branch to checkout (defaults to main/master)
 
 **Behavior:**
-- If binding already exists, updates to new repository
-- If repository already cloned, performs git pull
+- If binding already exists, updates to new repository and/or branch
+- Creates separate working directory for each branch
+- If repository already cloned for the branch, performs git pull
+- If new branch specified, creates new working directory and checks out branch
 - Validates repository accessibility before binding
 
 #### `unuse`
@@ -119,7 +128,7 @@ When executing hype commands:
 2. **Working directory resolution:**
    ```
    if repository bound:
-       cd /tmp/hype-repos/<hype-name>/<repo-name>/
+       cd /tmp/hype-repos/<hype-name>/<repo-name>/<branch>/
    else:
        use current directory
    ```
@@ -143,8 +152,9 @@ metadata:
   name: hype-repository-config
   namespace: <current-namespace>
 data:
-  my-app: "git@github.com:user/my-app.git"
-  staging: "https://github.com/user/staging-repo"
+  my-app: '{"repository": "git@github.com:user/my-app.git", "branch": "main"}'
+  staging: '{"repository": "https://github.com/user/staging-repo", "branch": "develop"}'
+  feature-env: '{"repository": "git@github.com:user/my-app.git", "branch": "feature-xyz"}'
   local-dev: ""  # Empty string indicates no binding
 ```
 
@@ -236,15 +246,20 @@ hype my-app unuse
 
 ### Multi-environment Workflow
 ```bash
-# Set up multiple environments
+# Set up multiple environments with specific branches
+hype prod use repo git@github.com:company/prod-config.git --branch main
+hype staging use repo git@github.com:company/prod-config.git --branch develop
+hype dev use repo git@github.com:company/prod-config.git --branch feature-new-feature
+
+# Or use different repositories for different environments
 hype prod use repo git@github.com:company/prod-config.git
 hype staging use repo git@github.com:company/staging-config.git
 hype dev use repo git@github.com:company/dev-config.git
 
 # Switch between environments seamlessly
-hype prod helmfile apply
-hype staging helmfile sync
-hype dev init
+hype prod helmfile apply       # Uses main branch
+hype staging helmfile sync     # Uses develop branch
+hype dev init                  # Uses feature branch
 
 # Keep all environments up to date
 hype update
