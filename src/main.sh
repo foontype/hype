@@ -23,6 +23,10 @@ Usage:
   hype <hype-name> up                                            Build and deploy (task build + helmfile apply)
   hype <hype-name> down                                          Destroy deployment (helmfile destroy)
   hype <hype-name> restart                                       Restart deployment (down + up)
+  hype <hype-name> use repo <repository> [--branch <branch>]    Bind repository to hype environment
+  hype <hype-name> unuse                                         Remove repository binding
+  hype update                                                    Update all bound repositories
+  hype list                                                      List all hype environments and bindings
   hype upgrade                                                   Upgrade HYPE CLI to latest version
   hype --version                                                 Show version
   hype --help                                                    Show this help
@@ -79,6 +83,13 @@ main() {
         "upgrade")
             cmd_upgrade
             ;;
+        "update")
+            check_dependencies
+            execute_repository_command "update"
+            ;;
+        "list")
+            execute_repository_command "list"
+            ;;
         *)
             if [[ $# -lt 2 ]]; then
                 error "Missing required arguments"
@@ -92,59 +103,88 @@ main() {
             
             debug "Command: $command, Hype name: $hype_name, Args: $*"
             
+            # Repository management commands don't need working directory change
             case "$command" in
-                "init")
+                "use"|"unuse")
                     check_dependencies
-                    cmd_init "$hype_name"
-                    ;;
-                "deinit")
-                    check_dependencies
-                    cmd_deinit "$hype_name"
-                    ;;
-                "check")
-                    check_dependencies
-                    cmd_check "$hype_name"
-                    ;;
-                "template")
-                    check_dependencies
-                    cmd_template "$hype_name" "$@"
-                    ;;
-                "parse")
-                    check_dependencies
-                    cmd_parse "$hype_name" "$@"
-                    ;;
-                "trait")
-                    check_dependencies
-                    cmd_trait "$hype_name" "$@"
-                    ;;
-                "task")
-                    check_dependencies
-                    cmd_task "$hype_name" "$@"
-                    ;;
-                "helmfile")
-                    check_dependencies
-                    cmd_helmfile "$hype_name" "$@"
-                    ;;
-                "up")
-                    check_dependencies
-                    cmd_up "$hype_name"
-                    ;;
-                "down")
-                    check_dependencies
-                    cmd_down "$hype_name"
-                    ;;
-                "restart")
-                    check_dependencies
-                    cmd_restart "$hype_name"
+                    execute_repository_command "$command" "$hype_name" "$@"
                     ;;
                 *)
-                    error "Unknown command: $command"
-                    show_help
-                    exit 1
+                    # Change to working directory for all other commands
+                    if command -v change_to_working_directory >/dev/null 2>&1; then
+                        change_to_working_directory "$hype_name" 2>/dev/null || true
+                    fi
+                    
+                    case "$command" in
+                        "init")
+                            check_dependencies
+                            cmd_init "$hype_name"
+                            ;;
+                        "deinit")
+                            check_dependencies
+                            cmd_deinit "$hype_name"
+                            ;;
+                        "check")
+                            check_dependencies
+                            cmd_check "$hype_name"
+                            ;;
+                        "template")
+                            check_dependencies
+                            cmd_template "$hype_name" "$@"
+                            ;;
+                        "parse")
+                            check_dependencies
+                            cmd_parse "$hype_name" "$@"
+                            ;;
+                        "trait")
+                            check_dependencies
+                            cmd_trait "$hype_name" "$@"
+                            ;;
+                        "task")
+                            check_dependencies
+                            cmd_task "$hype_name" "$@"
+                            ;;
+                        "helmfile")
+                            check_dependencies
+                            cmd_helmfile "$hype_name" "$@"
+                            ;;
+                        "up")
+                            check_dependencies
+                            cmd_up "$hype_name"
+                            ;;
+                        "down")
+                            check_dependencies
+                            cmd_down "$hype_name"
+                            ;;
+                        "restart")
+                            check_dependencies
+                            cmd_restart "$hype_name"
+                            ;;
+                        *)
+                            error "Unknown command: $command"
+                            show_help
+                            exit 1
+                            ;;
+                    esac
                     ;;
             esac
             ;;
     esac
+}
+
+# Execute command with proper working directory
+execute_with_working_directory() {
+    local hype_name="$1"
+    local original_command="$2"
+    shift 2
+    
+    # Change to working directory if repository is bound
+    if command -v change_to_working_directory >/dev/null 2>&1; then
+        change_to_working_directory "$hype_name" 2>/dev/null || true
+    fi
+    
+    # Execute the original command
+    "$original_command" "$hype_name" "$@"
 }
 
 # Execute main function with all arguments

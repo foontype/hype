@@ -15,6 +15,10 @@ check_dependencies() {
         missing+=("helmfile")
     fi
     
+    if ! command -v jq >/dev/null 2>&1; then
+        missing+=("jq")
+    fi
+    
     # Check for correct yq version (mikefarah/yq)
     if ! command -v yq >/dev/null 2>&1; then
         missing+=("yq")
