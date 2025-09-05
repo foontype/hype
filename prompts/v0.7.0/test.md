@@ -9,6 +9,8 @@ task build を実行して build/hype をビルドします
 ./build/hype list
   * repotest が表示されること
 
+./build/hype repotest trait set test-trait
+
 ./build/hype repotest init
 
 ./build/hype repotest helmfile template
@@ -18,6 +20,8 @@ task build を実行して build/hype をビルドします
 ./build/hype repotest helmfile destroy
 
 ./build/hype repotest deinit
+
+./build/hype reporest trait unset
 
 ./build/hype repotest unuse
 
