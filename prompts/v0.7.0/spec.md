@@ -27,12 +27,17 @@ Repository bindings are stored in a Kubernetes ConfigMap with the following stru
 ├── <hype-name-1>/
 │   └── <repository-clone>/
 │       ├── main/          # main branch working directory
+│       │   └── <path>/    # optional subdirectory path (if specified)
 │       ├── develop/       # develop branch working directory
+│       │   └── <path>/    # optional subdirectory path (if specified)
 │       └── feature-xyz/   # feature branch working directory
+│           └── <path>/    # optional subdirectory path (if specified)
 ├── <hype-name-2>/
 │   └── <repository-clone>/
 │       ├── main/
+│       │   └── services/webapp/  # example: specific service path
 │       └── staging/
+│           └── configs/k8s/      # example: configuration path
 └── ...
 ```
 
@@ -42,25 +47,29 @@ Repository bindings are stored in a Kubernetes ConfigMap with the following stru
 
 #### `use repo`
 ```
-hype <hype name> use repo <repository> [--branch <branch>]
+hype <hype name> use repo <repository> [--branch <branch>] [--path <path>]
 ```
 - Binds a repository to the specified hype name
 - Updates the ConfigMap with the binding information
 - Clones the repository to `/tmp/hype-repos/<hype-name>/<repository-name>/`
 - Creates branch-specific working directory
 - Switches to specified branch (defaults to repository's default branch)
+- Optionally sets working subdirectory within repository
 
 **Parameters:**
 - `<hype name>`: Environment identifier
 - `<repository>`: Git repository URL (supports HTTPS, SSH, local paths)
 - `--branch <branch>`: Optional branch to checkout (defaults to main/master)
+- `--path <path>`: Optional subdirectory path within repository (defaults to repository root)
 
 **Behavior:**
-- If binding already exists, updates to new repository and/or branch
+- If binding already exists, updates to new repository, branch, and/or path
 - Creates separate working directory for each branch
 - If repository already cloned for the branch, performs git pull
 - If new branch specified, creates new working directory and checks out branch
+- If path specified, validates subdirectory exists after clone/pull
 - Validates repository accessibility before binding
+- Path is relative to repository root and must exist in the specified branch
 
 #### `unuse`
 ```
@@ -128,7 +137,10 @@ When executing hype commands:
 2. **Working directory resolution:**
    ```
    if repository bound:
-       cd /tmp/hype-repos/<hype-name>/<repo-name>/<branch>/
+       if path specified:
+           cd /tmp/hype-repos/<hype-name>/<repo-name>/<branch>/<path>/
+       else:
+           cd /tmp/hype-repos/<hype-name>/<repo-name>/<branch>/
    else:
        use current directory
    ```
@@ -152,9 +164,9 @@ metadata:
   name: hype-repository-config
   namespace: <current-namespace>
 data:
-  my-app: '{"repository": "git@github.com:user/my-app.git", "branch": "main"}'
-  staging: '{"repository": "https://github.com/user/staging-repo", "branch": "develop"}'
-  feature-env: '{"repository": "git@github.com:user/my-app.git", "branch": "feature-xyz"}'
+  my-app: '{"repository": "git@github.com:user/my-app.git", "branch": "main", "path": ""}'
+  staging: '{"repository": "https://github.com/user/staging-repo", "branch": "develop", "path": "services/webapp"}'
+  feature-env: '{"repository": "git@github.com:user/my-app.git", "branch": "feature-xyz", "path": "configs/k8s"}'
   local-dev: ""  # Empty string indicates no binding
 ```
 
@@ -172,6 +184,8 @@ data:
 - Network connectivity issues
 - Insufficient disk space
 - Git conflicts during updates
+- Specified path does not exist in repository
+- Path permission issues
 
 ### ConfigMap Operations
 - Kubernetes cluster connectivity
@@ -185,6 +199,7 @@ data:
 - `12`: ConfigMap operation failed
 - `13`: Working directory creation failed
 - `14`: Kubernetes cluster not accessible
+- `15`: Specified path does not exist in repository
 
 ## Security Considerations
 
@@ -230,12 +245,18 @@ data:
 # Bind a repository to hype environment
 hype my-app use repo git@github.com:user/my-app.git
 
+# Bind a repository with specific path
+hype webapp use repo git@github.com:user/monorepo.git --path services/webapp
+
 # List all bindings
 hype list
 
 # Work with the bound repository
 hype my-app init
 hype my-app helmfile apply
+
+# Work with specific path in repository
+hype webapp init  # Works in services/webapp subdirectory
 
 # Update all repositories
 hype update
@@ -246,14 +267,14 @@ hype my-app unuse
 
 ### Multi-environment Workflow
 ```bash
-# Set up multiple environments with specific branches
-hype prod use repo git@github.com:company/prod-config.git --branch main
-hype staging use repo git@github.com:company/prod-config.git --branch develop
-hype dev use repo git@github.com:company/prod-config.git --branch feature-new-feature
+# Set up multiple environments with specific branches and paths
+hype prod use repo git@github.com:company/prod-config.git --branch main --path k8s/prod
+hype staging use repo git@github.com:company/prod-config.git --branch develop --path k8s/staging
+hype dev use repo git@github.com:company/prod-config.git --branch feature-new-feature --path k8s/dev
 
 # Or use different repositories for different environments
-hype prod use repo git@github.com:company/prod-config.git
-hype staging use repo git@github.com:company/staging-config.git
+hype prod use repo git@github.com:company/prod-config.git --path environments/production
+hype staging use repo git@github.com:company/staging-config.git --path k8s
 hype dev use repo git@github.com:company/dev-config.git
 
 # Switch between environments seamlessly
