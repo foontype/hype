@@ -148,7 +148,7 @@ test_core_modules() {
     echo "Testing core modules..."
     
     local modules_found=0
-    local expected_modules=("config" "common" "hypefile" "dependencies")
+    local expected_modules=("config" "common" "hypefile" "dependencies" "repository")
     
     for module in "${expected_modules[@]}"; do
         if [[ -f "$PROJECT_ROOT/src/core/${module}.sh" ]]; then
@@ -163,6 +163,27 @@ test_core_modules() {
         test_passed "All expected core modules found"
     else
         test_failed "Core module count mismatch" "Found: $modules_found, Expected: ${#expected_modules[@]}"
+    fi
+}
+
+# Test repository module
+test_repository_module() {
+    echo
+    echo "Testing repository module..."
+    
+    # Check if repository module unit tests exist
+    local repo_test_file="$TEST_DIR/unit/test-repository.sh"
+    if [[ -f "$repo_test_file" ]]; then
+        test_passed "Repository unit test file exists"
+        
+        # Run repository module unit tests
+        if bash "$repo_test_file" >/dev/null 2>&1; then
+            test_passed "Repository module unit tests"
+        else
+            test_failed "Repository module unit tests"
+        fi
+    else
+        test_failed "Repository unit test file missing: test-repository.sh"
     fi
 }
 
@@ -221,6 +242,7 @@ main() {
     test_command_parsing
     test_plugin_structure
     test_core_modules
+    test_repository_module
     test_shellcheck
     
     # Show results

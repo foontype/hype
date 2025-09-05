@@ -23,6 +23,10 @@ Usage:
   hype <hype-name> up                                            Build and deploy (task build + helmfile apply)
   hype <hype-name> down                                          Destroy deployment (helmfile destroy)
   hype <hype-name> restart                                       Restart deployment (down + up)
+  hype <hype-name> use repo <repository> [--branch <branch>] [--path <path>]    Bind repository to hype name
+  hype <hype-name> unuse                                         Remove repository binding
+  hype list                                                      List all hype names and repository bindings
+  hype update                                                    Update all bound repositories
   hype upgrade                                                   Upgrade HYPE CLI to latest version
   hype --version                                                 Show version
   hype --help                                                    Show this help
@@ -54,6 +58,11 @@ Examples:
   hype my-nginx up                                               Build and deploy my-nginx
   hype my-nginx down                                             Destroy my-nginx deployment
   hype my-nginx restart                                          Restart my-nginx deployment
+  hype my-app use repo git@github.com:user/my-app.git           Bind repository to my-app
+  hype my-app use repo git@github.com:user/repo.git --path k8s  Bind repo with specific path
+  hype my-app unuse                                              Remove repository binding
+  hype list                                                      Show all repository bindings
+  hype update                                                    Update all repositories
 EOF
 }
 
@@ -79,6 +88,12 @@ main() {
         "upgrade")
             cmd_upgrade
             ;;
+        "list")
+            cmd_list_repos
+            ;;
+        "update")
+            cmd_update_repos
+            ;;
         *)
             if [[ $# -lt 2 ]]; then
                 error "Missing required arguments"
@@ -91,6 +106,9 @@ main() {
             shift 2
             
             debug "Command: $command, Hype name: $hype_name, Args: $*"
+            
+            # Change to working directory for repository-aware execution
+            change_to_working_directory "$hype_name"
             
             case "$command" in
                 "init")
@@ -136,6 +154,18 @@ main() {
                 "restart")
                     check_dependencies
                     cmd_restart "$hype_name"
+                    ;;
+                "use")
+                    if [[ "$1" == "repo" ]]; then
+                        shift
+                        cmd_use_repo "$hype_name" "$@"
+                    else
+                        error "Unknown use command: $1"
+                        exit 1
+                    fi
+                    ;;
+                "unuse")
+                    cmd_unuse "$hype_name"
                     ;;
                 *)
                     error "Unknown command: $command"
