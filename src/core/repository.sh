@@ -66,7 +66,7 @@ set_repo_binding() {
     ensure_configmap
     
     local binding_json
-    binding_json=$(jq -n \
+    binding_json=$(jq -n -c \
         --arg repo "$repository" \
         --arg branch "$branch" \
         --arg path "$path" \
