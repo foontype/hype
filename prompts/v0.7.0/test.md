@@ -1,7 +1,8 @@
 task build を実行して build/hype をビルドします
+
 エラーが発生した場合は TRACE=true を hype コマンド実行時につけてエラー箇所を特定してください
 
-手順:
+* 動作確認手順
 
 ./build/hype repotest use repo https://github.com/foontype/hype --path prompts/nginx-example
 
