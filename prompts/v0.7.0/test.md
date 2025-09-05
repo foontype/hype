@@ -5,5 +5,17 @@ task build を実行して build/hype をビルドします
 ./build/hype list
   * repotest が表示されること
 
-./build/hype repotest parse section hype
-  * hypefile.yaml の hype セクションが表示されること
+./build/hype repotest init
+
+./build/hype repotest helmfile template
+
+./build/hype repotest helmfile apply
+
+./build/hype repotest helmfile destroy
+
+./build/hype repotest deinit
+
+./build/hype repotest unuse
+
+./build/hype list
+  * repotest が表示されないこと
