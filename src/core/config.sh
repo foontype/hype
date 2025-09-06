@@ -33,14 +33,19 @@ fi
 # Try to find hypefile.yaml by searching upward from current directory
 if [[ -z "${HYPEFILE:-}" ]]; then
     if HYPEFILE=$(find_hypefile 2>/dev/null); then
-        HYPE_DIR=$(dirname "$HYPEFILE")
-        export HYPE_DIR
         debug "Found hypefile at: $HYPEFILE"
-        debug "Set HYPE_DIR to: $HYPE_DIR"
     else
         HYPEFILE="hypefile.yaml"
-        export HYPE_DIR="$PWD"
         debug "No hypefile found, using default: $HYPEFILE"
-        debug "Set HYPE_DIR to current directory: $HYPE_DIR"
     fi
+fi
+
+# Set HYPE_DIR based on hypefile location
+if [[ -f "$HYPEFILE" ]]; then
+    HYPE_DIR=$(dirname "$(realpath "$HYPEFILE")")
+    export HYPE_DIR
+    debug "Set HYPE_DIR to hypefile directory: $HYPE_DIR"
+else
+    export HYPE_DIR="$PWD"
+    debug "Set HYPE_DIR to current directory: $HYPE_DIR"
 fi

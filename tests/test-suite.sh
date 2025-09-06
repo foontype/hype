@@ -245,7 +245,7 @@ test_hypefile_discovery() {
     fi
     
     # Test 4: HYPE_DIR set correctly when hypefile found
-    if (cd "$test_subdir" && env DEBUG=true "$HYPE_BINARY" --version 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Set HYPE_DIR to: $test_root"); then
+    if (cd "$test_subdir" && env DEBUG=true "$HYPE_BINARY" --version 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Set HYPE_DIR to hypefile directory: $test_root"); then
         test_passed "HYPE_DIR: set to hypefile directory"
     else
         test_failed "HYPE_DIR: set to hypefile directory"
