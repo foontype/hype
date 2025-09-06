@@ -3,9 +3,6 @@
 # HYPE CLI Configuration Module
 # Core configuration settings and environment variables
 
-# Version information
-HYPE_VERSION="0.6.2"
-
 # Default configuration
 HYPEFILE="${HYPEFILE:-hypefile.yaml}"
 HYPE_LOG="${HYPE_LOG:-stdout}"

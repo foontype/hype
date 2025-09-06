@@ -57,8 +57,16 @@ Examples:
 EOF
 }
 
+# Load configuration
+load_config() {
+    # Version information
+    HYPE_VERSION="0.6.2"
+    export HYPE_VERSION
+}
+
 # Show version
 show_version() {
+    load_config
     echo "HYPE CLI version $HYPE_VERSION"
 }
 
