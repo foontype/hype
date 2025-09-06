@@ -208,15 +208,12 @@ sync_repository() {
     fi
     
     # Copy repository contents to branch-specific directory
-    (
-		# NOTE: 'cd' need to keep single bash session for multiple comands.
-        #.      This is some Coding Agent restriction.
-        cd "$clone_dir" \
-          && git fetch origin \
-          && git checkout "$branch" 2>/dev/null || git checkout -b "$branch" "origin/$branch" \
-          && git pull origin "$branch" \
-          && rsync -av --exclude='.git' ./ "$branch_dir/"
-    )
+    exec_commands_in_work_dir "$clone_dir" "
+        git fetch origin &&
+        (git checkout \"$branch\" 2>/dev/null || git checkout -b \"$branch\" \"origin/$branch\") &&
+        git pull origin \"$branch\" &&
+        rsync -av --exclude='.git' ./ \"$branch_dir/\"
+    "
     
     # Validate path exists if specified
     if [[ -n "$path" ]]; then
