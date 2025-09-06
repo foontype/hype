@@ -65,8 +65,6 @@ show_version() {
 
 # Main function
 main() {
-    load_config "$@"
-    
     if [[ $# -eq 0 ]]; then
         show_help
         exit 0
@@ -88,6 +86,8 @@ main() {
                 show_help
                 exit 1
             fi
+            
+            load_config "$@"
             
             local hype_name="$1"
             local command="$2"
