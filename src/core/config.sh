@@ -21,7 +21,6 @@ load_config() {
     # Debug and trace modes (initialize early)
 DEBUG="${DEBUG:-false}"
 TRACE="${TRACE:-false}"
-HYPE_LOG="${HYPE_LOG:-stdout}"
 
 # Enable trace mode if requested
 if [[ "$TRACE" == "true" ]]; then
