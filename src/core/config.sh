@@ -18,15 +18,6 @@ find_hypefile() {
 
 # Configuration loading function
 load_config() {
-    # Debug and trace modes (initialize early)
-DEBUG="${DEBUG:-false}"
-TRACE="${TRACE:-false}"
-
-# Enable trace mode if requested
-if [[ "$TRACE" == "true" ]]; then
-    set -x
-fi
-
 # Default configuration
 # Try to find hypefile.yaml by searching upward from current directory
 if [[ -z "${HYPEFILE:-}" ]]; then

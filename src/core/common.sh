@@ -9,6 +9,15 @@ HYPE_VERSION="0.6.2"
 # Initialize logging variable early to avoid unbound variable errors
 HYPE_LOG="${HYPE_LOG:-stdout}"
 
+# Debug and trace modes (initialize early)
+DEBUG="${DEBUG:-false}"
+TRACE="${TRACE:-false}"
+
+# Enable trace mode if requested
+if [[ "$TRACE" == "true" ]]; then
+    set -x
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
