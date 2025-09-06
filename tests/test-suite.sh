@@ -224,51 +224,64 @@ test_hypefile_discovery() {
     # Create test directory structure and temporary hypefile
     local test_root
     test_root=$(mktemp -d)
+    echo "[DEBUG] Created test directory: $test_root" >&2
     local test_hypefile="$test_root/hypefile.yaml"
     echo "# Test hypefile" > "$test_hypefile"
+    echo "[DEBUG] Created test hypefile: $test_hypefile" >&2
     
     # Test 1: Find hypefile in current directory
     echo "hype: test-hype" > "$test_hypefile"
-    if (cd "$test_root" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "\[DEBUG\] Found hypefile at: $test_hypefile"); then
+    echo "[DEBUG] Test 1: Starting hypefile discovery test from current directory" >&2
+    
+    # Add timeout to prevent hanging
+    local test1_output
+    if test1_output=$(timeout 10s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test1_output" | grep -q "\[DEBUG\] Found hypefile at: $test_hypefile"; then
         test_passed "Hypefile discovery: current directory"
     else
-        # For debugging: capture actual output
-        local actual_output
-        actual_output=$(cd "$test_root" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
-        test_failed "Hypefile discovery: current directory" "Expected: [DEBUG] Found hypefile at: $test_hypefile, Actual output: $actual_output"
+        echo "[DEBUG] Test 1 failed. Full output:" >&2
+        echo "$test1_output" >&2
+        test_failed "Hypefile discovery: current directory" "Expected: [DEBUG] Found hypefile at: $test_hypefile, Actual output: $test1_output"
     fi
     
     # Test 2: Find hypefile from subdirectory
     local test_subdir="$test_root/subdir/nested"
     mkdir -p "$test_subdir"
-    if (cd "$test_subdir" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "\[DEBUG\] Found hypefile at: $test_hypefile"); then
+    echo "[DEBUG] Test 2: Starting hypefile discovery test from subdirectory: $test_subdir" >&2
+    
+    local test2_output
+    if test2_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test2_output" | grep -q "\[DEBUG\] Found hypefile at: $test_hypefile"; then
         test_passed "Hypefile discovery: parent directory search"
     else
-        # For debugging: capture actual output
-        local actual_output2
-        actual_output2=$(cd "$test_subdir" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
-        test_failed "Hypefile discovery: parent directory search" "Expected: [DEBUG] Found hypefile at: $test_hypefile, Actual output: $actual_output2"
+        echo "[DEBUG] Test 2 failed. Full output:" >&2
+        echo "$test2_output" >&2
+        test_failed "Hypefile discovery: parent directory search" "Expected: [DEBUG] Found hypefile at: $test_hypefile, Actual output: $test2_output"
     fi
     
     # Test 3: Error when no hypefile found
     local test_empty_root
     test_empty_root=$(mktemp -d)
+    echo "[DEBUG] Test 3: Testing error when no hypefile found in: $test_empty_root" >&2
+    
     local error_output
-    error_output=$(cd "$test_empty_root" && "$HYPE_BINARY" test-hype init 2>&1) || true
+    error_output=$(timeout 5s bash -c "cd '$test_empty_root' && '$HYPE_BINARY' test-hype init 2>&1") || true
     if echo "$error_output" | grep -q "Error: hypefile.yaml not found in current or parent directories"; then
         test_passed "Hypefile discovery: error when not found"
     else
-        test_failed "Hypefile discovery: error when not found" "Actual output: $error_output"
+        echo "[DEBUG] Test 3 failed. Full output:" >&2
+        echo "$error_output" >&2
+        test_failed "Hypefile discovery: error when not found" "Expected: Error: hypefile.yaml not found..., Actual output: $error_output"
     fi
     
     # Test 4: HYPE_DIR set correctly when hypefile found
-    if (cd "$test_subdir" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "\[DEBUG\] Set HYPE_DIR to hypefile directory: $test_root"); then
+    echo "[DEBUG] Test 4: Testing HYPE_DIR setting from subdirectory: $test_subdir" >&2
+    
+    local test4_output
+    if test4_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test4_output" | grep -q "\[DEBUG\] Set HYPE_DIR to hypefile directory: $test_root"; then
         test_passed "HYPE_DIR: set to hypefile directory"
     else
-        # For debugging: capture actual output
-        local actual_output3
-        actual_output3=$(cd "$test_subdir" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
-        test_failed "HYPE_DIR: set to hypefile directory" "Expected: [DEBUG] Set HYPE_DIR to hypefile directory: $test_root, Actual output: $actual_output3"
+        echo "[DEBUG] Test 4 failed. Full output:" >&2
+        echo "$test4_output" >&2
+        test_failed "HYPE_DIR: set to hypefile directory" "Expected: [DEBUG] Set HYPE_DIR to hypefile directory: $test_root, Actual output: $test4_output"
     fi
     
     # Cleanup
