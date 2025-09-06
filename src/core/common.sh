@@ -3,6 +3,9 @@
 # HYPE CLI Common Functions Module
 # Logging, utility functions, and color constants
 
+# Initialize logging variable early to avoid unbound variable errors
+HYPE_LOG="${HYPE_LOG:-stdout}"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
