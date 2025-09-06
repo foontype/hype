@@ -36,6 +36,13 @@ load_config() {
         HYPE_DIR=$(dirname "$(realpath "$HYPEFILE")")
         export HYPE_DIR
         debug "Set HYPE_DIR to hypefile directory: $HYPE_DIR"
+        
+        # Set default HYPE_CACHE_DIR if not already defined
+        if [[ -z "${HYPE_CACHE_DIR:-}" ]]; then
+            HYPE_CACHE_DIR="${HYPE_DIR}/.hype"
+            export HYPE_CACHE_DIR
+            debug "Set HYPE_CACHE_DIR to default: $HYPE_CACHE_DIR"
+        fi
     else
         echo "Error: hypefile not found at: $HYPEFILE" >&2
         exit 1
