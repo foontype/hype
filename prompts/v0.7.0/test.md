@@ -21,7 +21,7 @@ task build を実行して build/hype をビルドします
 
 ./build/hype repotest deinit
 
-./build/hype reporest trait unset
+./build/hype repotest trait unset
 
 ./build/hype repotest unuse
 
