@@ -107,8 +107,8 @@ main() {
             
             debug "Command: $command, Hype name: $hype_name, Args: $*"
             
-            # Change to working directory for repository-aware execution
-            change_to_working_directory "$hype_name"
+            # Note: Working directory handling is now done within individual plugin commands
+            # to support sandbox environments where 'cd' commands are reverted
             
             case "$command" in
                 "init")
