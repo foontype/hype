@@ -229,7 +229,7 @@ test_hypefile_discovery() {
     
     # Test 1: Find hypefile in current directory
     echo "hype: test-hype" > "$test_hypefile"
-    if (cd "$test_root" && env DEBUG=true "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Found hypefile at: $test_hypefile"); then
+    if (cd "$test_root" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Found hypefile at: $test_hypefile"); then
         test_passed "Hypefile discovery: current directory"
     else
         test_failed "Hypefile discovery: current directory"
@@ -238,7 +238,7 @@ test_hypefile_discovery() {
     # Test 2: Find hypefile from subdirectory
     local test_subdir="$test_root/subdir/nested"
     mkdir -p "$test_subdir"
-    if (cd "$test_subdir" && env DEBUG=true "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Found hypefile at: $test_hypefile"); then
+    if (cd "$test_subdir" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Found hypefile at: $test_hypefile"); then
         test_passed "Hypefile discovery: parent directory search"
     else
         test_failed "Hypefile discovery: parent directory search"
@@ -256,7 +256,7 @@ test_hypefile_discovery() {
     fi
     
     # Test 4: HYPE_DIR set correctly when hypefile found
-    if (cd "$test_subdir" && env DEBUG=true "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Set HYPE_DIR to hypefile directory: $test_root"); then
+    if (cd "$test_subdir" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Set HYPE_DIR to hypefile directory: $test_root"); then
         test_passed "HYPE_DIR: set to hypefile directory"
     else
         test_failed "HYPE_DIR: set to hypefile directory"
