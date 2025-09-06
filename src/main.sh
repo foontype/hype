@@ -33,7 +33,8 @@ Options:
 
 Environment Variables:
   HYPEFILE                 Path to hypefile.yaml (default: hypefile.yaml)
-  HYPE_DIR                 Directory containing hypefile.yaml (auto-set when hypefile found)
+  HYPE_DIR                 Directory containing hypefile.yaml (auto-set during hypefile discovery)
+                           Searches upward from current directory like git does with .git
   DEBUG                    Enable debug output (default: false)
   TRACE                    Enable bash trace mode with set -x (default: false)
   HYPE_LOG                 Log output destination: false=no output, stdout=stdout (default), file=path to file

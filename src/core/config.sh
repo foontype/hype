@@ -3,9 +3,6 @@
 # HYPE CLI Configuration Module
 # Core configuration settings and environment variables
 
-# Version information
-HYPE_VERSION="0.6.2"
-
 # Find hypefile.yaml by searching upward from current directory
 find_hypefile() {
     local dir="$PWD"
