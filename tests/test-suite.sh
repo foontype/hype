@@ -101,8 +101,13 @@ test_command_parsing() {
     echo
     echo "Testing command parsing..."
     
+    # Create temporary directory with hypefile for testing
+    local test_root
+    test_root=$(mktemp -d)
+    echo "hype: test-hype" > "$test_root/hypefile.yaml"
+    
     # Test unknown command
-    output=$("$HYPE_BINARY" test-hype unknown-command 2>&1) || true
+    output=$(cd "$test_root" && "$HYPE_BINARY" test-hype unknown-command 2>&1) || true
     if [[ "$output" =~ "Unknown command: unknown-command" ]]; then
         test_passed "Unknown command detection"
     else
@@ -110,12 +115,15 @@ test_command_parsing() {
     fi
     
     # Test missing arguments
-    output=$("$HYPE_BINARY" test-hype 2>&1) || true
+    output=$(cd "$test_root" && "$HYPE_BINARY" test-hype 2>&1) || true
     if [[ "$output" =~ "Missing required arguments" ]]; then
         test_passed "Missing dependencies detection"
     else
         test_failed "Missing dependencies detection" "Output: $output"
     fi
+    
+    # Cleanup
+    rm -rf "$test_root"
 }
 
 # Test plugin structure
@@ -220,7 +228,8 @@ test_hypefile_discovery() {
     echo "# Test hypefile" > "$test_hypefile"
     
     # Test 1: Find hypefile in current directory
-    if (cd "$test_root" && env DEBUG=true "$HYPE_BINARY" --version 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Found hypefile at: $test_hypefile"); then
+    echo "hype: test-hype" > "$test_hypefile"
+    if (cd "$test_root" && env DEBUG=true "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Found hypefile at: $test_hypefile"); then
         test_passed "Hypefile discovery: current directory"
     else
         test_failed "Hypefile discovery: current directory"
@@ -229,33 +238,28 @@ test_hypefile_discovery() {
     # Test 2: Find hypefile from subdirectory
     local test_subdir="$test_root/subdir/nested"
     mkdir -p "$test_subdir"
-    if (cd "$test_subdir" && env DEBUG=true "$HYPE_BINARY" --version 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Found hypefile at: $test_hypefile"); then
+    if (cd "$test_subdir" && env DEBUG=true "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Found hypefile at: $test_hypefile"); then
         test_passed "Hypefile discovery: parent directory search"
     else
         test_failed "Hypefile discovery: parent directory search"
     fi
     
-    # Test 3: No hypefile found (fallback to default)
+    # Test 3: Error when no hypefile found
     local test_empty_root
     test_empty_root=$(mktemp -d)
-    if (cd "$test_empty_root" && env DEBUG=true "$HYPE_BINARY" --version 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "No hypefile found, using default: hypefile.yaml"); then
-        test_passed "Hypefile discovery: fallback to default"
+    local error_output
+    error_output=$(cd "$test_empty_root" && "$HYPE_BINARY" test-hype init 2>&1) || true
+    if echo "$error_output" | grep -q "Error: hypefile.yaml not found in current or parent directories"; then
+        test_passed "Hypefile discovery: error when not found"
     else
-        test_failed "Hypefile discovery: fallback to default"
+        test_failed "Hypefile discovery: error when not found" "Actual output: $error_output"
     fi
     
     # Test 4: HYPE_DIR set correctly when hypefile found
-    if (cd "$test_subdir" && env DEBUG=true "$HYPE_BINARY" --version 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Set HYPE_DIR to hypefile directory: $test_root"); then
+    if (cd "$test_subdir" && env DEBUG=true "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Set HYPE_DIR to hypefile directory: $test_root"); then
         test_passed "HYPE_DIR: set to hypefile directory"
     else
         test_failed "HYPE_DIR: set to hypefile directory"
-    fi
-    
-    # Test 5: HYPE_DIR set to current directory when no hypefile found
-    if (cd "$test_empty_root" && env DEBUG=true "$HYPE_BINARY" --version 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "Set HYPE_DIR to current directory: $test_empty_root"); then
-        test_passed "HYPE_DIR: set to current directory when no hypefile"
-    else
-        test_failed "HYPE_DIR: set to current directory when no hypefile"
     fi
     
     # Cleanup
