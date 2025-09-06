@@ -51,6 +51,8 @@ if [[ "$skip_hypefile_check" == "false" ]]; then
             echo "Error: hypefile.yaml not found in current or parent directories" >&2
             exit 1
         fi
+    else
+        debug "Using specified HYPEFILE: $HYPEFILE"
     fi
 
     # Verify hypefile exists and set HYPE_DIR
