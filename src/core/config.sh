@@ -18,31 +18,8 @@ find_hypefile() {
 
 # Configuration loading function
 load_config() {
-    # Debug and trace modes (initialize early)
-DEBUG="${DEBUG:-false}"
-TRACE="${TRACE:-false}"
-
-# Enable trace mode if requested
-if [[ "$TRACE" == "true" ]]; then
-    set -x
-fi
-
-# Skip hypefile checks for version and help commands
-skip_hypefile_check=false
-if [[ $# -eq 0 ]]; then
-    skip_hypefile_check=true
-else
-    for arg in "$@"; do
-        if [[ "$arg" == "--version" || "$arg" == "-v" || "$arg" == "--help" || "$arg" == "-h" ]]; then
-            skip_hypefile_check=true
-            break
-        fi
-    done
-fi
-
-# Default configuration
-# Try to find hypefile.yaml by searching upward from current directory
-if [[ "$skip_hypefile_check" == "false" ]]; then
+    # Default configuration
+    # Try to find hypefile.yaml by searching upward from current directory
     if [[ -z "${HYPEFILE:-}" ]]; then
         if HYPEFILE=$(find_hypefile 2>/dev/null); then
             debug "Found hypefile at: $HYPEFILE"
@@ -63,9 +40,4 @@ if [[ "$skip_hypefile_check" == "false" ]]; then
         echo "Error: hypefile not found at: $HYPEFILE" >&2
         exit 1
     fi
-else
-    # For version/help commands, set minimal defaults
-    HYPEFILE="${HYPEFILE:-hypefile.yaml}"
-    export HYPE_DIR="$PWD"
-fi
 }
