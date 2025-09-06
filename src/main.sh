@@ -113,47 +113,47 @@ main() {
             case "$command" in
                 "init")
                     check_dependencies
-                    cmd_init "$hype_name"
+                    exec_in_work_dir "$hype_name" cmd_init "$hype_name"
                     ;;
                 "deinit")
                     check_dependencies
-                    cmd_deinit "$hype_name"
+                    exec_in_work_dir "$hype_name" cmd_deinit "$hype_name"
                     ;;
                 "check")
                     check_dependencies
-                    cmd_check "$hype_name"
+                    exec_in_work_dir "$hype_name" cmd_check "$hype_name"
                     ;;
                 "template")
                     check_dependencies
-                    cmd_template "$hype_name" "$@"
+                    exec_in_work_dir "$hype_name" cmd_template "$hype_name" "$@"
                     ;;
                 "parse")
                     check_dependencies
-                    cmd_parse "$hype_name" "$@"
+                    exec_in_work_dir "$hype_name" cmd_parse "$hype_name" "$@"
                     ;;
                 "trait")
                     check_dependencies
-                    cmd_trait "$hype_name" "$@"
+                    exec_in_work_dir "$hype_name" cmd_trait "$hype_name" "$@"
                     ;;
                 "task")
                     check_dependencies
-                    cmd_task "$hype_name" "$@"
+                    exec_in_work_dir "$hype_name" cmd_task "$hype_name" "$@"
                     ;;
                 "helmfile")
                     check_dependencies
-                    cmd_helmfile "$hype_name" "$@"
+                    exec_in_work_dir "$hype_name" cmd_helmfile "$hype_name" "$@"
                     ;;
                 "up")
                     check_dependencies
-                    cmd_up "$hype_name"
+                    exec_in_work_dir "$hype_name" cmd_up "$hype_name"
                     ;;
                 "down")
                     check_dependencies
-                    cmd_down "$hype_name"
+                    exec_in_work_dir "$hype_name" cmd_down "$hype_name"
                     ;;
                 "restart")
                     check_dependencies
-                    cmd_restart "$hype_name"
+                    exec_in_work_dir "$hype_name" cmd_restart "$hype_name"
                     ;;
                 "use")
                     if [[ "$1" == "repo" ]]; then

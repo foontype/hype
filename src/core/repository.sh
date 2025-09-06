@@ -208,12 +208,13 @@ sync_repository() {
     fi
     
     # Copy repository contents to branch-specific directory
-    exec_commands_in_work_dir "$clone_dir" "
+    # Note: This uses clone_dir directly since we're working with the git repository
+    (cd "$clone_dir" && bash -c "
         git fetch origin &&
         (git checkout \"$branch\" 2>/dev/null || git checkout -b \"$branch\" \"origin/$branch\") &&
         git pull origin \"$branch\" &&
         rsync -av --exclude='.git' ./ \"$branch_dir/\"
-    "
+    ")
     
     # Validate path exists if specified
     if [[ -n "$path" ]]; then
@@ -412,29 +413,35 @@ cmd_update_repos() {
 
 # Execute command in working directory
 exec_in_work_dir() {
-    local work_dir="$1"
+    local hype_name="$1"
     shift
+    local work_dir
+    
+    work_dir=$(get_work_dir_for_hype "$hype_name")
     
     if [[ ! -d "$work_dir" ]]; then
         error "Working directory does not exist: $work_dir"
         return 1
     fi
     
-    debug "Executing command in working directory: $work_dir"
+    debug "Executing command in working directory: $work_dir (for $hype_name)"
     (cd "$work_dir" && "$@")
 }
 
 # Execute multiple commands in working directory with bash -c
 exec_commands_in_work_dir() {
-    local work_dir="$1"
+    local hype_name="$1"
     local command_string="$2"
+    local work_dir
+    
+    work_dir=$(get_work_dir_for_hype "$hype_name")
     
     if [[ ! -d "$work_dir" ]]; then
         error "Working directory does not exist: $work_dir"
         return 1
     fi
     
-    debug "Executing commands in working directory: $work_dir"
+    debug "Executing commands in working directory: $work_dir (for $hype_name)"
     (cd "$work_dir" && bash -c "$command_string")
 }
 
@@ -467,11 +474,3 @@ get_work_dir_for_hype() {
     fi
 }
 
-# Legacy function for backward compatibility - now uses wrapper functions
-change_to_working_directory() {
-    local hype_name="$1"
-    local work_dir
-    
-    work_dir=$(get_work_dir_for_hype "$hype_name")
-    debug "Working directory for $hype_name: $work_dir"
-}
