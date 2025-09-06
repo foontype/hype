@@ -18,26 +18,26 @@ find_hypefile() {
 
 # Configuration loading function
 load_config() {
-# Default configuration
-# Try to find hypefile.yaml by searching upward from current directory
-if [[ -z "${HYPEFILE:-}" ]]; then
-    if HYPEFILE=$(find_hypefile 2>/dev/null); then
-        debug "Found hypefile at: $HYPEFILE"
+    # Default configuration
+    # Try to find hypefile.yaml by searching upward from current directory
+    if [[ -z "${HYPEFILE:-}" ]]; then
+        if HYPEFILE=$(find_hypefile 2>/dev/null); then
+            debug "Found hypefile at: $HYPEFILE"
+        else
+            echo "Error: hypefile.yaml not found in current or parent directories" >&2
+            exit 1
+        fi
     else
-        echo "Error: hypefile.yaml not found in current or parent directories" >&2
+        debug "Using specified HYPEFILE: $HYPEFILE"
+    fi
+
+    # Verify hypefile exists and set HYPE_DIR
+    if [[ -f "$HYPEFILE" ]]; then
+        HYPE_DIR=$(dirname "$(realpath "$HYPEFILE")")
+        export HYPE_DIR
+        debug "Set HYPE_DIR to hypefile directory: $HYPE_DIR"
+    else
+        echo "Error: hypefile not found at: $HYPEFILE" >&2
         exit 1
     fi
-else
-    debug "Using specified HYPEFILE: $HYPEFILE"
-fi
-
-# Verify hypefile exists and set HYPE_DIR
-if [[ -f "$HYPEFILE" ]]; then
-    HYPE_DIR=$(dirname "$(realpath "$HYPEFILE")")
-    export HYPE_DIR
-    debug "Set HYPE_DIR to hypefile directory: $HYPE_DIR"
-else
-    echo "Error: hypefile not found at: $HYPEFILE" >&2
-    exit 1
-fi
 }
