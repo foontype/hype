@@ -232,7 +232,10 @@ test_hypefile_discovery() {
     if (cd "$test_root" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "\[DEBUG\] Found hypefile at: $test_hypefile"); then
         test_passed "Hypefile discovery: current directory"
     else
-        test_failed "Hypefile discovery: current directory"
+        # For debugging: capture actual output
+        local actual_output
+        actual_output=$(cd "$test_root" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
+        test_failed "Hypefile discovery: current directory" "Expected: [DEBUG] Found hypefile at: $test_hypefile, Actual output: $actual_output"
     fi
     
     # Test 2: Find hypefile from subdirectory
@@ -241,7 +244,10 @@ test_hypefile_discovery() {
     if (cd "$test_subdir" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "\[DEBUG\] Found hypefile at: $test_hypefile"); then
         test_passed "Hypefile discovery: parent directory search"
     else
-        test_failed "Hypefile discovery: parent directory search"
+        # For debugging: capture actual output
+        local actual_output2
+        actual_output2=$(cd "$test_subdir" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
+        test_failed "Hypefile discovery: parent directory search" "Expected: [DEBUG] Found hypefile at: $test_hypefile, Actual output: $actual_output2"
     fi
     
     # Test 3: Error when no hypefile found
@@ -259,7 +265,10 @@ test_hypefile_discovery() {
     if (cd "$test_subdir" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -q "\[DEBUG\] Set HYPE_DIR to hypefile directory: $test_root"); then
         test_passed "HYPE_DIR: set to hypefile directory"
     else
-        test_failed "HYPE_DIR: set to hypefile directory"
+        # For debugging: capture actual output
+        local actual_output3
+        actual_output3=$(cd "$test_subdir" && env DEBUG=true HYPE_LOG=stdout "$HYPE_BINARY" test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
+        test_failed "HYPE_DIR: set to hypefile directory" "Expected: [DEBUG] Set HYPE_DIR to hypefile directory: $test_root, Actual output: $actual_output3"
     fi
     
     # Cleanup
