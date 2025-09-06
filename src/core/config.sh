@@ -3,6 +3,9 @@
 # HYPE CLI Configuration Module
 # Core configuration settings and environment variables
 
+# Version information
+HYPE_VERSION="0.6.2"
+
 # Find hypefile.yaml by searching upward from current directory
 find_hypefile() {
     local dir="$PWD"
@@ -16,10 +19,9 @@ find_hypefile() {
     return 1
 }
 
-# Version information
-HYPE_VERSION="0.6.2"
-
-# Debug and trace modes (initialize early)
+# Configuration loading function
+load_config() {
+    # Debug and trace modes (initialize early)
 DEBUG="${DEBUG:-false}"
 TRACE="${TRACE:-false}"
 HYPE_LOG="${HYPE_LOG:-stdout}"
@@ -68,3 +70,4 @@ else
     HYPEFILE="${HYPEFILE:-hypefile.yaml}"
     export HYPE_DIR="$PWD"
 fi
+}

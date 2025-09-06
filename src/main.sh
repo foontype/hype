@@ -65,6 +65,8 @@ show_version() {
 
 # Main function
 main() {
+    load_config "$@"
+    
     if [[ $# -eq 0 ]]; then
         show_help
         exit 0
