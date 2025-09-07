@@ -4,7 +4,7 @@ task build を実行して build/hype をビルドします
 > task build
 
 パス環境変数に build を追加します。すでにあるなら不要です。
-> export PATH="${PATH}:$(PWD)/build"
+> export PATH="$(PWD)/build:${PATH}"
 
 examples に移動します
 > cd prompts/nginx-example
