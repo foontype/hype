@@ -1,3 +1,43 @@
+"v0.6.3": |
+  ## What's New in HYPE CLI v0.6.3
+
+  ### Improvements
+  - **Configuration Management**: Fixed task vars command by correcting hype binary path
+    - Resolved path issues in task execution that could cause command failures
+    - Improved reliability of task variable processing
+    - Enhanced integration with go-task runner
+
+  ### Features  
+  - **Default Cache Directory**: Added automatic HYPE_CACHE_DIR setting when hypefile.yaml is found
+    - Automatically sets HYPE_CACHE_DIR to ${HYPE_DIR}/.hype when hypefile.yaml is detected
+    - Improves user experience by eliminating manual cache directory configuration
+    - Better default behavior for cache management
+
+  ### Documentation
+  - **Project Documentation Updates**: Updated test.md and hypefile.yaml configuration examples
+    - Enhanced documentation for better developer experience
+    - Improved configuration examples and testing procedures
+    - Updated project structure documentation
+
+  ### Bug Fixes
+  - **Task Execution**: Fixed binary path references in task execution workflow
+  - **Cache Directory Management**: Improved default cache directory initialization
+
+  ### Technical Changes
+  - Version bump to 0.6.3
+  - Enhanced find_hypefile function with better default HYPE_CACHE_DIR handling
+  - Fixed task command binary path resolution
+  - Improved configuration loading and directory management
+
+  ### Dependencies
+  - Bash 4.0+
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for build system)
+  - curl or wget (for upgrade functionality)
+
 "v0.6.2": |
   ## What's New in HYPE CLI v0.6.2
 
