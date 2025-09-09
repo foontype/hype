@@ -1,3 +1,4 @@
+```
 - hype
   - <hype name>
     - [未指定時]
@@ -22,5 +23,4 @@
         - bind した url を表示する
         - bind されていればその url にある hypefile の description を表示する
         - bind されていなければその旨を表示
-    
-
+```
