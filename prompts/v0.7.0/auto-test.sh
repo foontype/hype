@@ -97,4 +97,4 @@ echo
 echo "✓ All basic functionality tests passed"
 echo "✓ HYPE v0.7.0 repository binding feature is working"
 echo
-echo "For comprehensive testing, see test.md in this directory"
+echo "For comprehensive testing, see auto-test.md in this directory"
