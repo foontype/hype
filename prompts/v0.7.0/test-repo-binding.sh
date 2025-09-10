@@ -10,34 +10,34 @@ echo "==================================="
 echo
 
 # Build if not exists
-if [[ ! -f "build/hype" ]]; then
+if [[ ! -f "../.../../build/hype" ]]; then
     echo "Building HYPE CLI..."
-    task build
+    (cd ../../ && task build)
     echo
 fi
 
 # Test 1: Version check
 echo "Test 1: Version Check"
 echo "---------------------"
-./build/hype --version
+../../build/hype --version
 echo
 
 # Test 2: Help command
 echo "Test 2: Repository Commands Help"
 echo "--------------------------------"
-./build/hype test-app repo --help
+../../build/hype test-app repo --help
 echo
 
 # Test 3: Repository info (no binding)
 echo "Test 3: Repository Info (No Binding)"
 echo "------------------------------------"
-./build/hype test-app repo
+../../build/hype test-app repo
 echo
 
 # Test 4: URL validation (invalid URL)
 echo "Test 4: URL Validation (Invalid URL)"
 echo "------------------------------------"
-if ./build/hype test-invalid repo bind invalid-url 2>&1; then
+if ../../build/hype test-invalid repo bind invalid-url 2>&1; then
     echo "ERROR: Should have failed with invalid URL"
     exit 1
 else
@@ -63,18 +63,18 @@ if [[ "$KUBECTL_AVAILABLE" == "true" ]]; then
     echo "-----------------------------------------"
     
     # Try to bind a repository
-    if ./build/hype test-demo repo bind https://github.com/foontype/hype.git --branch main 2>&1; then
+    if ../../build/hype test-demo repo bind https://github.com/foontype/hype.git --branch main 2>&1; then
         echo "✓ Repository binding command executed"
         
         # Check binding info
         echo
         echo "Checking binding information:"
-        ./build/hype test-demo repo
+        ../../build/hype test-demo repo
         
         # Cleanup
         echo
         echo "Cleaning up test binding..."
-        ./build/hype test-demo repo unbind || echo "Unbind failed (may be expected)"
+        ../../build/hype test-demo repo unbind || echo "Unbind failed (may be expected)"
     else
         echo "⚠ Repository binding failed (may be expected if no cluster access)"
     fi
@@ -83,7 +83,7 @@ else
     echo "Test 6: Repository Binding (without kubectl)"
     echo "--------------------------------------------"
     
-    if ./build/hype test-demo repo bind https://github.com/foontype/hype.git 2>&1 | grep -q "kubectl is required"; then
+    if ../../build/hype test-demo repo bind https://github.com/foontype/hype.git 2>&1 | grep -q "kubectl is required"; then
         echo "✓ Correctly reported kubectl requirement"
     else
         echo "⚠ Unexpected response for kubectl requirement"
@@ -97,4 +97,4 @@ echo
 echo "✓ All basic functionality tests passed"
 echo "✓ HYPE v0.7.0 repository binding feature is working"
 echo
-echo "For comprehensive testing, see TESTING-v0.7.0.md"
+echo "For comprehensive testing, see test.md in this directory"
