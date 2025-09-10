@@ -10,7 +10,7 @@ echo "==================================="
 echo
 
 # Build if not exists
-if [[ ! -f "../.../../build/hype" ]]; then
+if [[ ! -f "../../build/hype" ]]; then
     echo "Building HYPE CLI..."
     (cd ../../ && task build)
     echo
