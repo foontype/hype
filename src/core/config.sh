@@ -86,7 +86,7 @@ setup_repo_workdir_if_bound() {
     # Parse binding data
     local repo_info
     repo_info=$(parse_repo_binding "$binding_data")
-    eval "$repo_info"  # Sets URL, BRANCH, PATH variables
+    eval "$repo_info"  # Sets REPO_URL, REPO_BRANCH, REPO_PATH variables
     
     local cache_dir
     cache_dir=$(get_repo_cache_dir "$hype_name")
@@ -94,7 +94,7 @@ setup_repo_workdir_if_bound() {
     # Ensure repository is cached
     if ! is_valid_cache "$cache_dir"; then
         info "Cloning repository for '$hype_name'..."
-        if ! clone_repo_to_cache "$URL" "$BRANCH" "$cache_dir"; then
+        if ! clone_repo_to_cache "$REPO_URL" "$REPO_BRANCH" "$cache_dir"; then
             warn "Failed to clone repository, falling back to current directory"
             return 1
         fi
@@ -102,7 +102,7 @@ setup_repo_workdir_if_bound() {
     
     # Setup working directory
     local work_dir
-    if ! work_dir=$(setup_repo_workdir "$cache_dir" "$PATH"); then
+    if ! work_dir=$(setup_repo_workdir "$cache_dir" "$REPO_PATH"); then
         warn "Failed to setup repository working directory, falling back to current directory"
         return 1
     fi

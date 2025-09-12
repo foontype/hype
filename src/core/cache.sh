@@ -3,6 +3,37 @@
 # HYPE CLI Cache Management Module
 # Functions for managing repository caches and Git operations
 
+# Resolve command paths for better portability
+resolve_command_path() {
+    local cmd="$1"
+    command -v "$cmd" 2>/dev/null || {
+        # Fallback to common locations
+        case "$cmd" in
+            git) 
+                for path in /usr/bin/git /usr/local/bin/git /bin/git; do
+                    [[ -x "$path" ]] && echo "$path" && return 0
+                done
+                ;;
+            rm)
+                for path in /usr/bin/rm /bin/rm; do
+                    [[ -x "$path" ]] && echo "$path" && return 0
+                done
+                ;;
+            find)
+                for path in /usr/bin/find /bin/find; do
+                    [[ -x "$path" ]] && echo "$path" && return 0
+                done
+                ;;
+        esac
+        return 1
+    }
+}
+
+# Initialize command paths
+GIT_CMD=$(resolve_command_path git)
+RM_CMD=$(resolve_command_path rm)
+FIND_CMD=$(resolve_command_path find)
+
 # Ensure cache directory exists
 ensure_cache_dir() {
     local cache_dir="$1"
@@ -28,7 +59,7 @@ clone_repo_to_cache() {
     
     # Remove existing cache if it exists
     if [[ -d "$cache_dir" ]]; then
-        rm -rf "$cache_dir" || {
+        "$RM_CMD" -rf "$cache_dir" || {
             error "Failed to remove existing cache directory: $cache_dir"
             return 1
         }
@@ -40,24 +71,24 @@ clone_repo_to_cache() {
     ensure_cache_dir "$parent_dir" || return 1
     
     # Clone repository
-    if ! git clone --quiet --branch "$branch" "$url" "$cache_dir" 2>/dev/null; then
+    if ! "$GIT_CMD" clone --quiet --branch "$branch" "$url" "$cache_dir" 2>/dev/null; then
         # Try cloning without specifying branch if branch-specific clone fails
         debug "Branch-specific clone failed, trying default branch"
-        if ! git clone --quiet "$url" "$cache_dir" 2>/dev/null; then
+        if ! "$GIT_CMD" clone --quiet "$url" "$cache_dir" 2>/dev/null; then
             error "Failed to clone repository: $url"
             return 1
         fi
         
         # If default clone succeeded, try to checkout the specified branch
         if [[ "$branch" != "main" ]] && [[ "$branch" != "master" ]]; then
-            (cd "$cache_dir" && git checkout --quiet "$branch" 2>/dev/null) || {
+            (cd "$cache_dir" && "$GIT_CMD" checkout --quiet "$branch" 2>/dev/null) || {
                 warn "Failed to checkout branch '$branch', using default branch"
             }
         fi
     fi
     
     # Initialize and update submodules
-    if (cd "$cache_dir" && git submodule update --init --recursive --quiet 2>/dev/null); then
+    if (cd "$cache_dir" && "$GIT_CMD" submodule update --init --recursive --quiet 2>/dev/null); then
         debug "Updated submodules in $cache_dir"
     else
         debug "No submodules found or submodule update failed"
@@ -89,22 +120,22 @@ update_repo_cache() {
         cd "$cache_dir" || return 1
         
         # Fetch latest changes
-        git fetch --quiet origin || {
+        "$GIT_CMD" fetch --quiet origin || {
             error "Failed to fetch from remote repository"
             return 1
         }
         
         # Reset to origin branch
-        git reset --hard --quiet "origin/$branch" || {
+        "$GIT_CMD" reset --hard --quiet "origin/$branch" || {
             warn "Failed to reset to origin/$branch, trying to pull"
-            git pull --quiet origin "$branch" || {
+            "$GIT_CMD" pull --quiet origin "$branch" || {
                 error "Failed to update repository cache"
                 return 1
             }
         }
         
         # Update submodules
-        git submodule update --init --recursive --quiet 2>/dev/null || {
+        "$GIT_CMD" submodule update --init --recursive --quiet 2>/dev/null || {
             debug "Submodule update failed or no submodules found"
         }
     )
@@ -137,13 +168,13 @@ get_repo_status() {
         cd "$cache_dir" || return 1
         
         local branch
-        branch=$(git branch --show-current 2>/dev/null || echo "unknown")
+        branch=$("$GIT_CMD" branch --show-current 2>/dev/null || echo "unknown")
         
         local remote_url
-        remote_url=$(git remote get-url origin 2>/dev/null || echo "unknown")
+        remote_url=$("$GIT_CMD" remote get-url origin 2>/dev/null || echo "unknown")
         
         local last_commit
-        last_commit=$(git log -1 --format="%h %s" 2>/dev/null || echo "unknown")
+        last_commit=$("$GIT_CMD" log -1 --format="%h %s" 2>/dev/null || echo "unknown")
         
         echo "Branch: $branch"
         echo "Remote: $remote_url"
@@ -156,7 +187,7 @@ remove_repo_cache() {
     local cache_dir="$1"
     
     if [[ -d "$cache_dir" ]]; then
-        rm -rf "$cache_dir" || {
+        "$RM_CMD" -rf "$cache_dir" || {
             error "Failed to remove cache directory: $cache_dir"
             return 1
         }
@@ -205,7 +236,7 @@ cleanup_old_caches() {
     
     debug "Cleaning up repository caches older than $max_age_days days"
     
-    find "$repo_cache_dir" -maxdepth 1 -type d -mtime +"$max_age_days" -exec rm -rf {} \; 2>/dev/null || true
+    "$FIND_CMD" "$repo_cache_dir" -maxdepth 1 -type d -mtime +"$max_age_days" -exec "$RM_CMD" -rf {} \; 2>/dev/null || true
     
     info "Cache cleanup completed"
 }

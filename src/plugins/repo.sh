@@ -188,25 +188,25 @@ cmd_repo_update() {
     local repo_info
     repo_info=$(parse_repo_binding "$binding_data")
 # shellcheck disable=SC2034
-    eval "$repo_info"  # Sets URL, BRANCH, PATH variables
+    eval "$repo_info"  # Sets REPO_URL, REPO_BRANCH, REPO_PATH variables
     
     local cache_dir
     cache_dir=$(get_repo_cache_dir "$hype_name")
     
     info "Updating repository cache for '$hype_name'"
     # shellcheck disable=SC2153
-    info "Repository: $URL"
+    info "Repository: $REPO_URL"
     # shellcheck disable=SC2153
-    info "Branch: $BRANCH"
+    info "Branch: $REPO_BRANCH"
     
     # Check if cache exists and is valid
     if is_valid_cache "$cache_dir"; then
         # Update existing cache
-        if update_repo_cache "$cache_dir" "$BRANCH"; then
+        if update_repo_cache "$cache_dir" "$REPO_BRANCH"; then
             info "Repository cache updated successfully"
         else
             warn "Cache update failed, re-cloning repository"
-            if clone_repo_to_cache "$URL" "$BRANCH" "$cache_dir"; then
+            if clone_repo_to_cache "$REPO_URL" "$REPO_BRANCH" "$cache_dir"; then
                 info "Repository re-cached successfully"
             else
                 error "Failed to update repository cache"
@@ -216,7 +216,7 @@ cmd_repo_update() {
     else
         # Clone fresh cache
         info "Cloning repository cache..."
-        if clone_repo_to_cache "$URL" "$BRANCH" "$cache_dir"; then
+        if clone_repo_to_cache "$REPO_URL" "$REPO_BRANCH" "$cache_dir"; then
             info "Repository cached successfully"
         else
             error "Failed to cache repository"
@@ -250,12 +250,12 @@ cmd_repo_info() {
     local repo_info
     repo_info=$(parse_repo_binding "$binding_data")
 # shellcheck disable=SC2034
-    eval "$repo_info"  # Sets URL, BRANCH, PATH variables
+    eval "$repo_info"  # Sets REPO_URL, REPO_BRANCH, REPO_PATH variables
     
     info "Repository binding information for '$hype_name':"
-    echo "  Repository URL: $URL"
-    echo "  Branch: $BRANCH"
-    echo "  Path: $PATH"
+    echo "  Repository URL: $REPO_URL"
+    echo "  Branch: $REPO_BRANCH"
+    echo "  Path: $REPO_PATH"
     
     # Check cache status
     local cache_dir
@@ -271,7 +271,9 @@ cmd_repo_info() {
         if status=$(get_repo_status "$cache_dir"); then
             echo ""
             echo "Repository status:"
-            printf '%s\n' "$status" | sed 's/^/  /'
+            while IFS= read -r line; do
+                echo "  $line"
+            done <<< "$status"
         fi
     else
         warn "Cache status: Missing or invalid"
