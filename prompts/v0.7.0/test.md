@@ -3,11 +3,11 @@
 task build を実行して build/hype をビルドします
 > task build
 
-テスト用ディレクトリに移動します
-> cd prompts/nginx-example
+空の hypefile.yaml を設置して、キャッシュディレクトリを固定します。
+> touch hypefile.yaml
 
 パス環境変数の先頭に build を追加します。すでにあるなら不要です。
-> export PATH="$(cd ../../build && pwd):${PATH}"
+> export PATH="$(cd ./build && pwd):${PATH}"
 
 hype が利用できることを確認します。
 > which hype
