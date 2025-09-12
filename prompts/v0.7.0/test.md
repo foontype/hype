@@ -1,10 +1,5 @@
 ### テスト準備
 
-リポジトリをクローンして、テスト用ディレクトリに移動します
-> git clone https://github.com/foontype/hype.git
-> cd hype
-> git checkout feature/v0.7.0-testing
-
 task build を実行して build/hype をビルドします
 > task build
 
@@ -35,14 +30,20 @@ task build を実行して build/hype をビルドします
 
 #### 4. リポジトリバインドテスト
 
-> hype myapp repo bind https://github.com/foontype/hype.git
+> hype myapp repo bind https://github.com/foontype/hype.git --path prompts/nginx-example
   * バインド成功のメッセージが表示されること
   * kubectl でConfigMap hype-repos が作成されていること
+
+#### 4-1. バインドしたリポジトリの使用テスト
+
+> hype myapp parse section hype
+  * prompts/nginx-example/hypefile.yaml の hype section 表示されること
 
 #### 5. バインド状態確認テスト
 
 > hype myapp repo
   * バインドされたリポジトリURL（https://github.com/foontype/hype.git）が表示されること
+  * パスが promots/nginx-example であること
   * バインド日時が表示されること
 
 #### 6. 無効なURL拒否テスト
