@@ -13,9 +13,13 @@ hype が利用できることを確認します。
 > which hype
 
 いくつかの主要コマンドもあることを確認します。
+
 > which kubectl
+
 > which helm
+
 > which helmfile
+
 > which task
 
 ### v0.7.0 リポジトリバインディング機能テスト
