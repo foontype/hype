@@ -1,11 +1,19 @@
 ### テスト準備
 
+リポジトリをクローンして、テスト用ディレクトリに移動します
+> git clone https://github.com/foontype/hype.git
+> cd hype
+> git checkout feature/v0.7.0-testing
+
 task build を実行して build/hype をビルドします
 > task build
 
+テスト用ディレクトリに移動します
+> cd prompts/nginx-example
+
 パス環境変数の先頭に build を追加します。すでにあるなら不要です。
 重複している場合は、後方にあるものを取り除きます。
-> export PATH="$(PWD)/build:${PATH}"
+> export PATH="$(cd ../../build && pwd):${PATH}"
 
 ### v0.7.0 リポジトリバインディング機能テスト
 
