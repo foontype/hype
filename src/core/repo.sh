@@ -51,9 +51,9 @@ parse_repo_binding() {
     branch="${branch:-main}"
     path="${path:-.}"
     
-    echo "URL=$url"
-    echo "BRANCH=$branch"
-    echo "PATH=$path"
+    echo "REPO_URL=$url"
+    echo "REPO_BRANCH=$branch"
+    echo "REPO_PATH=$path"
 }
 
 # Store repository binding in ConfigMap

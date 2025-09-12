@@ -3,9 +3,24 @@
 task build を実行して build/hype をビルドします
 > task build
 
+空の hypefile.yaml を設置して、キャッシュディレクトリを固定します。
+> touch hypefile.yaml
+
 パス環境変数の先頭に build を追加します。すでにあるなら不要です。
-重複している場合は、後方にあるものを取り除きます。
-> export PATH="$(PWD)/build:${PATH}"
+> export PATH="$(cd ./build && pwd):${PATH}"
+
+hype が利用できることを確認します。
+> which hype
+
+いくつかの主要コマンドもあることを確認します。
+
+> which kubectl
+
+> which helm
+
+> which helmfile
+
+> which task
 
 ### v0.7.0 リポジトリバインディング機能テスト
 
@@ -27,14 +42,20 @@ task build を実行して build/hype をビルドします
 
 #### 4. リポジトリバインドテスト
 
-> hype myapp repo bind https://github.com/foontype/hype.git
+> hype myapp repo bind https://github.com/foontype/hype.git --path prompts/nginx-example
   * バインド成功のメッセージが表示されること
   * kubectl でConfigMap hype-repos が作成されていること
+
+#### 4-1. バインドしたリポジトリの使用テスト
+
+> hype myapp parse section hype
+  * prompts/nginx-example/hypefile.yaml の hype section 表示されること
 
 #### 5. バインド状態確認テスト
 
 > hype myapp repo
   * バインドされたリポジトリURL（https://github.com/foontype/hype.git）が表示されること
+  * パスが promots/nginx-example であること
   * バインド日時が表示されること
 
 #### 6. 無効なURL拒否テスト
