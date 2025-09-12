@@ -7,8 +7,16 @@ task build を実行して build/hype をビルドします
 > cd prompts/nginx-example
 
 パス環境変数の先頭に build を追加します。すでにあるなら不要です。
-重複している場合は、後方にあるものを取り除きます。
 > export PATH="$(cd ../../build && pwd):${PATH}"
+
+hype が利用できることを確認します。
+> which hype
+
+いくつかの主要コマンドもあることを確認します。
+> which kubectl
+> which helm
+> which helmfile
+> which task
 
 ### v0.7.0 リポジトリバインディング機能テスト
 
