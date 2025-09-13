@@ -9,8 +9,8 @@ for file in src/core/*.sh; do
     echo "" >> "$TARGET"
 done
 
-# Combine plugin files
-for file in src/plugins/*.sh; do
+# Combine builtin files
+for file in src/builtins/*.sh; do
     tail -n +2 "$file" >> "$TARGET"
     echo "" >> "$TARGET"
 done

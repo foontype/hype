@@ -126,27 +126,27 @@ test_command_parsing() {
     rm -rf "$test_root"
 }
 
-# Test plugin structure
-test_plugin_structure() {
+# Test builtin structure
+test_builtin_structure() {
     echo
-    echo "Testing plugin structure..."
+    echo "Testing builtin structure..."
     
-    local plugins_found=0
-    local expected_plugins=("init" "template" "parse" "trait" "upgrade" "task" "helmfile")
+    local builtins_found=0
+    local expected_builtins=("init" "template" "parse" "trait" "upgrade" "task" "helmfile")
     
-    for plugin in "${expected_plugins[@]}"; do
-        if [[ -f "$PROJECT_ROOT/src/plugins/${plugin}.sh" ]]; then
-            plugins_found=$((plugins_found + 1))
-            test_passed "Plugin file exists: ${plugin}.sh"
+    for builtin in "${expected_builtins[@]}"; do
+        if [[ -f "$PROJECT_ROOT/src/builtins/${builtin}.sh" ]]; then
+            builtins_found=$((builtins_found + 1))
+            test_passed "Builtin file exists: ${builtin}.sh"
         else
-            test_failed "Plugin file missing: ${plugin}.sh"
+            test_failed "Builtin file missing: ${builtin}.sh"
         fi
     done
     
-    if [[ $plugins_found -eq ${#expected_plugins[@]} ]]; then
-        test_passed "All expected plugins found"
+    if [[ $builtins_found -eq ${#expected_builtins[@]} ]]; then
+        test_passed "All expected builtins found"
     else
-        test_failed "Plugin count mismatch" "Found: $plugins_found, Expected: ${#expected_plugins[@]}"
+        test_failed "Builtin count mismatch" "Found: $builtins_found, Expected: ${#expected_builtins[@]}"
     fi
 }
 
@@ -299,7 +299,7 @@ main() {
     # Run test suites
     test_basic_functionality
     test_command_parsing
-    test_plugin_structure
+    test_builtin_structure
     test_core_modules
     test_hypefile_discovery
     test_shellcheck

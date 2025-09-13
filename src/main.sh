@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # HYPE CLI Main Entry Point
-# Plugin discovery and command routing
+# Builtin command discovery and routing
 
 # Show help
 show_help() {
