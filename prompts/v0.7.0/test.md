@@ -27,8 +27,8 @@ hype が利用できることを確認します。
 
 ### プロジェクト開発機能 テスト手順
 
-examples に移動します
 > cd prompts/nginx-example
+  * examples に移動します
 
 > hype test trait set test-trait
 
