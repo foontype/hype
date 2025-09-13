@@ -119,7 +119,7 @@ hype が利用できることを確認します。
 
 #### 4. リポジトリバインドテスト
 
-> hype myapp repo bind https://github.com/foontype/hype.git --path prompts/nginx-example
+> hype myapp repo bind foontype/hype --path prompts/nginx-example
   * バインド成功のメッセージが表示されること
   * kubectl でConfigMap hype-repos が作成されていること
 
