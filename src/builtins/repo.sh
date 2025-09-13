@@ -25,7 +25,8 @@ Subcommands:
   info            Show repository binding information
 
 Examples:
-  hype my-nginx repo bind https://github.com/user/repo.git      Bind repository
+  hype my-nginx repo bind user/repo                              Bind repository (shorthand)
+  hype my-nginx repo bind https://github.com/user/repo.git      Bind repository (full URL)
   hype my-nginx repo info                                        Show binding info
   hype my-nginx repo unbind                                      Remove binding
 EOF
@@ -122,10 +123,20 @@ cmd_repo_bind() {
     branch="${branch:-main}"
     path="${path:-.}"
     
+    # Expand GitHub shorthand if applicable
+    local original_url="$repo_url"
+    repo_url=$(expand_github_shorthand "$repo_url")
+    
+    # Show expansion if shorthand was used
+    if [[ "$original_url" != "$repo_url" ]]; then
+        info "Expanding GitHub shorthand: $original_url -> $repo_url"
+    fi
+    
     # Validate repository URL
-    if ! validate_repo_url "$repo_url"; then
-        error "Invalid repository URL: $repo_url"
+    if ! validate_repo_url "$original_url"; then
+        error "Invalid repository URL: $original_url"
         error "Supported formats:"
+        error "  - user/repo (GitHub shorthand)"
         error "  - https://github.com/user/repo"
         error "  - https://github.com/user/repo.git"
         error "  - git@github.com:user/repo.git"
@@ -327,11 +338,14 @@ Options:
   --path <path>         Specify path within repository (default: .)
 
 Examples:
-  # Bind a GitHub repository
+  # Bind a GitHub repository using shorthand
+  hype myapp repo bind foontype/hype
+
+  # Bind a GitHub repository with full URL
   hype myapp repo bind https://github.com/user/repo.git
 
   # Bind with specific branch and path
-  hype myapp repo bind https://github.com/user/repo.git --branch develop --path deploy
+  hype myapp repo bind user/repo --branch develop --path deploy
 
   # Show binding information
   hype myapp repo
