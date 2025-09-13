@@ -3,11 +3,31 @@
 # HYPE CLI Task Plugin
 # Handles task execution from taskfile sections
 
-# Plugin metadata
-PLUGIN_NAME="task"
-PLUGIN_VERSION="1.0.0"
-PLUGIN_DESCRIPTION="Task execution plugin"
-PLUGIN_COMMANDS=("task")
+# Builtin metadata (standardized)
+BUILTIN_NAME="task"
+BUILTIN_VERSION="1.0.0"
+BUILTIN_DESCRIPTION="Task execution builtin"
+BUILTIN_COMMANDS=("task")
+
+# Help functions
+help_task() {
+    cat <<EOF
+Usage: hype <hype-name> task <task-name> [args...]
+
+Run task from taskfile section
+
+This command executes tasks defined in the taskfile section of your hypefile.yaml.
+Tasks are run with environment variables set for the current hype name and trait.
+
+Examples:
+  hype my-nginx task deploy                      Run deploy task
+  hype my-nginx task build --verbose             Run build task with args
+EOF
+}
+
+help_task_brief() {
+    echo "Run task from taskfile section"
+}
 
 # Run task command
 cmd_task() {

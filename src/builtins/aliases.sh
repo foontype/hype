@@ -3,11 +3,66 @@
 # HYPE CLI Aliases Plugin
 # Handles deployment lifecycle aliases: up, down, restart
 
-# Plugin metadata
-PLUGIN_NAME="aliases"
-PLUGIN_VERSION="1.0.0"
-PLUGIN_DESCRIPTION="Deployment lifecycle aliases"
-PLUGIN_COMMANDS=("up" "down" "restart")
+# Builtin metadata (standardized)
+BUILTIN_NAME="aliases"
+BUILTIN_VERSION="1.0.0"
+BUILTIN_DESCRIPTION="Deployment lifecycle aliases"
+BUILTIN_COMMANDS=("up" "down" "restart")
+
+# Help functions for each command
+help_up() {
+    cat <<EOF
+Usage: hype <hype-name> up
+
+Build and deploy (task build + helmfile apply)
+
+This command first runs the build task (if available) and then
+applies the helmfile configuration to deploy your application.
+
+Examples:
+  hype my-nginx up                   Build and deploy my-nginx
+EOF
+}
+
+help_up_brief() {
+    echo "Build and deploy (task build + helmfile apply)"
+}
+
+help_down() {
+    cat <<EOF
+Usage: hype <hype-name> down
+
+Destroy deployment (helmfile destroy)
+
+This command destroys the deployment by running helmfile destroy,
+removing all resources created by the helmfile.
+
+Examples:
+  hype my-nginx down                 Destroy my-nginx deployment
+EOF
+}
+
+help_down_brief() {
+    echo "Destroy deployment (helmfile destroy)"
+}
+
+help_restart() {
+    cat <<EOF
+Usage: hype <hype-name> restart
+
+Restart deployment (down + up)
+
+This command performs a complete restart by first destroying
+the current deployment and then rebuilding and redeploying.
+
+Examples:
+  hype my-nginx restart              Restart my-nginx deployment
+EOF
+}
+
+help_restart_brief() {
+    echo "Restart deployment (down + up)"
+}
 
 # Check if build task exists in taskfile
 has_build_task() {

@@ -3,11 +3,32 @@
 # HYPE CLI Template Plugin
 # Handles template rendering and state values display
 
-# Plugin metadata
-PLUGIN_NAME="template"
-PLUGIN_VERSION="1.0.0"
-PLUGIN_DESCRIPTION="Template rendering and state values plugin"
-PLUGIN_COMMANDS=("template")
+# Builtin metadata (standardized)
+BUILTIN_NAME="template"
+BUILTIN_VERSION="1.0.0"
+BUILTIN_DESCRIPTION="Template rendering and state values builtin"
+BUILTIN_COMMANDS=("template")
+
+# Help functions
+help_template() {
+    cat <<EOF
+Usage: hype <hype-name> template [SUBCOMMAND]
+
+Show rendered hype section YAML or state values content
+
+Subcommands:
+  (none)                              Show rendered hype section YAML
+  state-values <configmap-name>       Show state-values file content
+
+Examples:
+  hype my-nginx template                                         Show rendered YAML for my-nginx
+  hype my-nginx template state-values my-nginx-state-values     Show state-values content
+EOF
+}
+
+help_template_brief() {
+    echo "Show rendered hype section YAML"
+}
 
 # Validate state values configmap
 validate_state_values_configmap() {

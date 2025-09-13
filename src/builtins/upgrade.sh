@@ -3,11 +3,30 @@
 # HYPE CLI Upgrade Plugin
 # Handles self-upgrade functionality
 
-# Plugin metadata
-PLUGIN_NAME="upgrade"
-PLUGIN_VERSION="1.0.0"
-PLUGIN_DESCRIPTION="Self-upgrade functionality plugin"
-PLUGIN_COMMANDS=("upgrade")
+# Builtin metadata (standardized)
+BUILTIN_NAME="upgrade"
+BUILTIN_VERSION="1.0.0"
+BUILTIN_DESCRIPTION="Self-upgrade functionality builtin"
+BUILTIN_COMMANDS=("upgrade")
+
+# Help functions
+help_upgrade() {
+    cat <<EOF
+Usage: hype upgrade
+
+Upgrade HYPE CLI to latest version
+
+This command downloads and installs the latest version of HYPE CLI
+from the official GitHub repository.
+
+Examples:
+  hype upgrade                    Upgrade to latest version
+EOF
+}
+
+help_upgrade_brief() {
+    echo "Upgrade HYPE CLI to latest version"
+}
 
 # Self-upgrade command
 cmd_upgrade() {

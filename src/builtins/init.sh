@@ -3,11 +3,66 @@
 # HYPE CLI Init Plugin
 # Handles initialization, deinitialization, and resource checking
 
-# Plugin metadata
-PLUGIN_NAME="init"
-PLUGIN_VERSION="1.0.0"
-PLUGIN_DESCRIPTION="Resource initialization and management plugin"
-PLUGIN_COMMANDS=("init" "deinit" "check")
+# Builtin metadata (standardized)
+BUILTIN_NAME="init"
+BUILTIN_VERSION="1.0.0"
+BUILTIN_DESCRIPTION="Resource initialization and management builtin"
+BUILTIN_COMMANDS=("init" "deinit" "check")
+
+# Help functions for each command
+help_init() {
+    cat <<EOF
+Usage: hype <hype-name> init
+
+Create default resources defined in hypefile.yaml
+
+This command initializes ConfigMaps, Secrets, and other default resources
+specified in the defaultResources section of your hypefile.yaml.
+
+Examples:
+  hype my-nginx init                   Create resources for my-nginx
+EOF
+}
+
+help_init_brief() {
+    echo "Create default resources"
+}
+
+help_deinit() {
+    cat <<EOF
+Usage: hype <hype-name> deinit
+
+Delete default resources defined in hypefile.yaml
+
+This command removes ConfigMaps, Secrets, and other default resources
+that were created during initialization.
+
+Examples:
+  hype my-nginx deinit                 Delete resources for my-nginx
+EOF
+}
+
+help_deinit_brief() {
+    echo "Delete default resources"
+}
+
+help_check() {
+    cat <<EOF
+Usage: hype <hype-name> check
+
+List the status of default resources
+
+This command shows the current status of all default resources,
+indicating whether they exist or are missing from the cluster.
+
+Examples:
+  hype my-nginx check                  Check resources for my-nginx
+EOF
+}
+
+help_check_brief() {
+    echo "List default resources status"
+}
 
 # Get resource values for kubectl creation
 get_resource_values() {

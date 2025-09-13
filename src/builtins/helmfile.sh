@@ -3,11 +3,32 @@
 # HYPE CLI Helmfile Plugin
 # Handles helmfile command execution with state management
 
-# Plugin metadata
-PLUGIN_NAME="helmfile"
-PLUGIN_VERSION="1.0.0"
-PLUGIN_DESCRIPTION="Helmfile execution plugin"
-PLUGIN_COMMANDS=("helmfile")
+# Builtin metadata (standardized)
+BUILTIN_NAME="helmfile"
+BUILTIN_VERSION="1.0.0"
+BUILTIN_DESCRIPTION="Helmfile execution builtin"
+BUILTIN_COMMANDS=("helmfile")
+
+# Help functions
+help_helmfile() {
+    cat <<EOF
+Usage: hype <hype-name> helmfile <helmfile-options>
+
+Run helmfile command with state management
+
+This command executes helmfile using the helmfile section from your hypefile.yaml,
+automatically setting up environment and state values.
+
+Examples:
+  hype my-nginx helmfile sync                    Sync with helmfile
+  hype my-nginx helmfile apply                   Apply helmfile changes
+  hype my-nginx helmfile destroy                 Destroy helmfile deployment
+EOF
+}
+
+help_helmfile_brief() {
+    echo "Run helmfile command"
+}
 
 # Run helmfile command
 cmd_helmfile() {
