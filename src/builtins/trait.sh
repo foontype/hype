@@ -3,11 +3,36 @@
 # HYPE CLI Trait Plugin
 # Handles trait management for HYPE names
 
-# Plugin metadata
-PLUGIN_NAME="trait"
-PLUGIN_VERSION="1.0.0"
-PLUGIN_DESCRIPTION="Trait management plugin"
-PLUGIN_COMMANDS=("trait")
+# Builtin metadata (standardized)
+BUILTIN_NAME="trait"
+BUILTIN_VERSION="1.0.0"
+BUILTIN_DESCRIPTION="Trait management builtin"
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("trait")
+
+# Help functions
+help_trait() {
+    cat <<EOF
+Usage: hype <hype-name> trait [SUBCOMMAND]
+
+Manage trait settings for HYPE names
+
+Subcommands:
+  (none)              Show current trait
+  set <trait-type>    Set trait type
+  unset               Remove trait
+
+Examples:
+  hype my-nginx trait                     Show current trait
+  hype my-nginx trait set production      Set trait to production
+  hype my-nginx trait unset               Remove trait
+EOF
+}
+
+help_trait_brief() {
+    echo "Show current trait"
+}
 
 # Get trait for hype name from hype-traits ConfigMap
 get_hype_trait() {

@@ -3,11 +3,37 @@
 # HYPE CLI Repository Plugin
 # Handles repository binding, unbinding, and management operations
 
-# Plugin metadata
-PLUGIN_NAME="repo"
-PLUGIN_VERSION="1.0.0"
-PLUGIN_DESCRIPTION="Repository binding and management plugin"
-PLUGIN_COMMANDS=("repo")
+# Builtin metadata (standardized)
+BUILTIN_NAME="repo"
+BUILTIN_VERSION="1.0.0"
+BUILTIN_DESCRIPTION="Repository binding and management builtin"
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("repo")
+
+# Help functions
+help_repo() {
+    cat <<EOF
+Usage: hype <hype-name> repo [SUBCOMMAND]
+
+Repository binding operations
+
+Subcommands:
+  bind <url>      Bind repository to hype name
+  unbind          Unbind repository from hype name
+  update          Update repository binding
+  info            Show repository binding information
+
+Examples:
+  hype my-nginx repo bind https://github.com/user/repo.git      Bind repository
+  hype my-nginx repo info                                        Show binding info
+  hype my-nginx repo unbind                                      Remove binding
+EOF
+}
+
+help_repo_brief() {
+    echo "Repository binding operations"
+}
 
 # Plugin initialization function
 plugin_repo_init() {

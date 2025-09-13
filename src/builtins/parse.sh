@@ -3,11 +3,36 @@
 # HYPE CLI Parse Plugin
 # Handles parsing of hypefile sections
 
-# Plugin metadata
-PLUGIN_NAME="parse"
-PLUGIN_VERSION="1.0.0"
-PLUGIN_DESCRIPTION="Hypefile section parsing plugin"
-PLUGIN_COMMANDS=("parse")
+# Builtin metadata (standardized)
+BUILTIN_NAME="parse"
+BUILTIN_VERSION="1.0.0"
+BUILTIN_DESCRIPTION="Hypefile section parsing builtin"
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("parse")
+
+# Help functions
+help_parse() {
+    cat <<EOF
+Usage: hype <hype-name> parse section <section-type>
+
+Show raw section content without headers
+
+Section Types:
+  hype           Show raw hype section
+  helmfile       Show raw helmfile section
+  taskfile       Show raw taskfile section
+
+Examples:
+  hype my-nginx parse section hype                  Show raw hype section
+  hype my-nginx parse section helmfile              Show raw helmfile section
+  hype my-nginx parse section taskfile              Show raw taskfile section
+EOF
+}
+
+help_parse_brief() {
+    echo "Show raw section without headers"
+}
 
 # Show raw sections without rendering info headers
 cmd_parse_section() {

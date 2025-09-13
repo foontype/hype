@@ -9,7 +9,7 @@
 BUILTIN_NAME="template"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Template builtin for HYPE CLI"
-BUILTIN_COMMANDS=("template")
+# BUILTIN_COMMANDS+=("example") # Uncomment and replace "example" with your command name
 
 # Builtin initialization function (optional)
 # Called when the builtin is loaded
