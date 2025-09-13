@@ -7,7 +7,9 @@
 BUILTIN_NAME="task"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Task execution builtin"
-BUILTIN_COMMANDS=("task")
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("task")
 
 # Help functions
 help_task() {

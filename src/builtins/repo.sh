@@ -7,7 +7,9 @@
 BUILTIN_NAME="repo"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Repository binding and management builtin"
-BUILTIN_COMMANDS=("repo")
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("repo")
 
 # Help functions
 help_repo() {

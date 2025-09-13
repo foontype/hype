@@ -7,7 +7,9 @@
 BUILTIN_NAME="trait"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Trait management builtin"
-BUILTIN_COMMANDS=("trait")
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("trait")
 
 # Help functions
 help_trait() {

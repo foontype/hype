@@ -7,7 +7,9 @@
 BUILTIN_NAME="template"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Template rendering and state values builtin"
-BUILTIN_COMMANDS=("template")
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("template")
 
 # Help functions
 help_template() {

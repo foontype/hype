@@ -7,7 +7,9 @@
 BUILTIN_NAME="helmfile"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Helmfile execution builtin"
-BUILTIN_COMMANDS=("helmfile")
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("helmfile")
 
 # Help functions
 help_helmfile() {

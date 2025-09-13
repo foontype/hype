@@ -7,7 +7,11 @@
 BUILTIN_NAME="init"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Resource initialization and management builtin"
-BUILTIN_COMMANDS=("init" "deinit" "check")
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("init")
+BUILTIN_COMMANDS+=("deinit")
+BUILTIN_COMMANDS+=("check")
 
 # Help functions for each command
 help_init() {

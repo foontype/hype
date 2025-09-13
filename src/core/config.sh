@@ -3,6 +3,10 @@
 # HYPE CLI Configuration Module
 # Core configuration settings and environment variables
 
+# Global arrays for builtin commands and their help functions
+declare -a BUILTIN_COMMANDS=()
+declare -A BUILTIN_HELP_FUNCTIONS=()
+
 # Find hypefile.yaml by searching upward from current directory
 find_hypefile() {
     local dir="$PWD"

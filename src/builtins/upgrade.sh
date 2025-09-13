@@ -7,7 +7,9 @@
 BUILTIN_NAME="upgrade"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Self-upgrade functionality builtin"
-BUILTIN_COMMANDS=("upgrade")
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("upgrade")
 
 # Help functions
 help_upgrade() {

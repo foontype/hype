@@ -7,7 +7,9 @@
 BUILTIN_NAME="parse"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Hypefile section parsing builtin"
-BUILTIN_COMMANDS=("parse")
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("parse")
 
 # Help functions
 help_parse() {

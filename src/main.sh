@@ -3,36 +3,21 @@
 # HYPE CLI Main Entry Point
 # Builtin command discovery and routing
 
-# Global arrays for builtin commands and their help functions
-declare -a BUILTIN_COMMANDS=()
-declare -A BUILTIN_HELP_FUNCTIONS=()
+# Note: Global arrays are now declared in src/core/config.sh
 
-# Register a builtin command
-register_builtin_command() {
-    local command="$1"
-    local help_function="$2"
-    
-    if [[ ! " ${BUILTIN_COMMANDS[*]} " =~ [[:space:]]${command}[[:space:]] ]]; then
-        BUILTIN_COMMANDS+=("$command")
-    fi
-    
-    if [[ -n "$help_function" ]]; then
-        BUILTIN_HELP_FUNCTIONS["$command"]="$help_function"
-    fi
-}
+# Note: Command registration is now handled directly by builtin files
+# using BUILTIN_COMMANDS+=("command") in their initialization section
 
-# Load builtin metadata - since builtins are already loaded in the bundled script,
-# we just need to register the commands that are available
+# Load builtin metadata - commands are already registered by builtins themselves
+# This function now just ensures help functions are properly associated
 load_builtin_metadata() {
-    debug "Loading builtin metadata from existing functions"
+    debug "Loading builtin metadata - commands: ${BUILTIN_COMMANDS[*]}"
     
-    # Register all known builtin commands by checking if their cmd_ functions exist
-    local known_commands=("init" "deinit" "check" "template" "parse" "trait" "task" "repo" "helmfile" "up" "down" "restart")
-    
-    for cmd in "${known_commands[@]}"; do
-        if declare -f "cmd_${cmd}" > /dev/null; then
-            register_builtin_command "$cmd" "help_${cmd}"
-            debug "Registered builtin command: $cmd"
+    # Associate help functions with registered commands
+    for cmd in "${BUILTIN_COMMANDS[@]}"; do
+        if declare -f "help_${cmd}" > /dev/null; then
+            BUILTIN_HELP_FUNCTIONS["$cmd"]="help_${cmd}"
+            debug "Associated help function for: $cmd"
         fi
     done
 }

@@ -7,7 +7,11 @@
 BUILTIN_NAME="aliases"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Deployment lifecycle aliases"
-BUILTIN_COMMANDS=("up" "down" "restart")
+
+# Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("up")
+BUILTIN_COMMANDS+=("down")
+BUILTIN_COMMANDS+=("restart")
 
 # Help functions for each command
 help_up() {
