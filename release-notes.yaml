@@ -1,3 +1,64 @@
+"v0.7.0": |
+  ## What's New in HYPE CLI v0.7.0
+
+  ### Major New Features
+  - **Repository Binding**: Added comprehensive repository binding functionality for remote repository management
+    - New `hype repo` command suite for managing repository bindings
+    - Support for `hype repo bind <name> <repo-url>` to bind repositories with names
+    - Support for `hype repo list` to view all bindings and `hype repo unbind <name>` to remove bindings
+    - Automatic repository caching and working directory management
+    - Enhanced `hype <name>` command to work with bound repositories seamlessly
+
+  ### Enhanced Configuration System
+  - **Dynamic Repository Discovery**: Improved hypefile discovery to work with bound repositories
+    - Automatic repository cloning and cache management in `~/.hype/cache`
+    - Support for branch-specific repository bindings
+    - Working directory isolation for different repository contexts
+    - Enhanced error handling and fallback mechanisms for repository operations
+
+  ### Improvements
+  - **Test Configuration**: Comprehensive test configuration improvements and repository-specific testing
+    - Enhanced test documentation and validation scripts
+    - Improved test script paths and better testing procedures
+    - Repository binding integration with test workflows
+    - Better CI/CD integration with repository-bound testing
+
+  ### Bug Fixes
+  - **PATH Environment Variable**: Fixed variable name collision causing PATH environment variable override
+    - Resolved command path resolution issues in cache.sh for better portability  
+    - Enhanced dependency checking and command discovery
+    - Improved shell environment preservation during execution
+
+  ### Documentation and Testing
+  - **Comprehensive Documentation**: Added extensive documentation for v0.7.0 repository binding feature
+    - Updated test.md with repository binding testing procedures
+    - Enhanced smoke-test.md with repository-specific testing workflows
+    - Improved development and deployment documentation
+
+  ### Technical Changes
+  - Version bump to 0.7.0
+  - Added repository binding cache management system
+  - Enhanced configuration loading with repository context support
+  - Improved command path resolution and dependency management
+  - Better working directory management for repository operations
+  - Enhanced error handling and logging for repository operations
+
+  ### Use Cases
+  - Manage multiple HYPE projects from different repositories without manual cloning
+  - Switch between different project configurations using named repository bindings  
+  - Centralized repository cache management for better performance
+  - Remote project management with automatic synchronization
+
+  ### Dependencies
+  - Bash 4.0+
+  - Git (for repository operations)
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for build system)
+  - curl or wget (for upgrade functionality)
+
 "v0.6.3": |
   ## What's New in HYPE CLI v0.6.3
 
