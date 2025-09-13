@@ -177,16 +177,16 @@
   ## What's New in HYPE CLI v0.6.0
 
   ### Major Architecture Changes
-  - **Plugin Architecture Migration**: Complete migration from monolithic structure to modular plugin-based architecture
+  - **Modular Architecture Migration**: Complete migration from monolithic structure to modular builtin-based architecture
     - Extracted core modules: config, common, hypefile, dependencies
-    - Created 7 independent plugins: init, template, parse, trait, upgrade, task, helmfile
-    - Added plugin template (plugin-template.sh) for future development
+    - Created 7 independent builtins: init, template, parse, trait, upgrade, task, helmfile
+    - Added builtin template (builtin-template.sh) for future development
     - Maintained 100% backward compatibility with all existing commands
 
   ### Build System Overhaul
   - **Taskfile Integration**: Migrated from Makefile to Taskfile for modern build system
     - Added comprehensive Taskfile.yml with build, test, lint, and clean targets
-    - Single executable output combining all modules and plugins
+    - Single executable output combining all modules and builtins
     - Better dependency management and parallel execution support
 
   ### Enhanced Testing Framework

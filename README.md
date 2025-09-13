@@ -1,10 +1,10 @@
 # HYPE CLI
 
-A plugin-based command-line tool written in Bash for Kubernetes AI deployments, providing streamlined management of default resources and configurations through a modular architecture.
+A modular command-line tool written in Bash for Kubernetes AI deployments, providing streamlined management of default resources and configurations through a modular architecture.
 
 ## Overview
 
-HYPE is a Bash-based CLI tool that simplifies the deployment and management of Kubernetes applications using Helmfile. It uses a modular architecture with separate core modules and plugins for different commands, following a build system approach where individual components are combined into a single executable. The tool introduces the concept of "hypefile.yaml" - a structured configuration file that separates default resources from Helmfile configurations.
+HYPE is a Bash-based CLI tool that simplifies the deployment and management of Kubernetes applications using Helmfile. It uses a modular architecture with separate core modules and builtins for different commands, following a build system approach where individual components are combined into a single executable. The tool introduces the concept of "hypefile.yaml" - a structured configuration file that separates default resources from Helmfile configurations.
 
 ## Features
 
@@ -17,7 +17,7 @@ HYPE is a Bash-based CLI tool that simplifies the deployment and management of K
 ## Project Structure
 
 - `src/core/` - Core modules (config, common, hypefile, dependencies)
-- `src/plugins/` - Plugin modules (init, template, parse, trait, upgrade, task, helmfile)
+- `src/builtins/` - Builtin modules (init, template, parse, trait, upgrade, task, helmfile)
 - `src/main.sh` - Main entry point and command routing
 - `build/` - Build artifacts (generated executable)
 - `tests/` - Test framework and unit tests
@@ -231,7 +231,7 @@ task lint
 
 # Individual component testing
 shellcheck src/core/*.sh
-shellcheck src/plugins/*.sh
+shellcheck src/builtins/*.sh
 shellcheck src/main.sh
 ```
 
@@ -242,7 +242,7 @@ shellcheck src/main.sh
 task lint
 
 # Format bash scripts (if shfmt is available)
-shfmt -w -ci src/core/*.sh src/plugins/*.sh src/main.sh
+shfmt -w -ci src/core/*.sh src/builtins/*.sh src/main.sh
 
 # Clean build artifacts
 task clean
@@ -281,7 +281,7 @@ Follow the comprehensive smoke test in `prompts/smoke-test.md` for complete work
 
 ### Adding New Features
 
-- For new plugins: Create files in `src/plugins/` following the plugin template structure
+- For new builtins: Create files in `src/builtins/` following the builtin template structure
 - For core functionality: Add functions to appropriate core module in `src/core/`
 - Always add tests and update help text if needed
 - Run full test suite before submitting PR

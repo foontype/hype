@@ -7,7 +7,7 @@ This document provides guidance to Claude Code (claude.ai/code) when working wit
 
 ## Project Overview
 
-HYPE is a plugin-based command-line tool written in Bash for Kubernetes AI deployments. It uses a modular architecture with separate core modules and plugins for different commands. The tool follows a build system approach where individual components are combined into a single executable.
+HYPE is a modular command-line tool written in Bash for Kubernetes AI deployments. It uses a modular architecture with separate core modules and builtins for different commands. The tool follows a build system approach where individual components are combined into a single executable.
 
 ## Language Guidelines
 - **Chat responses**: 日本語で応答してください (Respond in Japanese)
@@ -30,7 +30,7 @@ task lint
 
 # Individual component testing
 shellcheck src/core/*.sh
-shellcheck src/plugins/*.sh
+shellcheck src/builtins/*.sh
 shellcheck src/main.sh
 ```
 
@@ -73,7 +73,7 @@ task clean
 ## Project Structure
 
 - `src/core/` - Core modules (config, common, hypefile, dependencies)
-- `src/plugins/` - Plugin modules (init, template, parse, trait, upgrade, task, helmfile)
+- `src/builtins/` - Builtin modules (init, template, parse, trait, upgrade, task, helmfile)
 - `src/main.sh` - Main entry point and command routing
 - `build/` - Build artifacts (generated executable)
 - `tests/` - Test framework and unit tests
@@ -141,10 +141,10 @@ v0.4.0:
 
 ## Adding New Features
 
-### Adding New Plugins
-1. Create new plugin file in `src/plugins/` (e.g., `src/plugins/newfeature.sh`)
-2. Follow the plugin template structure in `src/plugins/plugin-template.sh`
-3. Add plugin metadata and command functions
+### Adding New Builtins
+1. Create new builtin file in `src/builtins/` (e.g., `src/builtins/newfeature.sh`)
+2. Follow the builtin template structure in `src/builtins/builtin-template.sh`
+3. Add builtin metadata and command functions
 4. Update main command routing in `src/main.sh`
 5. Add tests in `tests/unit/`
 6. Run `task build` and `task test`
@@ -160,7 +160,7 @@ v0.4.0:
 
 ## Important Implementation Notes
 - POSIX compatible, requires Bash 4.0+
-- Plugin-based architecture with build system
+- Modular architecture with builtins and build system
 - Version defined in `src/core/config.sh`: `HYPE_VERSION="0.6.0"`
 - Error handling uses consistent exit codes
 - Modular design allows independent development of features

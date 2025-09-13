@@ -16,7 +16,7 @@ tasks:
     desc: Build the final executable
     sources:
       - "src/core/*.sh"
-      - "src/plugins/*.sh"
+      - "src/builtins/*.sh"
       - "src/main.sh"
     generates:
       - "{{.TARGET}}"
