@@ -127,9 +127,27 @@ has_repo_binding() {
     get_repo_binding "$hype_name" >/dev/null 2>&1
 }
 
+# Expand GitHub shorthand notation (user/repo) to full URL
+expand_github_shorthand() {
+    local url="$1"
+    
+    # Check if URL is GitHub shorthand (user/repo format)
+    if [[ "$url" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
+        echo "https://github.com/${url}"
+        return 0
+    fi
+    
+    # Return original URL if not shorthand
+    echo "$url"
+    return 0
+}
+
 # Validate repository URL
 validate_repo_url() {
     local url="$1"
+    
+    # Expand GitHub shorthand if applicable
+    url=$(expand_github_shorthand "$url")
     
     # Basic URL validation
     if [[ ! "$url" =~ ^https?://.*\.git$ ]] && [[ ! "$url" =~ ^git@.*:.*\.git$ ]] && [[ ! "$url" =~ ^https?://github\.com/.*/.*$ ]]; then
