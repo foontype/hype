@@ -19,6 +19,7 @@ plugin_template_init() {
 
 # Main command function
 # This is called when the user runs: hype template
+# shellcheck disable=SC2317
 cmd_template() {
     local subcommand="${1:-}"
     
