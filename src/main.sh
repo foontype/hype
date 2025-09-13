@@ -57,20 +57,14 @@ execute_builtin_command() {
         fi
     fi
     
-    # Check if command exists in registered commands
-    if [[ " ${BUILTIN_COMMANDS[*]} " =~ [[:space:]]${command}[[:space:]] ]]; then
-        local cmd_function="cmd_${command}"
-        
-        # Check if the function exists
-        if declare -f "$cmd_function" > /dev/null; then
-            "$cmd_function" "$hype_name" "$@"
-        else
-            error "Command function $cmd_function not found for command: $command"
-            exit 1
-        fi
+    # At this point, command existence has been validated by main(), so execute directly
+    local cmd_function="cmd_${command}"
+    
+    # Check if the function exists
+    if declare -f "$cmd_function" > /dev/null; then
+        "$cmd_function" "$hype_name" "$@"
     else
-        error "Unknown command: $command"
-        show_help
+        error "Command function $cmd_function not found for command: $command"
         exit 1
     fi
 }
@@ -143,16 +137,16 @@ show_version() {
 
 # Main function
 main() {
-    # Load builtin metadata first
-    load_builtin_metadata
-    
     if [[ $# -eq 0 ]]; then
+        # Load builtin metadata for help display
+        load_builtin_metadata
         show_help
         exit 0
     fi
     
     case "${1:-}" in
         "--help"|"-h")
+            load_builtin_metadata
             show_help
             ;;
         "--version"|"-v")
@@ -182,6 +176,16 @@ main() {
             local hype_name="$1"
             local command="$2"
             shift 2
+            
+            # Load builtin metadata first to check command existence
+            load_builtin_metadata
+            
+            # Check if command exists before loading config and checking dependencies
+            if [[ ! " ${BUILTIN_COMMANDS[*]} " =~ [[:space:]]${command}[[:space:]] ]]; then
+                error "Unknown command: $command"
+                show_help
+                exit 1
+            fi
             
             load_config "$hype_name" "$command"
             
