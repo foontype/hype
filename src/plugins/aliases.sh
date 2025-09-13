@@ -9,6 +9,25 @@ PLUGIN_VERSION="1.0.0"
 PLUGIN_DESCRIPTION="Deployment lifecycle aliases"
 PLUGIN_COMMANDS=("up" "down" "restart")
 
+# Help functions for commands
+help_up() {
+    cat << EOF
+  up                             Build and deploy (task build + helmfile apply)
+EOF
+}
+
+help_down() {
+    cat << EOF
+  down                           Destroy deployment (helmfile destroy)
+EOF
+}
+
+help_restart() {
+    cat << EOF
+  restart                        Restart deployment (down + up)
+EOF
+}
+
 # Check if build task exists in taskfile
 has_build_task() {
     local hype_name="$1"

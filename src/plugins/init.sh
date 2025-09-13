@@ -9,6 +9,25 @@ PLUGIN_VERSION="1.0.0"
 PLUGIN_DESCRIPTION="Resource initialization and management plugin"
 PLUGIN_COMMANDS=("init" "deinit" "check")
 
+# Help functions for commands
+help_init() {
+    cat << EOF
+  init                           Create default resources
+EOF
+}
+
+help_deinit() {
+    cat << EOF
+  deinit                         Delete default resources
+EOF
+}
+
+help_check() {
+    cat << EOF
+  check                          List default resources status
+EOF
+}
+
 # Get resource values for kubectl creation
 get_resource_values() {
     local values_yaml="$1"

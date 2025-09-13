@@ -9,6 +9,14 @@ PLUGIN_VERSION="1.0.0"
 PLUGIN_DESCRIPTION="Template rendering and state values plugin"
 PLUGIN_COMMANDS=("template")
 
+# Help function for template command
+help_template() {
+    cat << EOF
+  template                       Show rendered hype section YAML
+  template state-values <name>   Show state-values file content
+EOF
+}
+
 # Validate state values configmap
 validate_state_values_configmap() {
     local hype_name="$1"

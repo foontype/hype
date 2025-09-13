@@ -9,6 +9,13 @@ PLUGIN_VERSION="1.0.0"
 PLUGIN_DESCRIPTION="Task execution plugin"
 PLUGIN_COMMANDS=("task")
 
+# Help function for task command
+help_task() {
+    cat << EOF
+  task <task-name> [args...]     Run task from taskfile section
+EOF
+}
+
 # Run task command
 cmd_task() {
     local hype_name="$1"

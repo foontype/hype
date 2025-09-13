@@ -9,6 +9,13 @@ PLUGIN_VERSION="1.0.0"
 PLUGIN_DESCRIPTION="Helmfile execution plugin"
 PLUGIN_COMMANDS=("helmfile")
 
+# Help function for helmfile command
+help_helmfile() {
+    cat << EOF
+  helmfile <helmfile-options>    Run helmfile command
+EOF
+}
+
 # Run helmfile command
 cmd_helmfile() {
     local hype_name="$1"

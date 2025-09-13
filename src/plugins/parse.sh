@@ -9,6 +9,13 @@ PLUGIN_VERSION="1.0.0"
 PLUGIN_DESCRIPTION="Hypefile section parsing plugin"
 PLUGIN_COMMANDS=("parse")
 
+# Help function for parse command
+help_parse() {
+    cat << EOF
+  parse section <type>           Show raw section without headers
+EOF
+}
+
 # Show raw sections without rendering info headers
 cmd_parse_section() {
     local hype_name="$1"

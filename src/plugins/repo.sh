@@ -9,6 +9,13 @@ PLUGIN_VERSION="1.0.0"
 PLUGIN_DESCRIPTION="Repository binding and management plugin"
 PLUGIN_COMMANDS=("repo")
 
+# Help function for repo command
+help_repo() {
+    cat << EOF
+  repo [bind|unbind|update|info] Repository binding operations
+EOF
+}
+
 # Plugin initialization function
 plugin_repo_init() {
     debug "Plugin $PLUGIN_NAME initialized"

@@ -9,6 +9,15 @@ PLUGIN_VERSION="1.0.0"
 PLUGIN_DESCRIPTION="Trait management plugin"
 PLUGIN_COMMANDS=("trait")
 
+# Help function for trait command
+help_trait() {
+    cat << EOF
+  trait                          Show current trait
+  trait set <trait-type>         Set trait type
+  trait unset                    Remove trait
+EOF
+}
+
 # Get trait for hype name from hype-traits ConfigMap
 get_hype_trait() {
     local hype_name="$1"
