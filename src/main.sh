@@ -19,6 +19,7 @@ Usage:
   hype <hype-name> trait set <trait-type>                       Set trait type
   hype <hype-name> trait unset                                   Remove trait
   hype <hype-name> task <task-name> [args...]                   Run task from taskfile section
+  hype <hype-name> repo [bind|unbind|update|info]               Repository binding operations
   hype <hype-name> helmfile <helmfile-options>                  Run helmfile command
   hype <hype-name> up                                            Build and deploy (task build + helmfile apply)
   hype <hype-name> down                                          Destroy deployment (helmfile destroy)
@@ -52,6 +53,7 @@ Examples:
   hype my-nginx parse section helmfile                          Show raw helmfile section
   hype my-nginx trait set production                             Set trait to production
   hype my-nginx task deploy                                      Run deploy task
+  hype my-nginx repo bind https://github.com/user/repo.git      Bind repository to my-nginx
   hype my-nginx helmfile sync                                    Sync with helmfile
   hype my-nginx up                                               Build and deploy my-nginx
   hype my-nginx down                                             Destroy my-nginx deployment
@@ -88,11 +90,11 @@ main() {
                 exit 1
             fi
             
-            load_config "$@"
-            
             local hype_name="$1"
             local command="$2"
             shift 2
+            
+            load_config "$hype_name" "$command"
             
             debug "Command: $command, Hype name: $hype_name, Args: $*"
             
@@ -124,6 +126,10 @@ main() {
                 "task")
                     check_dependencies
                     cmd_task "$hype_name" "$@"
+                    ;;
+                "repo")
+                    check_dependencies
+                    cmd_repo "$hype_name" "$@"
                     ;;
                 "helmfile")
                     check_dependencies
