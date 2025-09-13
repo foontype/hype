@@ -33,3 +33,6 @@ build/
 
 # Task runner cache
 .task/
+
+# Testing files
+hypefile.yaml
