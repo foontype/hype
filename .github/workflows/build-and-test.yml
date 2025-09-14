@@ -22,6 +22,20 @@ jobs:
         # Install Task
         sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
         echo "$HOME/.local/bin" >> $GITHUB_PATH
+        
+        # Install Helm
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        
+        # Install helmfile
+        HELMFILE_VERSION=$(curl -s https://api.github.com/repos/helmfile/helmfile/releases/latest | grep tag_name | cut -d '"' -f 4)
+        curl -L https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz -o helmfile.tar.gz
+        tar xzf helmfile.tar.gz
+        sudo mv helmfile /usr/local/bin/helmfile
+        chmod +x /usr/local/bin/helmfile
+        rm helmfile.tar.gz
+        
+        # Install helm-diff plugin
+        helm plugin install https://github.com/databus23/helm-diff
     
     - name: Lint with ShellCheck
       run: task lint

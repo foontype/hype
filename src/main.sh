@@ -151,6 +151,14 @@ main() {
                 cmd_upgrade
             fi
             ;;
+        "config")
+            # Config command - show hypefile discovery result
+            if HYPEFILE_RESULT=$(find_hypefile 2>/dev/null); then
+                echo "HYPEFILE: $HYPEFILE_RESULT"
+            else
+                echo "HYPEFILE: not found"
+            fi
+            ;;
         *)
             if [[ $# -lt 2 ]]; then
                 error "Missing required arguments"
