@@ -235,7 +235,10 @@ test_hypefile_discovery() {
     
     # Add timeout to prevent hanging
     local test1_output
-    if test1_output=$(timeout 10s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test1_output" | grep -q "Found hypefile at: $test_hypefile"; then
+    test1_output=$(timeout 10s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'")
+    echo "[DEBUG] Test 1 output:" >&2
+    echo "$test1_output" >&2
+    if echo "$test1_output" | grep -q "Found hypefile at: $test_hypefile"; then
         test_passed "Hypefile discovery: current directory"
     else
         echo "[DEBUG] Test 1 failed. Full output:" >&2
@@ -249,7 +252,10 @@ test_hypefile_discovery() {
     echo "[DEBUG] Test 2: Starting hypefile discovery test from subdirectory: $test_subdir" >&2
     
     local test2_output
-    if test2_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test2_output" | grep -q "Found hypefile at: $test_hypefile"; then
+    test2_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'")
+    echo "[DEBUG] Test 2 output:" >&2
+    echo "$test2_output" >&2
+    if echo "$test2_output" | grep -q "Found hypefile at: $test_hypefile"; then
         test_passed "Hypefile discovery: parent directory search"
     else
         echo "[DEBUG] Test 2 failed. Full output:" >&2
@@ -264,6 +270,8 @@ test_hypefile_discovery() {
     
     local error_output
     error_output=$(timeout 5s bash -c "cd '$test_empty_root' && '$HYPE_BINARY' test-hype init 2>&1") || true
+    echo "[DEBUG] Test 3 output:" >&2
+    echo "$error_output" >&2
     if echo "$error_output" | grep -q "Error: hypefile.yaml not found in current or parent directories"; then
         test_passed "Hypefile discovery: error when not found"
     else
@@ -276,7 +284,10 @@ test_hypefile_discovery() {
     echo "[DEBUG] Test 4: Testing HYPE_DIR setting from subdirectory: $test_subdir" >&2
     
     local test4_output
-    if test4_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test4_output" | grep -q "Set HYPE_DIR to hypefile directory: $test_root"; then
+    test4_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'")
+    echo "[DEBUG] Test 4 output:" >&2
+    echo "$test4_output" >&2
+    if echo "$test4_output" | grep -q "Set HYPE_DIR to hypefile directory: $test_root"; then
         test_passed "HYPE_DIR: set to hypefile directory"
     else
         echo "[DEBUG] Test 4 failed. Full output:" >&2
