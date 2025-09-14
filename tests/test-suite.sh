@@ -104,10 +104,10 @@ test_command_parsing() {
     # Create temporary directory with hypefile for testing
     local test_root
     test_root=$(mktemp -d)
-    echo "hype: testhype" > "$test_root/hypefile.yaml"
+    echo "hype: test-hype" > "$test_root/hypefile.yaml"
     
     # Test unknown command
-    output=$(cd "$test_root" && "$HYPE_BINARY" testhype unknown-command 2>&1) || true
+    output=$(cd "$test_root" && "$HYPE_BINARY" test-hype unknown-command 2>&1) || true
     if [[ "$output" =~ "Unknown command: unknown-command" ]]; then
         test_passed "Unknown command detection"
     else
@@ -115,7 +115,7 @@ test_command_parsing() {
     fi
     
     # Test missing arguments
-    output=$(cd "$test_root" && "$HYPE_BINARY" testhype 2>&1) || true
+    output=$(cd "$test_root" && "$HYPE_BINARY" test-hype 2>&1) || true
     if [[ "$output" =~ "Missing required arguments" ]]; then
         test_passed "Missing dependencies detection"
     else
@@ -230,12 +230,12 @@ test_hypefile_discovery() {
     echo "[DEBUG] Created test hypefile: $test_hypefile" >&2
     
     # Test 1: Find hypefile in current directory
-    echo "hype: testhype" > "$test_hypefile"
+    echo "hype: test-hype" > "$test_hypefile"
     echo "[DEBUG] Test 1: Starting hypefile discovery test from current directory" >&2
     
     # Add timeout to prevent hanging
     local test1_output
-    if test1_output=$(timeout 10s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' testhype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test1_output" | grep -q "Found hypefile at: $test_hypefile"; then
+    if test1_output=$(timeout 10s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test1_output" | grep -q "Found hypefile at: $test_hypefile"; then
         test_passed "Hypefile discovery: current directory"
     else
         echo "[DEBUG] Test 1 failed. Full output:" >&2
@@ -249,7 +249,7 @@ test_hypefile_discovery() {
     echo "[DEBUG] Test 2: Starting hypefile discovery test from subdirectory: $test_subdir" >&2
     
     local test2_output
-    if test2_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' testhype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test2_output" | grep -q "Found hypefile at: $test_hypefile"; then
+    if test2_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test2_output" | grep -q "Found hypefile at: $test_hypefile"; then
         test_passed "Hypefile discovery: parent directory search"
     else
         echo "[DEBUG] Test 2 failed. Full output:" >&2
@@ -263,7 +263,7 @@ test_hypefile_discovery() {
     echo "[DEBUG] Test 3: Testing error when no hypefile found in: $test_empty_root" >&2
     
     local error_output
-    error_output=$(timeout 5s bash -c "cd '$test_empty_root' && '$HYPE_BINARY' testhype init 2>&1") || true
+    error_output=$(timeout 5s bash -c "cd '$test_empty_root' && '$HYPE_BINARY' test-hype init 2>&1") || true
     if echo "$error_output" | grep -q "Error: hypefile.yaml not found in current or parent directories"; then
         test_passed "Hypefile discovery: error when not found"
     else
@@ -276,7 +276,7 @@ test_hypefile_discovery() {
     echo "[DEBUG] Test 4: Testing HYPE_DIR setting from subdirectory: $test_subdir" >&2
     
     local test4_output
-    if test4_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' testhype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test4_output" | grep -q "Set HYPE_DIR to hypefile directory: $test_root"; then
+    if test4_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") && echo "$test4_output" | grep -q "Set HYPE_DIR to hypefile directory: $test_root"; then
         test_passed "HYPE_DIR: set to hypefile directory"
     else
         echo "[DEBUG] Test 4 failed. Full output:" >&2
