@@ -34,21 +34,22 @@ help_trait_brief() {
     echo "Show current trait"
 }
 
-# Get trait for hype name from hype-traits ConfigMap
+# Get trait for hype name from hype-trait-<hype-name> ConfigMap
 get_hype_trait() {
     local hype_name="$1"
+    local configmap_name="hype-trait-$hype_name"
     
     debug "Getting trait for hype: $hype_name"
     
-    # Check if hype-traits ConfigMap exists
-    if ! kubectl get configmap hype-traits >/dev/null 2>&1; then
-        debug "hype-traits ConfigMap does not exist"
+    # Check if hype-trait-<hype-name> ConfigMap exists
+    if ! kubectl get configmap "$configmap_name" >/dev/null 2>&1; then
+        debug "$configmap_name ConfigMap does not exist"
         return 1
     fi
     
     # Get trait from ConfigMap
     local trait
-    trait=$(kubectl get configmap hype-traits -o jsonpath="{.data.$hype_name}" 2>/dev/null || echo "")
+    trait=$(kubectl get configmap "$configmap_name" -o jsonpath="{.data.trait}" 2>/dev/null || echo "")
     
     if [[ -n "$trait" ]]; then
         debug "Found trait for $hype_name: $trait"
@@ -60,53 +61,53 @@ get_hype_trait() {
     fi
 }
 
-# Set trait for hype name in hype-traits ConfigMap
+# Set trait for hype name in hype-trait-<hype-name> ConfigMap
 set_hype_trait() {
     local hype_name="$1"
     local trait_type="$2"
+    local configmap_name="hype-trait-$hype_name"
     
     debug "Setting trait for hype: $hype_name to: $trait_type"
+    
+    # Validate hype name format for Kubernetes ConfigMap naming (DNS-1123 label)
+    if [[ ! "$hype_name" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
+        die "Invalid hype name: $hype_name (must be valid Kubernetes ConfigMap name: lowercase alphanumeric and hyphens only, start/end with alphanumeric)"
+    fi
     
     # Validate trait type format (alphanumeric + hyphens only)
     if [[ ! "$trait_type" =~ ^[a-zA-Z0-9-]+$ ]]; then
         die "Invalid trait type: $trait_type (only alphanumeric characters and hyphens allowed)"
     fi
     
-    # Create or patch the hype-traits ConfigMap
-    if kubectl get configmap hype-traits >/dev/null 2>&1; then
-        # ConfigMap exists, patch it
-        debug "Patching existing hype-traits ConfigMap"
-        kubectl patch configmap hype-traits --patch "{\"data\":{\"$hype_name\":\"$trait_type\"}}"
-    else
-        # ConfigMap doesn't exist, create it
-        debug "Creating new hype-traits ConfigMap"
-        kubectl create configmap hype-traits --from-literal="$hype_name=$trait_type"
+    # Delete existing ConfigMap if it exists, then create new one
+    if kubectl get configmap "$configmap_name" >/dev/null 2>&1; then
+        debug "Deleting existing $configmap_name ConfigMap"
+        kubectl delete configmap "$configmap_name" >/dev/null 2>&1
     fi
+    
+    # Create new ConfigMap
+    debug "Creating $configmap_name ConfigMap"
+    kubectl create configmap "$configmap_name" --from-literal="trait=$trait_type"
     
     info "Set trait '$trait_type' for hype: $hype_name"
 }
 
-# Remove trait for hype name from hype-traits ConfigMap
+# Remove trait for hype name by deleting hype-trait-<hype-name> ConfigMap
 unset_hype_trait() {
     local hype_name="$1"
+    local configmap_name="hype-trait-$hype_name"
     
     debug "Removing trait for hype: $hype_name"
     
-    # Check if hype-traits ConfigMap exists
-    if ! kubectl get configmap hype-traits >/dev/null 2>&1; then
-        warn "hype-traits ConfigMap does not exist"
-        return 1
-    fi
-    
-    # Check if trait exists for this hype
-    if ! kubectl get configmap hype-traits -o jsonpath="{.data.$hype_name}" >/dev/null 2>&1; then
+    # Check if hype-trait-<hype-name> ConfigMap exists
+    if ! kubectl get configmap "$configmap_name" >/dev/null 2>&1; then
         warn "No trait set for hype: $hype_name"
         return 1
     fi
     
-    # Remove the trait by patching the ConfigMap
-    debug "Removing trait from hype-traits ConfigMap"
-    kubectl patch configmap hype-traits --type json -p "[{\"op\": \"remove\", \"path\": \"/data/$hype_name\"}]"
+    # Delete the entire ConfigMap
+    debug "Deleting $configmap_name ConfigMap"
+    kubectl delete configmap "$configmap_name"
     
     info "Removed trait for hype: $hype_name"
 }
