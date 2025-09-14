@@ -11,13 +11,15 @@ HYPE is a Bash-based CLI tool that simplifies the deployment and management of K
 - **Default Resource Management**: Automatically create and manage ConfigMaps and Secrets
 - **Template Rendering**: Process hypefile.yaml templates with dynamic values
 - **Helmfile Integration**: Seamless integration with existing Helmfile workflows
+- **Repository Binding**: Bind hype names to remote Git repositories for centralized configuration management
+- **Deployment Lifecycle Aliases**: Convenient `up`, `down`, and `restart` commands for deployment management
 - **Resource Status Checking**: Monitor the status of managed resources
 - **Debug Support**: Built-in debug logging for troubleshooting
 
 ## Project Structure
 
 - `src/core/` - Core modules (config, common, hypefile, dependencies)
-- `src/builtins/` - Builtin modules (init, template, parse, trait, upgrade, task, helmfile)
+- `src/builtins/` - Builtin modules (init, template, parse, trait, upgrade, task, helmfile, repo, aliases)
 - `src/main.sh` - Main entry point and command routing
 - `build/` - Build artifacts (generated executable)
 - `tests/` - Test framework and unit tests
@@ -44,11 +46,11 @@ You can install a specific version using the `INSTALL_VERSION` environment varia
 
 ```bash
 # Install specific version
-curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | INSTALL_VERSION=v0.6.1 bash
+curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | INSTALL_VERSION=v0.7.0 bash
 
 # Or download and run locally
 curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh -o install.sh
-INSTALL_VERSION=v0.6.1 ./install.sh
+INSTALL_VERSION=v0.7.0 ./install.sh
 ```
 
 ### Manual Install
@@ -95,6 +97,16 @@ hype <hype-name> helmfile <helmfile-options>
 # Clean up default resources
 hype <hype-name> deinit
 
+# Repository binding operations
+hype <hype-name> repo bind <repository-url>
+hype <hype-name> repo unbind
+hype <hype-name> repo info
+
+# Deployment lifecycle aliases
+hype <hype-name> up        # Build and deploy (task build + helmfile apply)
+hype <hype-name> down      # Destroy deployment (helmfile destroy)
+hype <hype-name> restart   # Restart deployment (down + up)
+
 # Show version and help
 hype --version
 hype --help
@@ -104,6 +116,51 @@ hype --help
 
 - `HYPEFILE`: Path to hypefile.yaml (default: hypefile.yaml)
 - `DEBUG`: Enable debug output (default: false)
+- `HYPE_CACHE_DIR`: Directory for caching repository data (default: ~/.hype/cache or .hype/)
+
+## Repository Binding
+
+HYPE supports binding hype names to remote Git repositories, enabling centralized configuration management and reusable deployment configurations.
+
+### Basic Repository Operations
+
+```bash
+# Bind a repository to a hype name (GitHub shorthand)
+hype my-nginx repo bind user/repo
+
+# Bind a repository with full URL
+hype my-nginx repo bind https://github.com/user/repo.git
+
+# Show binding information
+hype my-nginx repo info
+
+# Remove repository binding
+hype my-nginx repo unbind
+
+# Update repository cache
+hype my-nginx repo update
+```
+
+### How Repository Binding Works
+
+1. **Bind**: Associates a hype name with a Git repository URL
+2. **Cache**: Clones the repository to a local cache directory
+3. **Work**: When using the hype name, automatically switches to the repository's working directory
+4. **Execute**: Commands run against the hypefile.yaml in the bound repository
+
+### Repository Binding Examples
+
+```bash
+# Bind to a configuration repository
+hype production repo bind company/k8s-configs
+
+# Use the bound repository - automatically switches to repo context
+hype production init
+hype production helmfile apply
+
+# Check what repository is bound
+hype production repo info
+```
 
 ## Hypefile Format
 
@@ -187,6 +244,20 @@ hype my-nginx helmfile apply
 
 # Clean up
 hype my-nginx deinit
+```
+
+### Using Repository Binding
+
+```bash
+# Bind to a remote configuration repository
+hype production repo bind company/k8s-configs
+
+# Deploy using bound repository configuration
+hype production init
+hype production helmfile apply
+
+# Check binding status
+hype production repo info
 ```
 
 ### Debug mode
