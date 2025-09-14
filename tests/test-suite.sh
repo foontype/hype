@@ -233,12 +233,16 @@ test_hypefile_discovery() {
     echo "hype: test-hype" > "$test_hypefile"
     echo "[DEBUG] Test 1: Starting hypefile discovery test from current directory" >&2
     
-    # Add timeout to prevent hanging
+    # Add timeout to prevent hanging - reduce timeout for CI
     local test1_output
-    test1_output=$(timeout 10s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'")
+    local test1_exit_code
+    test1_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test1_exit_code=$?
+    echo "[DEBUG] Test 1 exit code: ${test1_exit_code:-0}" >&2
     echo "[DEBUG] Test 1 output:" >&2
     echo "$test1_output" >&2
-    if echo "$test1_output" | grep -q "Found hypefile at: $test_hypefile"; then
+    if [[ ${test1_exit_code:-0} -eq 124 ]]; then
+        test_failed "Hypefile discovery: current directory" "Command timed out after 5 seconds"
+    elif echo "$test1_output" | grep -q "Found hypefile at: $test_hypefile"; then
         test_passed "Hypefile discovery: current directory"
     else
         echo "[DEBUG] Test 1 failed. Full output:" >&2
@@ -252,10 +256,14 @@ test_hypefile_discovery() {
     echo "[DEBUG] Test 2: Starting hypefile discovery test from subdirectory: $test_subdir" >&2
     
     local test2_output
-    test2_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'")
+    local test2_exit_code
+    test2_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test2_exit_code=$?
+    echo "[DEBUG] Test 2 exit code: ${test2_exit_code:-0}" >&2
     echo "[DEBUG] Test 2 output:" >&2
     echo "$test2_output" >&2
-    if echo "$test2_output" | grep -q "Found hypefile at: $test_hypefile"; then
+    if [[ ${test2_exit_code:-0} -eq 124 ]]; then
+        test_failed "Hypefile discovery: parent directory search" "Command timed out after 5 seconds"
+    elif echo "$test2_output" | grep -q "Found hypefile at: $test_hypefile"; then
         test_passed "Hypefile discovery: parent directory search"
     else
         echo "[DEBUG] Test 2 failed. Full output:" >&2
@@ -284,10 +292,14 @@ test_hypefile_discovery() {
     echo "[DEBUG] Test 4: Testing HYPE_DIR setting from subdirectory: $test_subdir" >&2
     
     local test4_output
-    test4_output=$(timeout 10s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'")
+    local test4_exit_code
+    test4_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test4_exit_code=$?
+    echo "[DEBUG] Test 4 exit code: ${test4_exit_code:-0}" >&2
     echo "[DEBUG] Test 4 output:" >&2
     echo "$test4_output" >&2
-    if echo "$test4_output" | grep -q "Set HYPE_DIR to hypefile directory: $test_root"; then
+    if [[ ${test4_exit_code:-0} -eq 124 ]]; then
+        test_failed "HYPE_DIR: set to hypefile directory" "Command timed out after 5 seconds"
+    elif echo "$test4_output" | grep -q "Set HYPE_DIR to hypefile directory: $test_root"; then
         test_passed "HYPE_DIR: set to hypefile directory"
     else
         echo "[DEBUG] Test 4 failed. Full output:" >&2
