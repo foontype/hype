@@ -1,3 +1,50 @@
+"v0.7.1": |
+  ## What's New in HYPE CLI v0.7.1
+
+  ### Improvements
+  - **GitHub Shorthand Support**: Added GitHub shorthand support for repo bind command
+    - Support for `user/repo` format in repo bind operations
+    - Enhanced repository URL parsing for more convenient binding
+    - Improved user experience with shorter repository references
+    
+  - **Modular Command System**: Implemented improved modular command system using array-based registration
+    - Enhanced command validation order to ensure unknown commands are detected before dependency checks  
+    - Better command registration and processing architecture
+    - Improved system modularity and maintainability
+    
+  - **Test Framework Improvements**: Fixed hypefile discovery test regex patterns
+    - Enhanced test reliability and accuracy
+    - Better test coverage for hypefile discovery functionality
+    - Improved CI/CD testing workflows
+    
+  - **Terminology Updates**: Renamed plugins to builtins for better clarity
+    - Consistent terminology throughout the codebase
+    - Better alignment with modern CLI architecture patterns
+    - Improved developer understanding and documentation
+
+  ### Documentation Updates
+  - **README Enhancement**: Updated README.md for v0.7.0 with comprehensive feature documentation
+    - Better feature descriptions and usage examples
+    - Enhanced getting started guide
+    - Improved project documentation structure
+
+  ### Technical Changes
+  - Version bump to 0.7.1
+  - Enhanced command registration system with array-based architecture
+  - Improved command validation and processing logic
+  - Better modular system implementation
+  - Enhanced test patterns for more reliable testing
+
+  ### Dependencies
+  - Bash 4.0+
+  - Git (for repository operations)
+  - kubectl (for trait ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for build system)
+  - curl or wget (for upgrade functionality)
+
 "v0.7.0": |
   ## What's New in HYPE CLI v0.7.0
 
