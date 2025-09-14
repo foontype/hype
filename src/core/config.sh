@@ -7,6 +7,33 @@
 declare -a BUILTIN_COMMANDS=()
 declare -A BUILTIN_HELP_FUNCTIONS=()
 
+# Validate hype name according to Kubernetes resource naming rules
+validate_hype_name() {
+    local name="$1"
+    
+    # Check if name is empty
+    if [[ -z "$name" ]]; then
+        error "Hype name cannot be empty"
+        return 1
+    fi
+    
+    # Check maximum length (253 characters for DNS compliance)
+    if [[ ${#name} -gt 253 ]]; then
+        error "Hype name '$name' is too long (max 253 characters)"
+        return 1
+    fi
+    
+    # Check if name matches Kubernetes resource naming rules
+    # Must start with lowercase letter, contain only lowercase letters, numbers, and hyphens
+    # Must not end with a hyphen
+    if [[ ! "$name" =~ ^[a-z]([a-z0-9-]*[a-z0-9])?$ ]]; then
+        error "Invalid hype name '$name'. Must start with a lowercase letter, contain only lowercase letters (a-z), numbers (0-9), and hyphens (-), and must not end with a hyphen."
+        return 1
+    fi
+    
+    return 0
+}
+
 # Find hypefile.yaml by searching upward from current directory
 find_hypefile() {
     local dir="$PWD"

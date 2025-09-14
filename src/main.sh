@@ -172,6 +172,13 @@ main() {
                 exit 1
             fi
             
+            # Validate hype name before proceeding (skip for upgrade command)
+            if [[ "$command" != "upgrade" ]]; then
+                if ! validate_hype_name "$hype_name"; then
+                    exit 1
+                fi
+            fi
+            
             load_config "$hype_name" "$command"
             
             debug "Command: $command, Hype name: $hype_name, Args: $*"
