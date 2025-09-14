@@ -23,6 +23,8 @@ Subcommands:
   unbind          Unbind repository from hype name
   update          Update repository binding
   info            Show repository binding information
+  migrate         Migrate legacy binding to new format
+  list            List all repository bindings
 
 Examples:
   hype my-nginx repo bind user/repo                              Bind repository (shorthand)
@@ -60,6 +62,12 @@ cmd_repo() {
             ;;
         "update")
             cmd_repo_update "$hype_name" "$@"
+            ;;
+        "migrate")
+            cmd_repo_migrate "$hype_name" "$@"
+            ;;
+        "list")
+            cmd_repo_list
             ;;
         ""|"info")
             cmd_repo_info "$hype_name" "$@"
@@ -265,6 +273,8 @@ cmd_repo_update() {
 # Show repository binding information
 cmd_repo_info() {
     local hype_name="$1"
+    local configmap_name
+    configmap_name=$(get_repo_configmap_name "$hype_name")
     
     if [[ -z "$hype_name" ]]; then
         error "Hype name is required"
@@ -272,9 +282,40 @@ cmd_repo_info() {
         exit 1
     fi
     
-    # Get repository binding
-    local binding_data
-    if ! binding_data=$(get_repo_binding "$hype_name"); then
+    # Check if new format binding exists
+    if check_new_format_available "$hype_name"; then
+        info "Repository binding information for '$hype_name':"
+        echo "  ConfigMap: $configmap_name"
+        
+        # Get individual fields from new format
+        local url branch path bound_at last_updated
+        url=$(kubectl get configmap "$configmap_name" -o jsonpath='{.data.url}' 2>/dev/null)
+        branch=$(kubectl get configmap "$configmap_name" -o jsonpath='{.data.branch}' 2>/dev/null)
+        path=$(kubectl get configmap "$configmap_name" -o jsonpath='{.data.path}' 2>/dev/null)
+        bound_at=$(kubectl get configmap "$configmap_name" -o jsonpath='{.data.bound_at}' 2>/dev/null)
+        last_updated=$(kubectl get configmap "$configmap_name" -o jsonpath='{.data.last_updated}' 2>/dev/null)
+        
+        echo "  Repository URL: $url"
+        echo "  Branch: ${branch:-main}"
+        echo "  Path: ${path:-.}"
+        [[ -n "$bound_at" ]] && echo "  Bound at: $bound_at"
+        [[ -n "$last_updated" ]] && echo "  Last updated: $last_updated"
+        
+    elif binding_data=$(get_legacy_repo_binding "$hype_name"); then
+        # Legacy format
+        warn "Using legacy binding format for '$hype_name'"
+        info "Run 'hype $hype_name repo migrate' to upgrade to new format"
+        echo ""
+        
+        # Parse legacy binding data
+        eval "$binding_data"  # Sets REPO_URL, REPO_BRANCH, REPO_PATH variables
+        
+        info "Repository binding information (legacy format):"
+        echo "  Repository URL: $REPO_URL"
+        echo "  Branch: $REPO_BRANCH"
+        echo "  Path: $REPO_PATH"
+        
+    else
         info "No repository binding found for '$hype_name'"
         info "This hype name is using local configuration only."
         info ""
@@ -283,18 +324,7 @@ cmd_repo_info() {
         return 0
     fi
     
-    # Parse binding data
-    local repo_info
-    repo_info=$(parse_repo_binding "$binding_data")
-# shellcheck disable=SC2034
-    eval "$repo_info"  # Sets REPO_URL, REPO_BRANCH, REPO_PATH variables
-    
-    info "Repository binding information for '$hype_name':"
-    echo "  Repository URL: $REPO_URL"
-    echo "  Branch: $REPO_BRANCH"
-    echo "  Path: $REPO_PATH"
-    
-    # Check cache status
+    # Check cache status (common for both formats)
     local cache_dir
     cache_dir=$(get_repo_cache_dir "$hype_name")
     
@@ -318,6 +348,46 @@ cmd_repo_info() {
     fi
 }
 
+# Migrate legacy binding to new format
+cmd_repo_migrate() {
+    local hype_name="$1"
+    
+    if [[ -z "$hype_name" ]]; then
+        error "Hype name is required"
+        show_repo_help
+        exit 1
+    fi
+    
+    info "Migrating repository binding for '$hype_name' to new format..."
+    
+    # Check if already in new format
+    if check_new_format_available "$hype_name"; then
+        info "Repository binding for '$hype_name' is already in new format"
+        return 0
+    fi
+    
+    # Try to migrate
+    if migrate_single_binding "$hype_name"; then
+        info "Migration completed successfully"
+        info "New ConfigMap: $(get_repo_configmap_name "$hype_name")"
+    else
+        error "Migration failed - no legacy binding found for '$hype_name'"
+        info "Use 'hype $hype_name repo bind <url>' to create a new binding"
+        exit 1
+    fi
+}
+
+# List all repository bindings
+cmd_repo_list() {
+    info "Repository bindings:"
+    echo ""
+    
+    if ! list_repo_bindings; then
+        warn "No repository bindings found"
+        info "Use 'hype <name> repo bind <url>' to create bindings"
+    fi
+}
+
 # Help function for repo plugin
 show_repo_help() {
     cat << 'EOF'
@@ -331,6 +401,8 @@ Commands:
   unbind                Remove repository binding
   update                Update repository cache
   info                  Show binding information (default)
+  migrate               Migrate legacy binding to new format
+  list                  List all repository bindings
   help, -h, --help      Show this help message
 
 Options:
@@ -352,6 +424,12 @@ Examples:
 
   # Update repository cache
   hype myapp repo update
+
+  # Migrate legacy binding to new format
+  hype myapp repo migrate
+
+  # List all repository bindings
+  hype myapp repo list
 
   # Remove binding
   hype myapp repo unbind
