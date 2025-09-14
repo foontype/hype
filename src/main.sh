@@ -151,6 +151,12 @@ main() {
                 cmd_upgrade
             fi
             ;;
+        "config")
+            # Config command - show current configuration
+            load_config "" ""
+            parse_hypefile ""
+            echo "HELMFILE: ${HELMFILE_SECTION_FILE:-not set}"
+            ;;
         *)
             if [[ $# -lt 2 ]]; then
                 error "Missing required arguments"
