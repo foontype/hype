@@ -229,14 +229,14 @@ test_hypefile_discovery() {
     echo "# Test hypefile" > "$test_hypefile"
     echo "[DEBUG] Created test hypefile: $test_hypefile" >&2
     
-    # Test 1: Find hypefile in current directory
+    # Test 1: Find hypefile in current directory - use --help to avoid dependency checks
     echo "hype: test-hype" > "$test_hypefile"
     echo "[DEBUG] Test 1: Starting hypefile discovery test from current directory" >&2
     
-    # Add timeout to prevent hanging - reduce timeout for CI
+    # Use --help to trigger discovery without running actual command
     local test1_output
     local test1_exit_code
-    test1_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test1_exit_code=$?
+    test1_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype --help 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test1_exit_code=$?
     echo "[DEBUG] Test 1 exit code: ${test1_exit_code:-0}" >&2
     echo "[DEBUG] Test 1 output:" >&2
     echo "$test1_output" >&2
@@ -250,14 +250,14 @@ test_hypefile_discovery() {
         test_failed "Hypefile discovery: current directory" "Expected: Found hypefile at: $test_hypefile, Actual output: $test1_output"
     fi
     
-    # Test 2: Find hypefile from subdirectory
+    # Test 2: Find hypefile from subdirectory - use --help to avoid dependency checks
     local test_subdir="$test_root/subdir/nested"
     mkdir -p "$test_subdir"
     echo "[DEBUG] Test 2: Starting hypefile discovery test from subdirectory: $test_subdir" >&2
     
     local test2_output
     local test2_exit_code
-    test2_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test2_exit_code=$?
+    test2_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype --help 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test2_exit_code=$?
     echo "[DEBUG] Test 2 exit code: ${test2_exit_code:-0}" >&2
     echo "[DEBUG] Test 2 output:" >&2
     echo "$test2_output" >&2
@@ -288,12 +288,12 @@ test_hypefile_discovery() {
         test_failed "Hypefile discovery: error when not found" "Expected: Error: hypefile.yaml not found..., Actual output: $error_output"
     fi
     
-    # Test 4: HYPE_DIR set correctly when hypefile found
+    # Test 4: HYPE_DIR set correctly when hypefile found - use --help to avoid dependency checks
     echo "[DEBUG] Test 4: Testing HYPE_DIR setting from subdirectory: $test_subdir" >&2
     
     local test4_output
     local test4_exit_code
-    test4_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype init 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test4_exit_code=$?
+    test4_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype --help 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test4_exit_code=$?
     echo "[DEBUG] Test 4 exit code: ${test4_exit_code:-0}" >&2
     echo "[DEBUG] Test 4 output:" >&2
     echo "$test4_output" >&2
