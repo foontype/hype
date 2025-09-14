@@ -152,10 +152,12 @@ main() {
             fi
             ;;
         "config")
-            # Config command - show current configuration
-            load_config "" ""
-            parse_hypefile ""
-            echo "HELMFILE: ${HELMFILE_SECTION_FILE:-not set}"
+            # Config command - show hypefile discovery result
+            if HYPEFILE_RESULT=$(find_hypefile 2>/dev/null); then
+                echo "HYPEFILE: $HYPEFILE_RESULT"
+            else
+                echo "HYPEFILE: not found"
+            fi
             ;;
         *)
             if [[ $# -lt 2 ]]; then
