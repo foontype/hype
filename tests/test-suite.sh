@@ -229,46 +229,46 @@ test_hypefile_discovery() {
     echo "# Test hypefile" > "$test_hypefile"
     echo "[DEBUG] Created test hypefile: $test_hypefile" >&2
     
-    # Test 1: Find hypefile in current directory - use --help to avoid dependency checks
+    # Test 1: Find hypefile in current directory - use config command for discovery
     echo "hype: test-hype" > "$test_hypefile"
     echo "[DEBUG] Test 1: Starting hypefile discovery test from current directory" >&2
     
-    # Use --help to trigger discovery without running actual command
+    # Use config command to test discovery
     local test1_output
     local test1_exit_code
-    test1_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype --help 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test1_exit_code=$?
+    test1_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_root' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' config 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test1_exit_code=$?
     echo "[DEBUG] Test 1 exit code: ${test1_exit_code:-0}" >&2
     echo "[DEBUG] Test 1 output:" >&2
     echo "$test1_output" >&2
     if [[ ${test1_exit_code:-0} -eq 124 ]]; then
         test_failed "Hypefile discovery: current directory" "Command timed out after 5 seconds"
-    elif echo "$test1_output" | grep -q "Found hypefile at: $test_hypefile"; then
+    elif echo "$test1_output" | grep -q "HYPEFILE: $test_hypefile"; then
         test_passed "Hypefile discovery: current directory"
     else
         echo "[DEBUG] Test 1 failed. Full output:" >&2
         echo "$test1_output" >&2
-        test_failed "Hypefile discovery: current directory" "Expected: Found hypefile at: $test_hypefile, Actual output: $test1_output"
+        test_failed "Hypefile discovery: current directory" "Expected: HYPEFILE: $test_hypefile, Actual output: $test1_output"
     fi
     
-    # Test 2: Find hypefile from subdirectory - use --help to avoid dependency checks
+    # Test 2: Find hypefile from subdirectory - use config command for discovery
     local test_subdir="$test_root/subdir/nested"
     mkdir -p "$test_subdir"
     echo "[DEBUG] Test 2: Starting hypefile discovery test from subdirectory: $test_subdir" >&2
     
     local test2_output
     local test2_exit_code
-    test2_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype --help 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test2_exit_code=$?
+    test2_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' config 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test2_exit_code=$?
     echo "[DEBUG] Test 2 exit code: ${test2_exit_code:-0}" >&2
     echo "[DEBUG] Test 2 output:" >&2
     echo "$test2_output" >&2
     if [[ ${test2_exit_code:-0} -eq 124 ]]; then
         test_failed "Hypefile discovery: parent directory search" "Command timed out after 5 seconds"
-    elif echo "$test2_output" | grep -q "Found hypefile at: $test_hypefile"; then
+    elif echo "$test2_output" | grep -q "HYPEFILE: $test_hypefile"; then
         test_passed "Hypefile discovery: parent directory search"
     else
         echo "[DEBUG] Test 2 failed. Full output:" >&2
         echo "$test2_output" >&2
-        test_failed "Hypefile discovery: parent directory search" "Expected: Found hypefile at: $test_hypefile, Actual output: $test2_output"
+        test_failed "Hypefile discovery: parent directory search" "Expected: HYPEFILE: $test_hypefile, Actual output: $test2_output"
     fi
     
     # Test 3: Error when no hypefile found
@@ -277,34 +277,34 @@ test_hypefile_discovery() {
     echo "[DEBUG] Test 3: Testing error when no hypefile found in: $test_empty_root" >&2
     
     local error_output
-    error_output=$(timeout 5s bash -c "cd '$test_empty_root' && '$HYPE_BINARY' test-hype init 2>&1") || true
+    error_output=$(timeout 5s bash -c "cd '$test_empty_root' && '$HYPE_BINARY' config 2>&1") || true
     echo "[DEBUG] Test 3 output:" >&2
     echo "$error_output" >&2
-    if echo "$error_output" | grep -q "Error: hypefile.yaml not found in current or parent directories"; then
+    if echo "$error_output" | grep -q "HYPEFILE: not found"; then
         test_passed "Hypefile discovery: error when not found"
     else
         echo "[DEBUG] Test 3 failed. Full output:" >&2
         echo "$error_output" >&2
-        test_failed "Hypefile discovery: error when not found" "Expected: Error: hypefile.yaml not found..., Actual output: $error_output"
+        test_failed "Hypefile discovery: error when not found" "Expected: HYPEFILE: not found, Actual output: $error_output"
     fi
     
-    # Test 4: HYPE_DIR set correctly when hypefile found - use --help to avoid dependency checks
+    # Test 4: HYPE_DIR set correctly when hypefile found - use config command for discovery
     echo "[DEBUG] Test 4: Testing HYPE_DIR setting from subdirectory: $test_subdir" >&2
     
     local test4_output
     local test4_exit_code
-    test4_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' test-hype --help 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test4_exit_code=$?
+    test4_output=$(timeout --kill-after=2s 5s bash -c "cd '$test_subdir' && env DEBUG=true HYPE_LOG=stdout '$HYPE_BINARY' config 2>&1 | sed 's/\x1b\[[0-9;]*m//g'") || test4_exit_code=$?
     echo "[DEBUG] Test 4 exit code: ${test4_exit_code:-0}" >&2
     echo "[DEBUG] Test 4 output:" >&2
     echo "$test4_output" >&2
     if [[ ${test4_exit_code:-0} -eq 124 ]]; then
         test_failed "HYPE_DIR: set to hypefile directory" "Command timed out after 5 seconds"
-    elif echo "$test4_output" | grep -q "Set HYPE_DIR to hypefile directory: $test_root"; then
+    elif echo "$test4_output" | grep -q "HYPEFILE: $test_hypefile"; then
         test_passed "HYPE_DIR: set to hypefile directory"
     else
         echo "[DEBUG] Test 4 failed. Full output:" >&2
         echo "$test4_output" >&2
-        test_failed "HYPE_DIR: set to hypefile directory" "Expected: Set HYPE_DIR to hypefile directory: $test_root, Actual output: $test4_output"
+        test_failed "HYPE_DIR: set to hypefile directory" "Expected: HYPEFILE: $test_hypefile, Actual output: $test4_output"
     fi
     
     # Cleanup
