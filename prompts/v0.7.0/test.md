@@ -8,12 +8,6 @@ task build を実行して build/hype をビルドします
 空の hypefile.yaml を設置して、キャッシュディレクトリを固定します。
 > touch hypefile.yaml
 
-パス環境変数の先頭に build を追加します。すでにあるなら不要です。
-> export PATH="$(cd ./build && pwd):${PATH}"
-
-hype が利用できることを確認します。
-> which hype
-
 いくつかの主要コマンドもあることを確認します。
 
 > which kubectl
@@ -30,29 +24,29 @@ hype が利用できることを確認します。
 > cd prompts/nginx-example
   * examples に移動します
 
-> hype test trait set test-trait
+> cd prompts/nginx-example && ../../build/hype test trait set test-trait
 
-> hype test trait
+> cd prompts/nginx-example && ../../build/hype test trait
   * test-trait と表示されること
 
-> hype test check
+> cd prompts/nginx-example && ../../build/hype test check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets がないことを確認
 
-> hype test parse section hype
+> cd prompts/nginx-example && ../../build/hype test parse section hype
   * hypefile.yaml の hype セクションが表示されること
 
-> hype test parse section helmfile
+> cd prompts/nginx-example && ../../build/hype test parse section helmfile
   * hypefile.yaml の helmfile セクションが表示されること
 
-> hype test init
+> cd prompts/nginx-example && ../../build/hype test init
 
-> hype test check
+> cd prompts/nginx-example && ../../build/hype test check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets があることを確認
 
-> hype test template state-values test-nginx-state-values
+> cd prompts/nginx-example && ../../build/hype test template state-values test-nginx-state-values
   * configmap に保存された data.values 以下の構造が表示できること
 
-> hype test helmfile build
+> cd prompts/nginx-example && ../../build/hype test helmfile build
   * test-discord-bot のリリースの values.autoHypeCurrentDirectory の値がカレントディレクトリであること
   * test-discord-bot のリリースの values.autoHypeName の値が test であること
   * test-discord-bot のリリースの values.autoHypeTrait の値が test-trait であること
@@ -64,7 +58,7 @@ hype が利用できることを確認します。
   * test-discord-bot のリリースの values.boolValue の値が true であること
   * test-discord-bot のリリースの values.extraValue の値が "extra value" であること
 
-> hype test helmfile template
+> cd prompts/nginx-example && ../../build/hype test helmfile template
   * デバッグログで helmfile template 実行時の引数に、--state-values-file オプションで state value configmap の一時ファイルが指定されていること
   * デバッグログで helmfile template 実行時の引数に、--state-values-file オプションで hype.currentDirectory を含む一時ファイルが指定されていること
   * デバッグログで state value configmap の一時ファイルに、state value file の元になったconfigmap と同等の構造が出力されていること
@@ -72,88 +66,88 @@ hype が利用できることを確認します。
   * デバッグログで helmfile section の一時ファイルの拡張子が .yaml.gotmpl であること
   * デバッグログで hype section の一時ファイルに、hypefile.yaml の hype section の内容が出力されていること
 
-> hype test task vars
+> cd prompts/nginx-example && ../../build/hype test task vars
   * タスク出力の HYPE_NAME の値が test であること
   * タスク出力の HYPE_CURRENT_DIRECTORY の値が test であること
   * タスク出力の HYPE_TRAIT の値が test-trait であること
 
-> hype test helmfile apply
+> cd prompts/nginx-example && ../../build/hype test helmfile apply
   * kubectl から nginx がアップしていることを確認する
 
-> hype test helmfile destroy
+> cd prompts/nginx-example && ../../build/hype test helmfile destroy
   * kubectl から nginx がダウンしていることを確認する
 
-> hype test up
+> cd prompts/nginx-example && ../../build/hype test up
   * kubectl から nginx がアップしていることを確認する
 
-> hype test down
+> cd prompts/nginx-example && ../../build/hype test down
   * kubectl から nginx がダウンしていることを確認する
 
-> hype test deinit
+> cd prompts/nginx-example && ../../build/hype test deinit
 
-> hype test check
+> cd prompts/nginx-example && ../../build/hype test check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets がないことを確認
 
-> hype test trait unset
+> cd prompts/nginx-example && ../../build/hype test trait unset
 
-> hype test trait
+> cd prompts/nginx-example && ../../build/hype test trait
   * test-trait と表示されないこと
 
 ### リポジトリバインディング機能 テスト手順
 
 #### 1. バージョン確認テスト
 
-> hype --version
+> ./build/hype --version
   * バージョン番号が表示されること
 
 #### 2. ヘルプ機能テスト
 
-> hype myapp repo --help
+> ./build/hype myapp repo --help
   * repo サブコマンドのヘルプが表示されること
   * bind, unbind, update, status の各コマンドが記載されていること
 
 #### 3. 初期状態確認テスト
 
-> hype myapp repo
+> ./build/hype myapp repo
   * "No repository bound" または類似のメッセージが表示されること
 
 #### 4. リポジトリバインドテスト
 
-> hype myapp repo bind foontype/hype --path prompts/nginx-example
+> ./build/hype myapp repo bind foontype/hype --path prompts/nginx-example
   * バインド成功のメッセージが表示されること
   * kubectl でConfigMap hype-repos が作成されていること
 
 #### 4-1. バインドしたリポジトリの使用テスト
 
-> hype myapp parse section hype
+> ./build/hype myapp parse section hype
   * prompts/nginx-example/hypefile.yaml の hype section 表示されること
 
 #### 5. バインド状態確認テスト
 
-> hype myapp repo
+> ./build/hype myapp repo
   * バインドされたリポジトリURL（https://github.com/foontype/hype.git）が表示されること
   * パスが promots/nginx-example であること
   * バインド日時が表示されること
 
 #### 6. 無効なURL拒否テスト
 
-> hype myapp repo bind invalid-url
+> ./build/hype myapp repo bind invalid-url
   * エラーメッセージが表示されること
   * 無効なURLが適切に拒否されること
 
-> hype myapp repo bind not-a-git-url.com
+> ./build/hype myapp repo bind not-a-git-url.com
   * エラーメッセージが表示されること
   * .git で終わらないURLが適切に拒否されること
 
 #### 7. リポジトリ更新テスト
 
-> hype myapp repo update
+> ./build/hype myapp repo update
   * 更新処理が実行されること
   * 最新の更新日時が表示されること
 
 #### 8. 重複バインドテスト
 
-> hype myapp repo bind https://github.com/example/test.git
+> ./build/hype myapp repo bind https://github.com/example/test.git
   * 既存のバインドが上書きされること
   * 新しいリポジトリURL（https://github.com/example/test.git）が表示されること
 
@@ -167,12 +161,12 @@ hype が利用できることを確認します。
 
 #### 10. リポジトリアンバインドテスト
 
-> hype myapp repo unbind
+> ./build/hype myapp repo unbind
   * アンバインド成功のメッセージが表示されること
 
 #### 11. アンバインド後状態確認テスト
 
-> hype myapp repo
+> ./build/hype myapp repo
   * "No repository bound" または類似のメッセージが表示されること
 
 > kubectl get configmap hype-repos -o yaml
@@ -180,17 +174,17 @@ hype が利用できることを確認します。
 
 #### 12. エラーハンドリングテスト
 
-> hype myapp repo unbind
+> ./build/hype myapp repo unbind
   * 既にアンバインド状態でunbindを実行した場合のエラーメッセージが表示されること
 
-> hype myapp repo update
+> ./build/hype myapp repo update
   * バインドされていない状態でupdateを実行した場合のエラーメッセージが表示されること
 
 #### 13. kubectl未インストール環境テスト
 
 kubectl が利用できない環境では以下をテスト:
 
-> hype myapp repo bind https://github.com/foontype/hype.git
+> ./build/hype myapp repo bind https://github.com/foontype/hype.git
   * 適切なエラーメッセージが表示されること
   * kubectl が必要であることが明示されること
 
