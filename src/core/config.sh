@@ -116,10 +116,8 @@ setup_repo_workdir_if_bound() {
     debug "Repository binding found for '$hype_name', setting up working directory"
     
     # Parse binding data
-    local repo_info
-    repo_info=$(parse_repo_binding "$binding_data")
     # shellcheck disable=SC2034
-    eval "$repo_info"  # Sets REPO_URL, REPO_BRANCH, REPO_PATH variables
+    eval "$binding_data"  # Sets REPO_URL, REPO_BRANCH, REPO_PATH variables
     
     local cache_dir
     cache_dir=$(get_repo_cache_dir "$hype_name")
