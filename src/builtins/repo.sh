@@ -226,10 +226,8 @@ cmd_repo_update() {
     fi
     
     # Parse binding data
-    local repo_info
-    repo_info=$(parse_repo_binding "$binding_data")
-# shellcheck disable=SC2034
-    eval "$repo_info"  # Sets REPO_URL, REPO_BRANCH, REPO_PATH variables
+    # shellcheck disable=SC2034
+    eval "$binding_data"  # Sets REPO_URL, REPO_BRANCH, REPO_PATH variables
     
     local cache_dir
     cache_dir=$(get_repo_cache_dir "$hype_name")
