@@ -125,7 +125,7 @@ task build を実行して build/hype をビルドします
 #### 5. バインド状態確認テスト
 
 > ./build/hype myapp repo
-  * バインドされたリポジトリURL（https://github.com/foontype/hype.git）が表示されること
+  * バインドされたリポジトリURL https://github.com/foontype/hype.git が表示されること
   * パスが promots/nginx-example であること
   * バインド日時が表示されること
 
