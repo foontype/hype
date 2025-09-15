@@ -1,3 +1,64 @@
+"v0.7.2": |
+  ## What's New in HYPE CLI v0.7.2
+
+  ### Major New Features
+  - **1:1 ConfigMap Repository Binding Structure**: Implemented individual ConfigMap per hype name for better isolation and scalability
+    - **New ConfigMap Format**: Each hype name gets its own dedicated `hype-repo-<hype-name>` ConfigMap instead of sharing a single `hype-repos` ConfigMap
+    - **Enhanced Metadata**: Added `bound_at` and `last_updated` timestamps for better tracking and debugging
+    - **Granular RBAC Support**: Individual ConfigMaps enable fine-grained permission control per hype name
+    - **Better Scalability**: Improved performance with large numbers of hype names through isolation
+
+  ### Enhanced Data Model
+  ```yaml
+  # New format (hype-repo-my-app ConfigMap)
+  data:
+    url: "https://github.com/user/repo"
+    branch: "main"
+    path: "."
+    bound_at: "2025-09-14T21:30:00Z"
+    last_updated: "2025-09-14T21:30:00Z"
+  ```
+
+  ### New Commands
+  - **`hype <name> repo list`**: List all repository bindings across the cluster
+  - **Enhanced `hype <name> repo info`**: Shows ConfigMap name, URLs, and timestamps for comprehensive binding information
+
+  ### Migration & Backward Compatibility
+  - **Full Backward Compatibility**: Automatic fallback to legacy `hype-repos` format when new format not available
+  - **Seamless Migration**: Existing bindings continue to work without any changes required
+  - **Future Migration Path**: Foundation laid for future migration utilities from legacy to new format
+
+  ### Improvements
+  - **Better Error Handling**: Enhanced error messages for repository operations with clearer guidance
+  - **Improved Debugging**: Individual ConfigMaps make troubleshooting repository bindings much easier
+  - **Enhanced Testing**: Comprehensive smoke test coverage for all repository binding scenarios
+  - **Performance**: Better performance with isolated ConfigMaps vs. single shared ConfigMap
+
+  ### Benefits
+  1. **Isolation**: Each hype name has dedicated storage preventing conflicts
+  2. **Scalability**: Better performance with large numbers of repository bindings
+  3. **Granular RBAC**: Individual permission control per hype name ConfigMap
+  4. **Rich Metadata**: Timestamps for binding creation and updates
+  5. **Enhanced Debugging**: Easier troubleshooting with isolated ConfigMaps
+  6. **Future Extensibility**: Easy to add more metadata fields per binding
+
+  ### Technical Changes
+  - Version bump to 0.7.2
+  - Modified `src/core/repo.sh` with new 1:1 ConfigMap functions
+  - Updated `src/builtins/repo.sh` with enhanced commands
+  - Maintained full API compatibility with existing repository commands
+  - Enhanced test coverage for new ConfigMap structure
+
+  ### Dependencies
+  - Bash 4.0+
+  - Git (for repository operations)
+  - kubectl (for ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for build system)
+  - curl or wget (for upgrade functionality)
+
 "v0.7.1": |
   ## What's New in HYPE CLI v0.7.1
 
