@@ -43,7 +43,7 @@ defaultResources:
       extraValue: "extra value"
 
 
-releaseProve:
+releaseProbe:
   - nginx
 
 ---
