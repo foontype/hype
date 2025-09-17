@@ -106,5 +106,5 @@ get_release_probe_list() {
         return
     fi
     
-    yq eval '.hype.releaseProbe[]' "$HYPE_SECTION_FILE" 2>/dev/null || true
+    yq eval '.releaseProbe[]' "$HYPE_SECTION_FILE" 2>/dev/null || true
 }

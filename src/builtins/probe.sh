@@ -22,7 +22,8 @@ check_helm_release_exists() {
     debug "Checking if helm release exists: $release_name"
     
     # Use helm list with filter to check if release exists
-    if helm list --filter="^${release_name}$" --short --quiet >/dev/null 2>&1; then
+    local result
+    if result=$(helm list --filter="^${release_name}$" --short 2>/dev/null) && [[ -n "$result" ]]; then
         debug "Helm release found: $release_name"
         return 0
     else
