@@ -24,6 +24,9 @@ task build を実行して build/hype をビルドします
 > cd prompts/nginx-example
   * examples に移動します
 
+> cd prompts/nginx-example && ../../build/hype test probe release
+  * $? が 1 であること
+
 > cd prompts/nginx-example && ../../build/hype test trait set test-trait
 
 > cd prompts/nginx-example && ../../build/hype test trait
@@ -73,6 +76,9 @@ task build を実行して build/hype をビルドします
 
 > cd prompts/nginx-example && ../../build/hype test helmfile apply
   * kubectl から nginx がアップしていることを確認する
+
+> cd prompts/nginx-example && ../../build/hype test probe release
+  * $? が 0 であること
 
 > cd prompts/nginx-example && ../../build/hype test helmfile destroy
   * kubectl から nginx がダウンしていることを確認する
