@@ -98,3 +98,13 @@ get_default_resources() {
     
     yq eval '.defaultResources[]' "$HYPE_SECTION_FILE" 2>/dev/null || true
 }
+
+# Get release probe list from hype section
+# Note: Template variables are already expanded by parse_hypefile()
+get_release_probe_list() {
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        return
+    fi
+    
+    yq eval '.hype.releaseProbe[]' "$HYPE_SECTION_FILE" 2>/dev/null || true
+}
