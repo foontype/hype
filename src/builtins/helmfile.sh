@@ -50,24 +50,16 @@ cmd_helmfile() {
     local current_dir_state_file
     current_dir_state_file=$(mktemp --suffix=.yaml)
     
-    # Get trait value if available
+    # Get trait value with default fallback
     local trait_value
-    if trait_value=$(get_hype_trait "$hype_name" 2>/dev/null); then
-        debug "Adding trait to state values: $trait_value"
-        cat > "$current_dir_state_file" << EOF
+    trait_value=$(get_hype_trait_with_default "$hype_name")
+    debug "Adding trait to state values: $trait_value"
+    cat > "$current_dir_state_file" << EOF
 Hype:
   CurrentDirectory: "$(pwd)"
   Name: "$hype_name"
   Trait: "$trait_value"
 EOF
-    else
-        debug "No trait found, using default state values"
-        cat > "$current_dir_state_file" << EOF
-Hype:
-  CurrentDirectory: "$(pwd)"
-  Name: "$hype_name"
-EOF
-    fi
     
     cmd+=("--state-values-file" "$current_dir_state_file")
     
