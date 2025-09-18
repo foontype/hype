@@ -22,11 +22,13 @@ Subcommands:
   (none)              Show current trait
   set <trait-type>    Set trait type
   unset               Remove trait
+  check <trait-type>  Check if current trait matches specified trait
 
 Examples:
   hype my-nginx trait                     Show current trait
   hype my-nginx trait set production      Set trait to production
   hype my-nginx trait unset               Remove trait
+  hype my-nginx trait check production    Check if trait is production (exit 0 if match, exit 1 if no match)
 EOF
 }
 
@@ -155,9 +157,32 @@ cmd_trait() {
                 exit 1
             fi
             ;;
+        "check")
+            if [[ -z "$trait_type" ]]; then
+                error "Trait type is required for check"
+                error "Usage: hype <hype-name> trait check <trait-type>"
+                exit 1
+            fi
+            
+            # Get current trait
+            local current_trait
+            if current_trait=$(get_hype_trait "$hype_name" 2>/dev/null); then
+                # Compare current trait with specified trait
+                if [[ "$current_trait" == "$trait_type" ]]; then
+                    debug "Trait matches: $current_trait == $trait_type"
+                    exit 0
+                else
+                    debug "Trait does not match: $current_trait != $trait_type"
+                    exit 1
+                fi
+            else
+                debug "No trait set for hype: $hype_name"
+                exit 1
+            fi
+            ;;
         *)
             error "Unknown trait subcommand: $subcommand"
-            error "Valid options: set, unset"
+            error "Valid options: set, unset, check"
             exit 1
             ;;
     esac
