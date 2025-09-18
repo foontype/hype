@@ -22,6 +22,7 @@ Subcommands:
   bind <url>      Bind repository to hype name
   unbind          Unbind repository from hype name
   update          Update repository binding
+  validate <url>  Validate repository binding matches specification
   info            Show repository binding information
   list            List all repository bindings
 
@@ -61,6 +62,9 @@ cmd_repo() {
             ;;
         "update")
             cmd_repo_update "$hype_name" "$@"
+            ;;
+        "validate")
+            cmd_repo_validate "$hype_name" "$@"
             ;;
         "list")
             cmd_repo_list
@@ -203,6 +207,76 @@ cmd_repo_unbind() {
         info "Repository unbinding completed successfully"
     else
         error "Failed to unbind repository"
+        exit 1
+    fi
+}
+
+# Validate repository binding matches specification
+cmd_repo_validate() {
+    local hype_name="$1"
+    shift  # Remove hype_name from arguments
+    local repo_url=""
+    local branch=""
+    local path=""
+    
+    # Parse arguments (same as bind command)
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --branch)
+                branch="$2"
+                shift 2
+                ;;
+            --path)
+                path="$2"
+                shift 2
+                ;;
+            *)
+                if [[ -z "$repo_url" ]]; then
+                    repo_url="$1"
+                else
+                    error "Unknown argument: $1"
+                    exit 1
+                fi
+                shift
+                ;;
+        esac
+    done
+    
+    if [[ -z "$hype_name" ]]; then
+        exit 1
+    fi
+    
+    if [[ -z "$repo_url" ]]; then
+        exit 1
+    fi
+    
+    # Set defaults (same as bind command)
+    branch="${branch:-main}"
+    path="${path:-.}"
+    
+    # Expand GitHub shorthand if applicable
+    repo_url=$(expand_github_shorthand "$repo_url")
+    
+    # Get current repository binding
+    local binding_data
+    if ! binding_data=$(get_repo_binding "$hype_name"); then
+        # No binding exists
+        exit 1
+    fi
+    
+    # Parse current binding data
+    # shellcheck disable=SC2034
+    eval "$binding_data"  # Sets REPO_URL, REPO_BRANCH, REPO_PATH variables
+    
+    # Compare specified parameters with current binding
+    # shellcheck disable=SC2153
+    if [[ "$repo_url" == "$REPO_URL" ]] && \
+       [[ "$branch" == "$REPO_BRANCH" ]] && \
+       [[ "$path" == "$REPO_PATH" ]]; then
+        # Binding matches
+        exit 0
+    else
+        # Binding does not match
         exit 1
     fi
 }
@@ -352,6 +426,8 @@ Commands:
                         Bind repository to hype name
   unbind                Remove repository binding
   update                Update repository cache
+  validate <url> [--branch <branch>] [--path <path>]
+                        Validate repository binding matches specification
   info                  Show binding information (default)
   list                  List all repository bindings
   help, -h, --help      Show this help message
@@ -369,6 +445,9 @@ Examples:
 
   # Bind with specific branch and path
   hype myapp repo bind user/repo --branch develop --path deploy
+
+  # Validate repository binding
+  hype myapp repo validate user/repo --branch develop --path deploy
 
   # Show binding information
   hype myapp repo
