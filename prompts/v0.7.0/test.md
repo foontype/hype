@@ -34,6 +34,12 @@ task build を実行して build/hype をビルドします
 > cd prompts/nginx-example && ../../build/hype test trait
   * test-trait と表示されること
 
+> cd prompts/nginx-example && ../../build/hype test trait check test-trait
+  * $? が 0 であること
+
+> cd prompts/nginx-example && ../../build/hype test trait check wrong-test-trait
+  * $? が 1 であること
+
 > cd prompts/nginx-example && ../../build/hype test check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets がないことを確認
 
