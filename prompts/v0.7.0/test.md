@@ -23,11 +23,11 @@ task build を実行して build/hype をビルドします
 > cd prompts/nginx-example
   * examples に移動します
 
-> cd prompts/nginx-example && ../../build/hype test probe release
+> cd prompts/nginx-example && ../../build/hype test releases check
   * $? が 1 であること
   * もし $? が 0 の場合（既存リソースが残っている場合）、以下を実行してリトライ:
     * `../../build/hype test down` でリソースをクリーンアップ
-    * 再度 `../../build/hype test probe release` を実行して $? が 1 であることを確認
+    * 再度 `../../build/hype test releases check` を実行して $? が 1 であることを確認
 
 > cd prompts/nginx-example && ../../build/hype test trait set test-trait
 
@@ -79,7 +79,7 @@ task build を実行して build/hype をビルドします
 > cd prompts/nginx-example && ../../build/hype test helmfile apply
   * kubectl から nginx がアップしていることを確認する
 
-> cd prompts/nginx-example && ../../build/hype test probe release
+> cd prompts/nginx-example && ../../build/hype test releases check
   * $? が 0 であること（リリースがデプロイされているため）
   * "All releases are present" メッセージが表示されること
 

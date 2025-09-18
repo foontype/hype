@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Unit tests for probe builtin
+# Unit tests for releases builtin
 
 # Create test environment
 setup_test_env() {
@@ -18,12 +18,12 @@ cleanup_test_env() {
     fi
 }
 
-# Create test hypefile with releaseProbe section
+# Create test hypefile with releases section
 create_test_hypefile() {
     local hype_name="$1"
     cat > "$HYPEFILE" << EOF
 hype:
-  releaseProbe:
+  releases:
     - hype-common
     - ${hype_name}-core-system
     - static-release
@@ -93,11 +93,11 @@ source_modules() {
     source "src/core/common.sh"
     source "src/core/config.sh"
     source "src/core/hypefile.sh"
-    source "src/builtins/probe.sh"
+    source "src/builtins/releases.sh"
 }
 
-# Test get_release_probe_list function
-test_get_release_probe_list() {
+# Test get_releases_list function
+test_get_releases_list() {
     setup_test_env
     create_test_hypefile "test-app"
     source_modules
@@ -107,17 +107,17 @@ test_get_release_probe_list() {
     
     # Get release list
     local releases
-    releases=$(get_release_probe_list)
+    releases=$(get_releases_list)
     
     # Check if expected releases are returned
     if echo "$releases" | grep -q "hype-common" && \
        echo "$releases" | grep -q "test-app-core-system" && \
        echo "$releases" | grep -q "static-release"; then
-        echo "✓ get_release_probe_list returns expected releases"
+        echo "✓ get_releases_list returns expected releases"
         cleanup_test_env
         return 0
     else
-        echo "✗ get_release_probe_list failed: $releases"
+        echo "✗ get_releases_list failed: $releases"
         cleanup_test_env
         return 1
     fi
@@ -134,7 +134,7 @@ test_template_expansion() {
     
     # Get release list
     local releases
-    releases=$(get_release_probe_list)
+    releases=$(get_releases_list)
     
     # Check if template variable was expanded
     if echo "$releases" | grep -q "my-service-core-system"; then
@@ -148,73 +148,73 @@ test_template_expansion() {
     fi
 }
 
-# Test probe release with all releases existing
-test_probe_release_success() {
+# Test releases check with all releases existing
+test_releases_check_success() {
     setup_test_env
     create_test_hypefile "test-app"
     source_modules
     mock_helm_success
     
-    # Run probe release command
-    if cmd_probe_release "test-app" >/dev/null 2>&1; then
-        echo "✓ probe release succeeds when all releases exist"
+    # Run releases check command
+    if cmd_releases_check "test-app" >/dev/null 2>&1; then
+        echo "✓ releases check succeeds when all releases exist"
         cleanup_test_env
         return 0
     else
-        echo "✗ probe release failed when all releases should exist"
+        echo "✗ releases check failed when all releases should exist"
         cleanup_test_env
         return 1
     fi
 }
 
-# Test probe release with missing releases
-test_probe_release_failure() {
+# Test releases check with missing releases
+test_releases_check_failure() {
     setup_test_env
     create_test_hypefile "test-app"
     source_modules
     mock_helm_partial_failure
     
-    # Run probe release command
-    if ! cmd_probe_release "test-app" >/dev/null 2>&1; then
-        echo "✓ probe release fails when some releases are missing"
+    # Run releases check command
+    if ! cmd_releases_check "test-app" >/dev/null 2>&1; then
+        echo "✓ releases check fails when some releases are missing"
         cleanup_test_env
         return 0
     else
-        echo "✗ probe release succeeded when it should have failed"
+        echo "✗ releases check succeeded when it should have failed"
         cleanup_test_env
         return 1
     fi
 }
 
-# Test empty releaseProbe list
-test_empty_release_probe() {
+# Test empty releases list
+test_empty_releases() {
     setup_test_env
     cat > "$HYPEFILE" << EOF
 hype:
-  releaseProbe: []
+  releases: []
 EOF
     source_modules
     
-    # Run probe release command
-    if cmd_probe_release "test-app" >/dev/null 2>&1; then
-        echo "✓ probe release succeeds with empty releaseProbe list"
+    # Run releases check command
+    if cmd_releases_check "test-app" >/dev/null 2>&1; then
+        echo "✓ releases check succeeds with empty releases list"
         cleanup_test_env
         return 0
     else
-        echo "✗ probe release failed with empty releaseProbe list"
+        echo "✗ releases check failed with empty releases list"
         cleanup_test_env
         return 1
     fi
 }
 
 # Run tests
-echo "Probe Builtin Unit Tests"
-echo "========================"
+echo "Releases Builtin Unit Tests"
+echo "==========================="
 
-test_get_release_probe_list
+test_get_releases_list
 test_template_expansion
-test_probe_release_success
-test_probe_release_failure
-test_empty_release_probe
+test_releases_check_success
+test_releases_check_failure
+test_empty_releases
 
-echo "Probe tests completed"
+echo "Releases tests completed"
