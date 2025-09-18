@@ -126,10 +126,10 @@ task build を実行して build/hype をビルドします
   * バインド成功のメッセージが表示されること
   * kubectl でConfigMap hype-repos が作成されていること
 
-> ./build/hype myapp repo validate foontype/hype --path prompts/nginx-example
+> ./build/hype myapp repo check foontype/hype --path prompts/nginx-example
   * $? が 0 を返すこと
 
-> ./build/hype myapp repo validate foontype/hype2
+> ./build/hype myapp repo check foontype/hype2
   * $? が 1 を返すこと
 
 #### 4-1. バインドしたリポジトリの使用テスト

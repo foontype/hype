@@ -22,7 +22,7 @@ Subcommands:
   bind <url>      Bind repository to hype name
   unbind          Unbind repository from hype name
   update          Update repository binding
-  validate <url>  Validate repository binding matches specification
+  check <url>     Check repository binding matches specification
   info            Show repository binding information
   list            List all repository bindings
 
@@ -63,8 +63,8 @@ cmd_repo() {
         "update")
             cmd_repo_update "$hype_name" "$@"
             ;;
-        "validate")
-            cmd_repo_validate "$hype_name" "$@"
+        "check")
+            cmd_repo_check "$hype_name" "$@"
             ;;
         "list")
             cmd_repo_list
@@ -211,8 +211,8 @@ cmd_repo_unbind() {
     fi
 }
 
-# Validate repository binding matches specification
-cmd_repo_validate() {
+# Check repository binding matches specification
+cmd_repo_check() {
     local hype_name="$1"
     shift  # Remove hype_name from arguments
     local repo_url=""
@@ -426,8 +426,8 @@ Commands:
                         Bind repository to hype name
   unbind                Remove repository binding
   update                Update repository cache
-  validate <url> [--branch <branch>] [--path <path>]
-                        Validate repository binding matches specification
+  check <url> [--branch <branch>] [--path <path>]
+                        Check repository binding matches specification
   info                  Show binding information (default)
   list                  List all repository bindings
   help, -h, --help      Show this help message
@@ -446,8 +446,8 @@ Examples:
   # Bind with specific branch and path
   hype myapp repo bind user/repo --branch develop --path deploy
 
-  # Validate repository binding
-  hype myapp repo validate user/repo --branch develop --path deploy
+  # Check repository binding
+  hype myapp repo check user/repo --branch develop --path deploy
 
   # Show binding information
   hype myapp repo
