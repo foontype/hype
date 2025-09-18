@@ -92,6 +92,20 @@ set_hype_trait() {
     info "Set trait '$trait_type' for hype: $hype_name"
 }
 
+# Get trait for hype name with default fallback
+get_hype_trait_with_default() {
+    local hype_name="$1"
+    local trait
+    
+    debug "Getting trait with default for hype: $hype_name"
+    
+    if trait=$(get_hype_trait "$hype_name" 2>/dev/null); then
+        echo "$trait"
+    else
+        echo "default"
+    fi
+}
+
 # Remove trait for hype name by deleting hype-trait-<hype-name> ConfigMap
 unset_hype_trait() {
     local hype_name="$1"

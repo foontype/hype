@@ -18,11 +18,16 @@ task build を実行して build/hype をビルドします
 
 > which task
 
-
 ### プロジェクト開発機能 テスト手順
 
 > cd prompts/nginx-example
   * examples に移動します
+
+> cd prompts/nginx-example && ../../build/hype test probe release
+  * $? が 1 であること
+  * もし $? が 0 の場合（既存リソースが残っている場合）、以下を実行してリトライ:
+    * `../../build/hype test down` でリソースをクリーンアップ
+    * 再度 `../../build/hype test probe release` を実行して $? が 1 であることを確認
 
 > cd prompts/nginx-example && ../../build/hype test trait set test-trait
 
@@ -66,13 +71,17 @@ task build を実行して build/hype をビルドします
   * デバッグログで helmfile section の一時ファイルの拡張子が .yaml.gotmpl であること
   * デバッグログで hype section の一時ファイルに、hypefile.yaml の hype section の内容が出力されていること
 
-> cd prompts/nginx-example && ../../build/hype test task vars
+> cd prompts/nginx-example && PATH="$(cd ../../build && pwd):${PATH}" ../../build/hype test task vars
   * タスク出力の HYPE_NAME の値が test であること
   * タスク出力の HYPE_CURRENT_DIRECTORY の値が test であること
   * タスク出力の HYPE_TRAIT の値が test-trait であること
 
 > cd prompts/nginx-example && ../../build/hype test helmfile apply
   * kubectl から nginx がアップしていることを確認する
+
+> cd prompts/nginx-example && ../../build/hype test probe release
+  * $? が 0 であること（リリースがデプロイされているため）
+  * "All releases are present" メッセージが表示されること
 
 > cd prompts/nginx-example && ../../build/hype test helmfile destroy
   * kubectl から nginx がダウンしていることを確認する

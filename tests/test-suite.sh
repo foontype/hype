@@ -132,7 +132,7 @@ test_builtin_structure() {
     echo "Testing builtin structure..."
     
     local builtins_found=0
-    local expected_builtins=("init" "template" "parse" "trait" "upgrade" "task" "helmfile")
+    local expected_builtins=("init" "template" "parse" "trait" "upgrade" "task" "helmfile" "probe")
     
     for builtin in "${expected_builtins[@]}"; do
         if [[ -f "$PROJECT_ROOT/src/builtins/${builtin}.sh" ]]; then
@@ -172,6 +172,32 @@ test_core_modules() {
     else
         test_failed "Core module count mismatch" "Found: $modules_found, Expected: ${#expected_modules[@]}"
     fi
+}
+
+# Run unit tests
+run_unit_tests() {
+    echo
+    echo "Running unit tests..."
+    
+    local unit_test_files=()
+    mapfile -t unit_test_files < <(find "$TEST_DIR/unit" -name "test-*.sh" -type f 2>/dev/null)
+    
+    if [[ ${#unit_test_files[@]} -eq 0 ]]; then
+        test_skipped "Unit tests" "No unit test files found"
+        return
+    fi
+    
+    for test_file in "${unit_test_files[@]}"; do
+        local test_name
+        test_name=$(basename "$test_file" .sh)
+        echo "  Running $test_name..."
+        
+        if bash "$test_file" >/dev/null 2>&1; then
+            test_passed "Unit test: $test_name"
+        else
+            test_failed "Unit test: $test_name"
+        fi
+    done
 }
 
 # Run ShellCheck if available
@@ -325,6 +351,7 @@ main() {
     test_builtin_structure
     test_core_modules
     test_hypefile_discovery
+    run_unit_tests
     test_shellcheck
     
     # Show results

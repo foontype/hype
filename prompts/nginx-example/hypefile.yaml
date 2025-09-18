@@ -42,6 +42,10 @@ defaultResources:
       boolValue: false
       extraValue: "extra value"
 
+
+releaseProbe:
+  - nginx
+
 ---
 releases:
   - name: nginx
