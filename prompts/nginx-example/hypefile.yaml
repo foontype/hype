@@ -43,11 +43,11 @@ defaultResources:
       extraValue: "extra value"
 
 
-releases:
+expectedReleases:
   - nginx
 
 ---
-releases:
+expectedReleases:
   - name: nginx
     namespace: default
     chart: bitnami/nginx
