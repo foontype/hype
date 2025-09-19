@@ -23,7 +23,7 @@ create_test_hypefile() {
     local hype_name="$1"
     cat > "$HYPEFILE" << EOF
 hype:
-  releases:
+  expectedReleases:
     - hype-common
     - ${hype_name}-core-system
     - static-release
@@ -191,7 +191,7 @@ test_empty_releases() {
     setup_test_env
     cat > "$HYPEFILE" << EOF
 hype:
-  releases: []
+  expectedReleases: []
 EOF
     source_modules
     

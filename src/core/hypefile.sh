@@ -106,5 +106,5 @@ get_releases_list() {
         return
     fi
     
-    yq eval '.releases[]' "$HYPE_SECTION_FILE" 2>/dev/null || true
+    yq eval '.expectedReleases[]' "$HYPE_SECTION_FILE" 2>/dev/null || true
 }

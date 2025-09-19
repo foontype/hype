@@ -200,7 +200,7 @@ defaultResources:
           password: "changeme123"
 
 ---
-releases:
+expectedReleases:
   - name: nginx
     namespace: default
     chart: bitnami/nginx
