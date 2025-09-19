@@ -40,7 +40,7 @@ task build を実行して build/hype をビルドします
 > cd prompts/nginx-example && ../../build/hype test trait check wrong-test-trait
   * $? が 1 であること
 
-> cd prompts/nginx-example && ../../build/hype test check
+> cd prompts/nginx-example && ../../build/hype test resources check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets がないことを確認
 
 > cd prompts/nginx-example && ../../build/hype test parse section hype
@@ -51,7 +51,7 @@ task build を実行して build/hype をビルドします
 
 > cd prompts/nginx-example && ../../build/hype test init
 
-> cd prompts/nginx-example && ../../build/hype test check
+> cd prompts/nginx-example && ../../build/hype test resources check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets があることを確認
 
 > cd prompts/nginx-example && ../../build/hype test template state-values test-nginx-state-values
@@ -100,7 +100,7 @@ task build を実行して build/hype をビルドします
 
 > cd prompts/nginx-example && ../../build/hype test deinit
 
-> cd prompts/nginx-example && ../../build/hype test check
+> cd prompts/nginx-example && ../../build/hype test resources check
   * kubectl を使って、test-nginx-configmap, test-nginx-state-values, test-nginx-secrets がないことを確認
 
 > cd prompts/nginx-example && ../../build/hype test trait unset

@@ -83,7 +83,7 @@ Test that existing hype commands still work:
 # These should work without repository binding (if hypefile.yaml exists)
 ./build/hype test-app init
 ./build/hype test-app template
-./build/hype test-app check
+./build/hype test-app resources check
 ```
 
 ## Expected Behavior

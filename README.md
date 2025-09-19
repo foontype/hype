@@ -86,7 +86,7 @@ task install
 hype <hype-name> init
 
 # Check status of default resources
-hype <hype-name> check
+hype <hype-name> resources check
 
 # Show rendered hype section template
 hype <hype-name> template
@@ -230,7 +230,7 @@ repositories:
 hype my-nginx init
 
 # Check resource status
-hype my-nginx check
+hype my-nginx resources check
 
 # View rendered configuration
 hype my-nginx template
