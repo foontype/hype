@@ -23,6 +23,7 @@ Subcommands:
   unbind          Unbind repository from hype name
   update          Update repository binding
   check <url>     Check repository binding matches specification
+  prepare <url>   Ensure repository binding matches specification
   info            Show repository binding information
   list            List all repository bindings
 
@@ -65,6 +66,9 @@ cmd_repo() {
             ;;
         "check")
             cmd_repo_check "$hype_name" "$@"
+            ;;
+        "prepare")
+            cmd_repo_prepare "$hype_name" "$@"
             ;;
         "list")
             cmd_repo_list
@@ -208,6 +212,21 @@ cmd_repo_unbind() {
     else
         error "Failed to unbind repository"
         exit 1
+    fi
+}
+
+# Ensure repository binding matches specification
+cmd_repo_prepare() {
+    local hype_name="$1"
+    shift  # Remove hype_name from arguments
+    
+    # Check if the binding matches specification
+    if cmd_repo_check "$hype_name" "$@"; then
+        # Binding matches, run check command
+        cmd_repo_info "$hype_name"
+    else
+        # Binding doesn't match or doesn't exist, run bind command
+        cmd_repo_bind "$hype_name" "$@"
     fi
 }
 
@@ -433,6 +452,8 @@ Commands:
   update                Update repository cache
   check <url> [--branch <branch>] [--path <path>]
                         Check repository binding matches specification
+  prepare <url> [--branch <branch>] [--path <path>]
+                        Ensure repository binding matches specification
   info                  Show binding information (default)
   list                  List all repository bindings
   help, -h, --help      Show this help message
@@ -453,6 +474,9 @@ Examples:
 
   # Check repository binding
   hype myapp repo check user/repo --branch develop --path deploy
+
+  # Ensure repository binding (prepare)
+  hype myapp repo prepare user/repo --branch develop --path deploy
 
   # Show binding information
   hype myapp repo
