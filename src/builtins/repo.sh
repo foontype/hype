@@ -369,36 +369,41 @@ cmd_repo_info() {
         [[ -n "$bound_at" ]] && echo "  Bound at: $bound_at"
         [[ -n "$last_updated" ]] && echo "  Last updated: $last_updated"
         
+        # Check cache status
+        local cache_dir
+        cache_dir=$(get_repo_cache_dir "$hype_name")
+        
+        echo ""
+        if is_valid_cache "$cache_dir"; then
+            info "Cache status: Available"
+            echo "  Cache directory: $cache_dir"
+            
+            # Show repository status
+            local status
+            if status=$(get_repo_status "$cache_dir"); then
+                echo ""
+                echo "Repository status:"
+                while IFS= read -r line; do
+                    echo "  $line"
+                done <<< "$status"
+            fi
+        else
+            warn "Cache status: Missing or invalid"
+            info "Run 'hype $hype_name repo update' to update the cache"
+        fi
+        
+        # Exit with success code when repo binding exists
+        exit 0
+        
     else
         info "No repository binding found for '$hype_name'"
         info "This hype name is using local configuration only."
         info ""
         info "To bind a repository, use:"
         info "  hype $hype_name repo bind <repository-url>"
-        return 0
-    fi
-    
-    # Check cache status
-    local cache_dir
-    cache_dir=$(get_repo_cache_dir "$hype_name")
-    
-    echo ""
-    if is_valid_cache "$cache_dir"; then
-        info "Cache status: Available"
-        echo "  Cache directory: $cache_dir"
         
-        # Show repository status
-        local status
-        if status=$(get_repo_status "$cache_dir"); then
-            echo ""
-            echo "Repository status:"
-            while IFS= read -r line; do
-                echo "  $line"
-            done <<< "$status"
-        fi
-    else
-        warn "Cache status: Missing or invalid"
-        info "Run 'hype $hype_name repo update' to update the cache"
+        # Exit with failure code when repo binding does not exist
+        exit 1
     fi
 }
 
