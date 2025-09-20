@@ -11,7 +11,6 @@ BUILTIN_DESCRIPTION="Resource initialization and management builtin"
 # Register commands in global BUILTIN_COMMANDS array
 BUILTIN_COMMANDS+=("init")
 BUILTIN_COMMANDS+=("deinit")
-BUILTIN_COMMANDS+=("check")
 
 # Help functions for each command
 help_init() {
@@ -50,23 +49,6 @@ help_deinit_brief() {
     echo "Delete default resources"
 }
 
-help_check() {
-    cat <<EOF
-Usage: hype <hype-name> check
-
-List the status of default resources
-
-This command shows the current status of all default resources,
-indicating whether they exist or are missing from the cluster.
-
-Examples:
-  hype my-nginx check                  Check resources for my-nginx
-EOF
-}
-
-help_check_brief() {
-    echo "List default resources status"
-}
 
 # Get resource values for kubectl creation
 get_resource_values() {
@@ -216,34 +198,6 @@ delete_resource() {
     esac
 }
 
-# Check resource status
-check_resource_status() {
-    local name="$1"
-    local type="$2"
-    
-    case "$type" in
-        "DefaultStateValues")
-            echo -e "${GREEN}✓${NC} DefaultStateValues (local processing)"
-            ;;
-        "StateValuesConfigmap"|"Configmap")
-            if kubectl get configmap "$name" >/dev/null 2>&1; then
-                echo -e "${GREEN}✓${NC} ConfigMap $name exists"
-            else
-                echo -e "${RED}✗${NC} ConfigMap $name missing"
-            fi
-            ;;
-        "Secrets")
-            if kubectl get secret "$name" >/dev/null 2>&1; then
-                echo -e "${GREEN}✓${NC} Secret $name exists"
-            else
-                echo -e "${RED}✗${NC} Secret $name missing"
-            fi
-            ;;
-        *)
-            echo -e "${YELLOW}?${NC} Unknown resource type: $type"
-            ;;
-    esac
-}
 
 # Initialize default resources
 cmd_init() {
@@ -324,43 +278,3 @@ cmd_deinit() {
     info "Deinitialization completed for: $hype_name"
 }
 
-# Show resources status
-cmd_check() {
-    local hype_name="$1"
-    
-    info "Resource status for: $hype_name"
-    echo
-    
-    parse_hypefile "$hype_name"
-    
-    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
-        info "No hypefile section found"
-        return
-    fi
-    
-    # Get resource count first
-    local resource_count
-    resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
-    
-    if [[ "$resource_count" -eq 0 ]]; then
-        info "No default resources found"
-        return
-    fi
-    
-    # Check status of each default resource
-    for (( i=0; i<resource_count; i++ )); do
-        local name type
-        
-        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
-        type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
-        
-        if [[ "$type" != "null" ]]; then
-            if [[ "$type" == "DefaultStateValues" ]]; then
-                # DefaultStateValues doesn't have a name, use type for status
-                check_resource_status "" "$type"
-            elif [[ "$name" != "null" ]]; then
-                check_resource_status "$name" "$type"
-            fi
-        fi
-    done
-}
