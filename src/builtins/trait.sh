@@ -23,12 +23,14 @@ Subcommands:
   set <trait-type>    Set trait type
   unset               Remove trait
   check <trait-type>  Check if current trait matches specified trait
+  prepare <trait-type> Prepare trait (check if exists, set if not)
 
 Examples:
   hype my-nginx trait                     Show current trait
   hype my-nginx trait set production      Set trait to production
   hype my-nginx trait unset               Remove trait
   hype my-nginx trait check production    Check if trait is production (exit 0 if match, exit 1 if no match)
+  hype my-nginx trait prepare production  Prepare trait (set if not already production)
 EOF
 }
 
@@ -182,9 +184,27 @@ cmd_trait() {
                 exit 1
             fi
             ;;
+        "prepare")
+            if [[ -z "$trait_type" ]]; then
+                error "Trait type is required for prepare"
+                error "Usage: hype <hype-name> trait prepare <trait-type>"
+                exit 1
+            fi
+            
+            # Check if trait exists and matches
+            if get_hype_trait "$hype_name" >/dev/null 2>&1; then
+                # Trait exists, check if it matches
+                debug "Trait exists, checking if it matches: $trait_type"
+                cmd_trait "$hype_name" "check" "$trait_type"
+            else
+                # No trait set, set it
+                debug "No trait set, setting trait: $trait_type"
+                set_hype_trait "$hype_name" "$trait_type"
+            fi
+            ;;
         *)
             error "Unknown trait subcommand: $subcommand"
-            error "Valid options: set, unset, check"
+            error "Valid options: set, unset, check, prepare"
             exit 1
             ;;
     esac
