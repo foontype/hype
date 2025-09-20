@@ -19,7 +19,7 @@ Usage: hype <hype-name> trait [SUBCOMMAND]
 Manage trait settings for HYPE names
 
 Subcommands:
-  (none)              Show current trait
+  (none)              Show current trait (exit 0 if exists, exit 1 if not)
   set <trait-type>    Set trait type
   unset               Remove trait
   check <trait-type>  Check if current trait matches specified trait
@@ -33,7 +33,7 @@ EOF
 }
 
 help_trait_brief() {
-    echo "Show current trait"
+    echo "Show current trait (exit 0 if exists, exit 1 if not)"
 }
 
 # Get trait for hype name from hype-trait-<hype-name> ConfigMap
@@ -140,8 +140,10 @@ cmd_trait() {
             local current_trait
             if current_trait=$(get_hype_trait "$hype_name" 2>/dev/null); then
                 echo "$current_trait"
+                exit 0
             else
                 echo "No trait set"
+                exit 1
             fi
             ;;
         "set")
