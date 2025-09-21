@@ -1,4 +1,4 @@
-９defaultResources:
+defaultResources:
   - name: "{{ .Hype.Name }}-nginx-state-values"
     type: StateValuesConfigmap
     values:
@@ -75,6 +75,15 @@ env:
   TASK_TEMP_DIR: .cache
 
 tasks:
+  build:
+    desc: Build Container Images
+    cmds:
+      - echo "pass"
+
+  push:
+    desc: Push Container images
+    cmds:
+      - echo "pass"
 
   vars:
     desc: Hype Smoke Testing
@@ -86,16 +95,3 @@ tasks:
         echo "HYPE_TRAIT=$HYPE_TRAIT"
         echo "HYPE_CURRENT_DIRECTORY=$HYPE_CURRENT_DIRECTORY"
         HYPE_LOG=false TRACE=false hype $HYPE_NAME template | yq eval -o json | jq .
-
-
-  build:
-    desc: Build application docker images.
-    cmds:
-      - echo "pass"
-
-  push:
-    desc: Push application docker images
-    cmds:
-      - echo "pass"
-
-
