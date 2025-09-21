@@ -125,6 +125,12 @@ cmd_prepare() {
     info "✓ Repository preparation completed"
     echo ""
 
+    # Step 2.5: Setup repository working directory if bound
+    if ! setup_repo_workdir_if_bound "$hype_name"; then
+        error "Failed to setup repository working directory for '$hype_name'"
+        return 1
+    fi
+    
     # Step 2.5: Initialize hype environment
     info "Step 2.5/5: Initializing hype environment..."
     if ! cmd_init "$hype_name"; then
