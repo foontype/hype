@@ -27,7 +27,10 @@ jobs:
         curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
         
         # Install helmfile
-        HELMFILE_VERSION=$(curl -s https://api.github.com/repos/helmfile/helmfile/releases/latest | grep tag_name | cut -d '"' -f 4)
+        HELMFILE_VERSION=$(curl -s https://api.github.com/repos/helmfile/helmfile/releases/latest | jq -r '.tag_name // "v1.0.0"')
+        if [ "$HELMFILE_VERSION" = "null" ] || [ -z "$HELMFILE_VERSION" ]; then
+          HELMFILE_VERSION="v1.0.0"
+        fi
         curl -L https://github.com/helmfile/helmfile/releases/download/${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION#v}_linux_amd64.tar.gz -o helmfile.tar.gz
         tar xzf helmfile.tar.gz
         sudo mv helmfile /usr/local/bin/helmfile
