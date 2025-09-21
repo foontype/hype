@@ -146,13 +146,13 @@ cmd_trait() {
             if [[ -z "$trait_type" ]]; then
                 error "Trait type is required"
                 error "Usage: hype <hype-name> trait set <trait-type>"
-                exit 1
+                return 1
             fi
             set_hype_trait "$hype_name" "$trait_type"
             ;;
         "unset")
             if ! unset_hype_trait "$hype_name"; then
-                exit 1
+                return 1
             fi
             ;;
         "check")
@@ -161,10 +161,10 @@ cmd_trait() {
                 local current_trait
                 if current_trait=$(get_hype_trait "$hype_name" 2>/dev/null); then
                     echo "$current_trait"
-                    exit 0
+                    return 0
                 else
                     echo "No trait set"
-                    exit 1
+                    return 1
                 fi
             else
                 # Check if current trait matches specified trait
@@ -173,14 +173,14 @@ cmd_trait() {
                     # Compare current trait with specified trait
                     if [[ "$current_trait" == "$trait_type" ]]; then
                         debug "Trait matches: $current_trait == $trait_type"
-                        exit 0
+                        return 0
                     else
                         debug "Trait does not match: $current_trait != $trait_type"
-                        exit 1
+                        return 1
                     fi
                 else
                     debug "No trait set for hype: $hype_name"
-                    exit 1
+                    return 1
                 fi
             fi
             ;;
@@ -188,7 +188,7 @@ cmd_trait() {
             if [[ -z "$trait_type" ]]; then
                 error "Trait type is required for prepare"
                 error "Usage: hype <hype-name> trait prepare <trait-type>"
-                exit 1
+                return 1
             fi
             
             # Check if trait exists and matches
@@ -205,7 +205,7 @@ cmd_trait() {
         *)
             error "Unknown trait subcommand: $subcommand"
             error "Valid options: set, unset, check, prepare"
-            exit 1
+            return 1
             ;;
     esac
 }

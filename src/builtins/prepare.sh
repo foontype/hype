@@ -70,7 +70,7 @@ cmd_prepare() {
                 else
                     error "Unknown argument: $1"
                     help_prepare
-                    exit 1
+                    return 1
                 fi
                 shift
                 ;;
@@ -81,19 +81,19 @@ cmd_prepare() {
     if [[ -z "$hype_name" ]]; then
         error "Hype name is required"
         help_prepare
-        exit 1
+        return 1
     fi
     
     if [[ -z "$repo_url" ]]; then
         error "Repository URL is required"
         help_prepare
-        exit 1
+        return 1
     fi
     
     if [[ -z "$trait" ]]; then
         error "Trait is required"
         help_prepare
-        exit 1
+        return 1
     fi
     
     # Set defaults
@@ -111,7 +111,7 @@ cmd_prepare() {
     info "Step 1/6: Preparing trait..."
     if ! cmd_trait "$hype_name" "prepare" "$trait"; then
         error "Failed to prepare trait: $trait"
-        exit 1
+        return 1
     fi
     info "✓ Trait preparation completed"
     echo ""
@@ -120,7 +120,7 @@ cmd_prepare() {
     info "Step 2/6: Preparing repository..."
     if ! cmd_repo "$hype_name" "prepare" "$repo_url" --branch "$branch" --path "$path"; then
         error "Failed to prepare repository: $repo_url"
-        exit 1
+        return 1
     fi
     info "✓ Repository preparation completed"
     echo ""
@@ -129,7 +129,7 @@ cmd_prepare() {
     info "Step 2.5/5: Initializing hype environment..."
     if ! cmd_init "$hype_name"; then
         error "Failed to initialize hype environment"
-        exit 1
+        return 1
     fi
     info "✓ Hype environment initialization completed"
     echo ""
@@ -138,7 +138,7 @@ cmd_prepare() {
     info "Step 3/6: Running build task..."
     if ! cmd_task "$hype_name" "build"; then
         error "Failed to run build task"
-        exit 1
+        return 1
     fi
     info "✓ Build task completed"
     echo ""
@@ -147,7 +147,7 @@ cmd_prepare() {
     info "Step 4/6: Running push task..."
     if ! cmd_task "$hype_name" "push"; then
         error "Failed to run push task"
-        exit 1
+        return 1
     fi
     info "✓ Push task completed"
     echo ""
@@ -156,7 +156,7 @@ cmd_prepare() {
     info "Step 5/6: Deploying application..."
     if ! cmd_up "$hype_name"; then
         error "Failed to deploy application"
-        exit 1
+        return 1
     fi
     info "✓ Application deployment completed"
     echo ""

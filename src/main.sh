@@ -48,6 +48,7 @@ execute_builtin_command() {
     # Check if the function exists
     if declare -f "$cmd_function" > /dev/null; then
         "$cmd_function" "$hype_name" "$@"
+        exit $?
     else
         error "Command function $cmd_function not found for command: $command"
         exit 1
