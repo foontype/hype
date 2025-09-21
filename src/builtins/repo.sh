@@ -22,6 +22,7 @@ Subcommands:
   bind <url>      Bind repository to hype name
   unbind          Unbind repository from hype name
   update          Update repository binding
+  check           Show current repository binding (exit 0 if exists, 1 if not)
   check <url>     Check repository binding matches specification
   prepare <url>   Ensure repository binding matches specification
   info            Show repository binding information
@@ -30,6 +31,8 @@ Subcommands:
 Examples:
   hype my-nginx repo bind user/repo                              Bind repository (shorthand)
   hype my-nginx repo bind https://github.com/user/repo.git      Bind repository (full URL)
+  hype my-nginx repo check                                       Show current binding status
+  hype my-nginx repo check user/repo                             Check if binding matches
   hype my-nginx repo info                                        Show binding info
   hype my-nginx repo unbind                                      Remove binding
 EOF
@@ -65,7 +68,11 @@ cmd_repo() {
             cmd_repo_update "$hype_name" "$@"
             ;;
         "check")
-            cmd_repo_check "$hype_name" "$@"
+            if [[ $# -eq 0 ]]; then
+                cmd_repo_check_current "$hype_name"
+            else
+                cmd_repo_check "$hype_name" "$@"
+            fi
             ;;
         "prepare")
             cmd_repo_prepare "$hype_name" "$@"
@@ -73,10 +80,10 @@ cmd_repo() {
         "list")
             cmd_repo_list
             ;;
-        ""|"info")
+        "info")
             cmd_repo_info "$hype_name" "$@"
             ;;
-        "help"|"-h"|"--help")
+        ""|"help"|"-h"|"--help")
             show_repo_help
             ;;
         *)
@@ -227,6 +234,27 @@ cmd_repo_prepare() {
     else
         # Binding doesn't match or doesn't exist, run bind command
         cmd_repo_bind "$hype_name" "$@"
+    fi
+}
+
+# Check current repository binding (no arguments)
+cmd_repo_check_current() {
+    local hype_name="$1"
+    
+    if [[ -z "$hype_name" ]]; then
+        error "Hype name is required"
+        exit 1
+    fi
+    
+    # Check if binding exists and show information
+    if has_repo_binding "$hype_name"; then
+        # Repository binding exists, show information
+        cmd_repo_info "$hype_name"
+        exit 0
+    else
+        # No repository binding exists
+        info "No repository binding found for '$hype_name'"
+        exit 1
     fi
 }
 
@@ -450,11 +478,12 @@ Commands:
                         Bind repository to hype name
   unbind                Remove repository binding
   update                Update repository cache
+  check                 Show current repository binding (exit 0 if exists, 1 if not)
   check <url> [--branch <branch>] [--path <path>]
                         Check repository binding matches specification
   prepare <url> [--branch <branch>] [--path <path>]
                         Ensure repository binding matches specification
-  info                  Show binding information (default)
+  info                  Show binding information
   list                  List all repository bindings
   help, -h, --help      Show this help message
 
@@ -463,6 +492,12 @@ Options:
   --path <path>         Specify path within repository (default: .)
 
 Examples:
+  # Show repo subcommand help
+  hype myapp repo
+
+  # Check current repository binding status
+  hype myapp repo check
+
   # Bind a GitHub repository using shorthand
   hype myapp repo bind foontype/hype
 
@@ -472,14 +507,14 @@ Examples:
   # Bind with specific branch and path
   hype myapp repo bind user/repo --branch develop --path deploy
 
-  # Check repository binding
+  # Check if binding matches specific repository
   hype myapp repo check user/repo --branch develop --path deploy
 
   # Ensure repository binding (prepare)
   hype myapp repo prepare user/repo --branch develop --path deploy
 
-  # Show binding information
-  hype myapp repo
+  # Show detailed binding information
+  hype myapp repo info
 
   # Update repository cache
   hype myapp repo update
