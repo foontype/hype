@@ -34,7 +34,7 @@ cmd_template() {
         *)
             error "Unknown template subcommand: $subcommand"
             show_template_help
-            exit 1
+            return 1
             ;;
     esac
 }

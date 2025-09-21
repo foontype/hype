@@ -145,7 +145,7 @@ cmd_up() {
         debug "Build task found, running build"
         if ! run_build_task "$hype_name"; then
             error "Build task failed"
-            exit 1
+            return 1
         fi
         info "Build task completed successfully"
     else
@@ -155,7 +155,7 @@ cmd_up() {
     # Run helmfile apply
     if ! run_helmfile_apply "$hype_name"; then
         error "Helmfile apply failed"
-        exit 1
+        return 1
     fi
     
     info "Up command completed successfully for hype: $hype_name"
@@ -172,7 +172,7 @@ cmd_down() {
     # Run helmfile destroy
     if ! run_helmfile_destroy "$hype_name"; then
         error "Helmfile destroy failed"
-        exit 1
+        return 1
     fi
     
     info "Down command completed successfully for hype: $hype_name"
@@ -190,7 +190,7 @@ cmd_restart() {
     info "Starting restart: running down phase"
     if ! run_helmfile_destroy "$hype_name"; then
         error "Down phase failed during restart"
-        exit 1
+        return 1
     fi
     
     info "Down phase completed, starting up phase"
@@ -200,7 +200,7 @@ cmd_restart() {
         debug "Build task found, running build"
         if ! run_build_task "$hype_name"; then
             error "Build task failed during restart"
-            exit 1
+            return 1
         fi
         info "Build task completed successfully"
     else
@@ -210,7 +210,7 @@ cmd_restart() {
     # Run up (helmfile apply)
     if ! run_helmfile_apply "$hype_name"; then
         error "Up phase failed during restart"
-        exit 1
+        return 1
     fi
     
     info "Restart command completed successfully for hype: $hype_name"

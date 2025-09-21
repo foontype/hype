@@ -42,7 +42,7 @@ cmd_parse_section() {
     if [[ -z "$section_type" ]]; then
         error "Section type is required"
         error "Usage: hype <hype-name> parse section [hype|helmfile|taskfile]"
-        exit 1
+        return 1
     fi
     
     parse_hypefile "$hype_name"
@@ -66,7 +66,7 @@ cmd_parse_section() {
         *)
             error "Unknown section type: $section_type"
             error "Valid options: hype, helmfile, taskfile"
-            exit 1
+            return 1
             ;;
     esac
 }
@@ -84,12 +84,12 @@ cmd_parse() {
         "")
             error "Missing parse subcommand"
             error "Usage: hype <hype-name> parse section [hype|helmfile|taskfile]"
-            exit 1
+            return 1
             ;;
         *)
             error "Unknown parse subcommand: $subcommand"
             error "Valid options: section"
-            exit 1
+            return 1
             ;;
     esac
 }

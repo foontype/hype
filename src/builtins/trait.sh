@@ -19,23 +19,24 @@ Usage: hype <hype-name> trait [SUBCOMMAND]
 Manage trait settings for HYPE names
 
 Subcommands:
-  (none)              Show current trait (exit 0 if exists, exit 1 if not)
-  set <trait-type>    Set trait type
-  unset               Remove trait
-  check <trait-type>  Check if current trait matches specified trait
-  prepare <trait-type> Prepare trait (check if exists, set if not)
+  check                   Show current trait (exit 0 if exists, exit 1 if not)
+  check <trait-name>      Check if current trait matches specified trait name
+  set <trait-type>        Set trait type
+  unset                   Remove trait
+  prepare <trait-type>    Prepare trait (check if exists, set if not)
 
 Examples:
-  hype my-nginx trait                     Show current trait
+  hype my-nginx trait                     Show trait help
+  hype my-nginx trait check               Show current trait
+  hype my-nginx trait check production    Check if trait is production (exit 0 if match, exit 1 if no match)
   hype my-nginx trait set production      Set trait to production
   hype my-nginx trait unset               Remove trait
-  hype my-nginx trait check production    Check if trait is production (exit 0 if match, exit 1 if no match)
   hype my-nginx trait prepare production  Prepare trait (set if not already production)
 EOF
 }
 
 help_trait_brief() {
-    echo "Show current trait (exit 0 if exists, exit 1 if not)"
+    echo "Manage trait settings for HYPE names"
 }
 
 # Get trait for hype name from hype-trait-<hype-name> ConfigMap
@@ -138,57 +139,56 @@ cmd_trait() {
     
     case "$subcommand" in
         "")
-            # Show current trait
-            local current_trait
-            if current_trait=$(get_hype_trait "$hype_name" 2>/dev/null); then
-                echo "$current_trait"
-                exit 0
-            else
-                echo "No trait set"
-                exit 1
-            fi
+            # Show trait help
+            help_trait
             ;;
         "set")
             if [[ -z "$trait_type" ]]; then
                 error "Trait type is required"
                 error "Usage: hype <hype-name> trait set <trait-type>"
-                exit 1
+                return 1
             fi
             set_hype_trait "$hype_name" "$trait_type"
             ;;
         "unset")
             if ! unset_hype_trait "$hype_name"; then
-                exit 1
+                return 1
             fi
             ;;
         "check")
             if [[ -z "$trait_type" ]]; then
-                error "Trait type is required for check"
-                error "Usage: hype <hype-name> trait check <trait-type>"
-                exit 1
-            fi
-            
-            # Get current trait
-            local current_trait
-            if current_trait=$(get_hype_trait "$hype_name" 2>/dev/null); then
-                # Compare current trait with specified trait
-                if [[ "$current_trait" == "$trait_type" ]]; then
-                    debug "Trait matches: $current_trait == $trait_type"
-                    exit 0
+                # Show current trait
+                local current_trait
+                if current_trait=$(get_hype_trait "$hype_name" 2>/dev/null); then
+                    echo "$current_trait"
+                    return 0
                 else
-                    debug "Trait does not match: $current_trait != $trait_type"
-                    exit 1
+                    echo "No trait set"
+                    return 1
                 fi
             else
-                debug "No trait set for hype: $hype_name"
-                exit 1
+                # Check if current trait matches specified trait
+                local current_trait
+                if current_trait=$(get_hype_trait "$hype_name" 2>/dev/null); then
+                    # Compare current trait with specified trait
+                    if [[ "$current_trait" == "$trait_type" ]]; then
+                        debug "Trait matches: $current_trait == $trait_type"
+                        return 0
+                    else
+                        debug "Trait does not match: $current_trait != $trait_type"
+                        return 1
+                    fi
+                else
+                    debug "No trait set for hype: $hype_name"
+                    return 1
+                fi
             fi
             ;;
         "prepare")
             if [[ -z "$trait_type" ]]; then
                 error "Trait type is required for prepare"
                 error "Usage: hype <hype-name> trait prepare <trait-type>"
-                exit 1
+                return 1
             fi
             
             # Check if trait exists and matches
@@ -205,7 +205,7 @@ cmd_trait() {
         *)
             error "Unknown trait subcommand: $subcommand"
             error "Valid options: set, unset, check, prepare"
-            exit 1
+            return 1
             ;;
     esac
 }

@@ -22,6 +22,7 @@ Subcommands:
   bind <url>      Bind repository to hype name
   unbind          Unbind repository from hype name
   update          Update repository binding
+  check           Show current repository binding (exit 0 if exists, 1 if not)
   check <url>     Check repository binding matches specification
   prepare <url>   Ensure repository binding matches specification
   info            Show repository binding information
@@ -30,6 +31,8 @@ Subcommands:
 Examples:
   hype my-nginx repo bind user/repo                              Bind repository (shorthand)
   hype my-nginx repo bind https://github.com/user/repo.git      Bind repository (full URL)
+  hype my-nginx repo check                                       Show current binding status
+  hype my-nginx repo check user/repo                             Check if binding matches
   hype my-nginx repo info                                        Show binding info
   hype my-nginx repo unbind                                      Remove binding
 EOF
@@ -65,7 +68,11 @@ cmd_repo() {
             cmd_repo_update "$hype_name" "$@"
             ;;
         "check")
-            cmd_repo_check "$hype_name" "$@"
+            if [[ $# -eq 0 ]]; then
+                cmd_repo_check_current "$hype_name"
+            else
+                cmd_repo_check "$hype_name" "$@"
+            fi
             ;;
         "prepare")
             cmd_repo_prepare "$hype_name" "$@"
@@ -73,16 +80,16 @@ cmd_repo() {
         "list")
             cmd_repo_list
             ;;
-        ""|"info")
+        "info")
             cmd_repo_info "$hype_name" "$@"
             ;;
-        "help"|"-h"|"--help")
+        ""|"help"|"-h"|"--help")
             show_repo_help
             ;;
         *)
             error "Unknown repo subcommand: $subcommand"
             show_repo_help
-            exit 1
+            return 1
             ;;
     esac
 }
@@ -112,7 +119,7 @@ cmd_repo_bind() {
                 else
                     error "Unknown argument: $1"
                     show_repo_help
-                    exit 1
+                    return 1
                 fi
                 shift
                 ;;
@@ -122,13 +129,13 @@ cmd_repo_bind() {
     if [[ -z "$hype_name" ]]; then
         error "Hype name is required"
         show_repo_help
-        exit 1
+        return 1
     fi
     
     if [[ -z "$repo_url" ]]; then
         error "Repository URL is required"
         show_repo_help
-        exit 1
+        return 1
     fi
     
     # Set defaults
@@ -152,7 +159,7 @@ cmd_repo_bind() {
         error "  - https://github.com/user/repo"
         error "  - https://github.com/user/repo.git"
         error "  - git@github.com:user/repo.git"
-        exit 1
+        return 1
     fi
     
     info "Binding repository to hype name '$hype_name'"
@@ -175,7 +182,7 @@ cmd_repo_bind() {
         fi
     else
         error "Failed to bind repository"
-        exit 1
+        return 1
     fi
 }
 
@@ -186,13 +193,13 @@ cmd_repo_unbind() {
     if [[ -z "$hype_name" ]]; then
         error "Hype name is required"
         show_repo_help
-        exit 1
+        return 1
     fi
     
     # Check if binding exists
     if ! has_repo_binding "$hype_name"; then
         warn "No repository binding found for '$hype_name'"
-        exit 1
+        return 1
     fi
     
     info "Removing repository binding for '$hype_name'"
@@ -211,7 +218,7 @@ cmd_repo_unbind() {
         info "Repository unbinding completed successfully"
     else
         error "Failed to unbind repository"
-        exit 1
+        return 1
     fi
 }
 
@@ -227,6 +234,27 @@ cmd_repo_prepare() {
     else
         # Binding doesn't match or doesn't exist, run bind command
         cmd_repo_bind "$hype_name" "$@"
+    fi
+}
+
+# Check current repository binding (no arguments)
+cmd_repo_check_current() {
+    local hype_name="$1"
+    
+    if [[ -z "$hype_name" ]]; then
+        error "Hype name is required"
+        return 1
+    fi
+    
+    # Check if binding exists and show information
+    if has_repo_binding "$hype_name"; then
+        # Repository binding exists, show information
+        cmd_repo_info "$hype_name"
+        return 0
+    else
+        # No repository binding exists
+        info "No repository binding found for '$hype_name'"
+        return 1
     fi
 }
 
@@ -254,7 +282,7 @@ cmd_repo_check() {
                     repo_url="$1"
                 else
                     error "Unknown argument: $1"
-                    exit 1
+                    return 1
                 fi
                 shift
                 ;;
@@ -262,11 +290,11 @@ cmd_repo_check() {
     done
     
     if [[ -z "$hype_name" ]]; then
-        exit 1
+        return 1
     fi
     
     if [[ -z "$repo_url" ]]; then
-        exit 1
+        return 1
     fi
     
     # Set defaults (same as bind command)
@@ -280,7 +308,7 @@ cmd_repo_check() {
     local binding_data
     if ! binding_data=$(get_repo_binding "$hype_name"); then
         # No binding exists
-        exit 1
+        return 1
     fi
     
     # Parse current binding data
@@ -293,10 +321,10 @@ cmd_repo_check() {
        [[ "$branch" == "$REPO_BRANCH" ]] && \
        [[ "$path" == "$REPO_PATH" ]]; then
         # Binding matches
-        exit 0
+        return 0
     else
         # Binding does not match
-        exit 1
+        return 1
     fi
 }
 
@@ -307,7 +335,7 @@ cmd_repo_update() {
     if [[ -z "$hype_name" ]]; then
         error "Hype name is required"
         show_repo_help
-        exit 1
+        return 1
     fi
     
     # Get repository binding
@@ -315,7 +343,7 @@ cmd_repo_update() {
     if ! binding_data=$(get_repo_binding "$hype_name"); then
         error "No repository binding found for '$hype_name'"
         error "Use 'hype $hype_name repo bind <url>' to bind a repository first"
-        exit 1
+        return 1
     fi
     
     # Parse binding data
@@ -342,7 +370,7 @@ cmd_repo_update() {
                 info "Repository re-cached successfully"
             else
                 error "Failed to update repository cache"
-                exit 1
+                return 1
             fi
         fi
     else
@@ -352,7 +380,7 @@ cmd_repo_update() {
             info "Repository cached successfully"
         else
             error "Failed to cache repository"
-            exit 1
+            return 1
         fi
     fi
 }
@@ -366,7 +394,7 @@ cmd_repo_info() {
     if [[ -z "$hype_name" ]]; then
         error "Hype name is required"
         show_repo_help
-        exit 1
+        return 1
     fi
     
     # Check if binding exists
@@ -412,7 +440,7 @@ cmd_repo_info() {
         fi
         
         # Exit with success code when repo binding exists
-        exit 0
+        return 0
         
     else
         info "No repository binding found for '$hype_name'"
@@ -422,7 +450,7 @@ cmd_repo_info() {
         info "  hype $hype_name repo bind <repository-url>"
         
         # Exit with failure code when repo binding does not exist
-        exit 1
+        return 1
     fi
 }
 
@@ -450,11 +478,12 @@ Commands:
                         Bind repository to hype name
   unbind                Remove repository binding
   update                Update repository cache
+  check                 Show current repository binding (exit 0 if exists, 1 if not)
   check <url> [--branch <branch>] [--path <path>]
                         Check repository binding matches specification
   prepare <url> [--branch <branch>] [--path <path>]
                         Ensure repository binding matches specification
-  info                  Show binding information (default)
+  info                  Show binding information
   list                  List all repository bindings
   help, -h, --help      Show this help message
 
@@ -463,6 +492,12 @@ Options:
   --path <path>         Specify path within repository (default: .)
 
 Examples:
+  # Show repo subcommand help
+  hype myapp repo
+
+  # Check current repository binding status
+  hype myapp repo check
+
   # Bind a GitHub repository using shorthand
   hype myapp repo bind foontype/hype
 
@@ -472,14 +507,14 @@ Examples:
   # Bind with specific branch and path
   hype myapp repo bind user/repo --branch develop --path deploy
 
-  # Check repository binding
+  # Check if binding matches specific repository
   hype myapp repo check user/repo --branch develop --path deploy
 
   # Ensure repository binding (prepare)
   hype myapp repo prepare user/repo --branch develop --path deploy
 
-  # Show binding information
-  hype myapp repo
+  # Show detailed binding information
+  hype myapp repo info
 
   # Update repository cache
   hype myapp repo update

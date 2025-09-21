@@ -2,6 +2,8 @@
 
 A modular command-line tool written in Bash for Kubernetes AI deployments, providing streamlined management of default resources and configurations through a modular architecture.
 
+> This is an example change for demonstration purposes.
+
 ## Overview
 
 HYPE is a Bash-based CLI tool that simplifies the deployment and management of Kubernetes applications using Helmfile. It uses a modular architecture with separate core modules and builtins for different commands, following a build system approach where individual components are combined into a single executable. The tool introduces the concept of "hypefile.yaml" - a structured configuration file that separates default resources from Helmfile configurations.

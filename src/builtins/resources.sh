@@ -19,39 +19,45 @@ check_resource_status() {
     case "$type" in
         "DefaultStateValues")
             echo -e "${GREEN}✓${NC} DefaultStateValues (local processing)"
+            return 0
             ;;
         "StateValuesConfigmap"|"Configmap")
             if kubectl get configmap "$name" >/dev/null 2>&1; then
                 echo -e "${GREEN}✓${NC} ConfigMap $name exists"
+                return 0
             else
                 echo -e "${RED}✗${NC} ConfigMap $name missing"
+                return 1
             fi
             ;;
         "Secrets")
             if kubectl get secret "$name" >/dev/null 2>&1; then
                 echo -e "${GREEN}✓${NC} Secret $name exists"
+                return 0
             else
                 echo -e "${RED}✗${NC} Secret $name missing"
+                return 1
             fi
             ;;
         *)
             echo -e "${YELLOW}?${NC} Unknown resource type: $type"
+            return 1
             ;;
     esac
 }
 
-# Check command - check status of default resources
+# Check command - display current resources and check if configuration exists
 cmd_resources_check() {
     local hype_name="$1"
     
-    info "Resource status for: $hype_name"
+    info "Resources for: $hype_name"
     echo
     
     parse_hypefile "$hype_name"
     
     if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
         info "No hypefile section found"
-        return
+        return 1
     fi
     
     # Get resource count first
@@ -59,11 +65,11 @@ cmd_resources_check() {
     resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
     
     if [[ "$resource_count" -eq 0 ]]; then
-        info "No default resources found"
-        return
+        info "No default resources configured"
+        return 1
     fi
     
-    # Check status of each default resource
+    # Display each default resource
     for (( i=0; i<resource_count; i++ )); do
         local name type
         
@@ -72,20 +78,33 @@ cmd_resources_check() {
         
         if [[ "$type" != "null" ]]; then
             if [[ "$type" == "DefaultStateValues" ]]; then
-                # DefaultStateValues doesn't have a name, use type for status
-                check_resource_status "" "$type"
+                echo "  - Type: $type (local processing)"
             elif [[ "$name" != "null" ]]; then
-                check_resource_status "$name" "$type"
+                echo "  - Name: $name, Type: $type"
+            else
+                echo "  - Type: $type"
             fi
         fi
     done
+    
+    echo
+    info "Found $resource_count configured resource(s)"
+    
+    # Exit with status 0 since resources are configured
+    return 0
 }
 
 # Main command function for resources
 cmd_resources() {
     local hype_name="$1"
     local subcommand="${2:-}"
-    shift 2
+    
+    # Only shift if we have a subcommand
+    if [[ -n "$subcommand" ]]; then
+        shift 2
+    else
+        shift 1
+    fi
     
     case "$subcommand" in
         "check")
@@ -97,7 +116,7 @@ cmd_resources() {
         *)
             error "Unknown resources subcommand: $subcommand"
             help_resources
-            exit 1
+            return 1
             ;;
     esac
 }
@@ -110,16 +129,17 @@ Usage: hype <hype-name> resources <subcommand> [options...]
 Resources builtin for HYPE CLI - manage and check status of resources
 
 Subcommands:
-  check                   Check status of default resources
+  check                   Display current resources and check if configuration exists (exit 0 if exists, exit 1 if not)
   help, -h, --help       Show this help message
 
 Examples:
-  hype my-hype resources check     Check resource status for my-hype
-  hype my-hype resources help      Show this help
+  hype my-nginx resources         Show this help
+  hype my-nginx resources check   Display current resources for my-nginx
+  hype my-nginx resources help    Show this help
 
-The 'check' subcommand lists all default resources defined in the 
-hypefile.yaml and shows their current status in the Kubernetes cluster,
-indicating whether they exist or are missing from the cluster.
+The 'check' subcommand displays all default resources defined in the 
+hypefile.yaml. It exits with status 0 if resources are configured, 
+or status 1 if no resources are configured.
 EOF
 }
 
