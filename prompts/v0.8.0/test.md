@@ -211,7 +211,32 @@ kubectl が利用できない環境では以下をテスト:
 
 ### プロジェクト準備機能 テスト手順
 
-TODO
+#### 14. プロジェクト準備テスト
+
+> ./build/hype my-nginx prepare foontype/hype --path prompts/nginx-example
+  * プロジェクト準備処理が開始されること
+  * trait準備、リポジトリ準備、ビルド、プッシュ、デプロイの各ステップが順次実行されること
+  * 各ステップの進行状況が表示されること
+
+#### 15. 準備後の設定確認テスト
+
+> ./build/hype my-nginx repo check
+  * リポジトリが正しくバインドされていること
+  * バインド情報が表示されること
+
+> ./build/hype my-nginx trait check
+  * traitが正しく設定されていること
+  * trait設定情報が表示されること
+
+> ./build/hype my-nginx resources check
+  * 必要なリソースが正しく設定されていること
+  * リソース設定情報が表示されること
+
+#### 16. 後片付けテスト
+
+> ./build/hype my-nginx down
+  * デプロイされたリソースが削除されること
+  * クリーンアップ処理が正常に完了すること
 
 ### テスト後クリーンアップ
 
