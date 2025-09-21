@@ -108,7 +108,7 @@ cmd_prepare() {
     echo ""
     
     # Step 1: trait prepare
-    info "Step 1/5: Preparing trait..."
+    info "Step 1/6: Preparing trait..."
     if ! cmd_trait "$hype_name" "prepare" "$trait"; then
         error "Failed to prepare trait: $trait"
         exit 1
@@ -117,16 +117,25 @@ cmd_prepare() {
     echo ""
     
     # Step 2: repo prepare
-    info "Step 2/5: Preparing repository..."
+    info "Step 2/6: Preparing repository..."
     if ! cmd_repo "$hype_name" "prepare" "$repo_url" --branch "$branch" --path "$path"; then
         error "Failed to prepare repository: $repo_url"
         exit 1
     fi
     info "✓ Repository preparation completed"
     echo ""
+
+    # Step 2.5: Initialize hype environment
+    info "Step 2.5/5: Initializing hype environment..."
+    if ! cmd_init "$hype_name"; then
+        error "Failed to initialize hype environment"
+        exit 1
+    fi
+    info "✓ Hype environment initialization completed"
+    echo ""
     
     # Step 3: task build
-    info "Step 3/5: Running build task..."
+    info "Step 3/6: Running build task..."
     if ! cmd_task "$hype_name" "build"; then
         error "Failed to run build task"
         exit 1
@@ -135,7 +144,7 @@ cmd_prepare() {
     echo ""
     
     # Step 4: task push
-    info "Step 4/5: Running push task..."
+    info "Step 4/6: Running push task..."
     if ! cmd_task "$hype_name" "push"; then
         error "Failed to run push task"
         exit 1
@@ -144,7 +153,7 @@ cmd_prepare() {
     echo ""
     
     # Step 5: up
-    info "Step 5/5: Deploying application..."
+    info "Step 5/6: Deploying application..."
     if ! cmd_up "$hype_name"; then
         error "Failed to deploy application"
         exit 1
