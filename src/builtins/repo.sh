@@ -23,7 +23,7 @@ Subcommands:
   unbind          Unbind repository from hype name
   update          Update repository binding
   check <url>     Check repository binding matches specification
-  prepare <url>   Complete preparation: bind repository, initialize resources, and build
+  prepare <url>   Ensure repository binding matches specification
   info            Show repository binding information
   list            List all repository bindings
 
@@ -220,37 +220,14 @@ cmd_repo_prepare() {
     local hype_name="$1"
     shift  # Remove hype_name from arguments
     
-    info "Starting preparation for: $hype_name"
-    
-    # Step 1: Repository binding check/setup
-    info "Step 1: Repository binding setup"
+    # Check if the binding matches specification
     if cmd_repo_check "$hype_name" "$@"; then
-        # Binding matches, show info
+        # Binding matches, run check command
         cmd_repo_info "$hype_name"
     else
         # Binding doesn't match or doesn't exist, run bind command
         cmd_repo_bind "$hype_name" "$@"
     fi
-    
-    # Step 2: Initialize default resources
-    info "Step 2: Initializing default resources"
-    if cmd_init "$hype_name"; then
-        info "Resource initialization completed successfully"
-    else
-        error "Resource initialization failed"
-        exit 1
-    fi
-    
-    # Step 3: Build the project (if build task exists)
-    info "Step 3: Building project"
-    if cmd_task "$hype_name" "build" 2>/dev/null; then
-        info "Build completed successfully"
-    else
-        warn "Build task not found or failed - skipping build step"
-        debug "This is not an error if your project doesn't have a build task defined"
-    fi
-    
-    info "Preparation completed for: $hype_name"
 }
 
 # Check repository binding matches specification
@@ -476,7 +453,7 @@ Commands:
   check <url> [--branch <branch>] [--path <path>]
                         Check repository binding matches specification
   prepare <url> [--branch <branch>] [--path <path>]
-                        Complete preparation: bind repository, initialize resources, and build
+                        Ensure repository binding matches specification
   info                  Show binding information (default)
   list                  List all repository bindings
   help, -h, --help      Show this help message
@@ -498,7 +475,7 @@ Examples:
   # Check repository binding
   hype myapp repo check user/repo --branch develop --path deploy
 
-  # Complete preparation: bind repo, init resources, and build
+  # Ensure repository binding (prepare)
   hype myapp repo prepare user/repo --branch develop --path deploy
 
   # Show binding information
