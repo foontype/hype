@@ -57,7 +57,7 @@ cmd_resources_check() {
     
     if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
         info "No hypefile section found"
-        exit 1
+        return 1
     fi
     
     # Get resource count first
@@ -66,7 +66,7 @@ cmd_resources_check() {
     
     if [[ "$resource_count" -eq 0 ]]; then
         info "No default resources configured"
-        exit 1
+        return 1
     fi
     
     # Display each default resource
@@ -91,7 +91,7 @@ cmd_resources_check() {
     info "Found $resource_count configured resource(s)"
     
     # Exit with status 0 since resources are configured
-    exit 0
+    return 0
 }
 
 # Main command function for resources
@@ -116,7 +116,7 @@ cmd_resources() {
         *)
             error "Unknown resources subcommand: $subcommand"
             help_resources
-            exit 1
+            return 1
             ;;
     esac
 }

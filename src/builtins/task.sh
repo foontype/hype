@@ -41,7 +41,7 @@ cmd_task() {
     if [[ -z "$task_name" ]]; then
         error "Task name is required"
         error "Usage: hype <hype-name> task <task-name> [args...]"
-        exit 1
+        return 1
     fi
     
     debug "Running task '$task_name' for: $hype_name"
@@ -53,7 +53,7 @@ cmd_task() {
     if [[ ! -f "$TASKFILE_SECTION_FILE" || ! -s "$TASKFILE_SECTION_FILE" ]]; then
         error "No taskfile section found in hypefile"
         error "Add a taskfile section after the second '---' separator"
-        exit 1
+        return 1
     fi
     
     # Validate task exists in taskfile using task command itself
@@ -66,7 +66,7 @@ cmd_task() {
         if [[ -n "$all_tasks" ]]; then
             error "Available tasks: ${all_tasks// /, }"
         fi
-        exit 1
+        return 1
     fi
     
     # Check if task command is available

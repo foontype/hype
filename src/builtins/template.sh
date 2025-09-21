@@ -116,7 +116,7 @@ cmd_template_state_value() {
     if [[ -z "$configmap_name" ]]; then
         error "ConfigMap name is required"
         error "Usage: hype <hype-name> template state-values <configmap-name>"
-        exit 1
+        return 1
     fi
     
     info "State-value file content for ConfigMap: $configmap_name"
@@ -124,20 +124,20 @@ cmd_template_state_value() {
     
     # Validate the configmap
     if ! validate_state_values_configmap "$hype_name" "$configmap_name"; then
-        exit 1
+        return 1
     fi
     
     # Extract YAML content from ConfigMap data.values key
     local state_values
     if ! state_values=$(kubectl get configmap "$configmap_name" -o jsonpath='{.data.values}' 2>/dev/null); then
         error "Failed to extract state values from ConfigMap: $configmap_name"
-        exit 1
+        return 1
     fi
     
     # Verify the state values are not empty
     if [[ -z "$state_values" ]]; then
         error "ConfigMap $configmap_name contains no values data"
-        exit 1
+        return 1
     fi
     
     debug "Successfully extracted state values from ConfigMap: $configmap_name"
@@ -162,7 +162,7 @@ cmd_template() {
         *)
             error "Unknown template subcommand: $subcommand"
             error "Valid options: state-values"
-            exit 1
+            return 1
             ;;
     esac
 }

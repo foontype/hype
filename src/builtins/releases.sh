@@ -45,13 +45,13 @@ cmd_releases_check() {
     local release_list
     if ! release_list=$(get_releases_list); then
         error "Failed to get releases list from hypefile"
-        exit 1
+        return 1
     fi
     
     # Check if release list is empty
     if [[ -z "$release_list" ]]; then
         info "No releases to check - releases list is empty"
-        exit 0
+        return 0
     fi
     
     # Check each release
@@ -68,10 +68,10 @@ cmd_releases_check() {
     # Report results
     if [[ ${#failed_releases[@]} -eq 0 ]]; then
         info "All releases are present"
-        exit 0
+        return 0
     else
         error "Missing releases: ${failed_releases[*]}"
-        exit 1
+        return 1
     fi
 }
 
@@ -91,7 +91,7 @@ cmd_releases() {
         *)
             error "Unknown releases subcommand: $subcommand"
             help_releases
-            exit 1
+            return 1
             ;;
     esac
 }
