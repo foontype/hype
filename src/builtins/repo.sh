@@ -24,7 +24,8 @@ Subcommands:
   update          Update repository binding
   check <url>     Check repository binding matches specification
   prepare <url>   Ensure repository binding matches specification
-  info            Show repository binding information
+  status          Show repository status and binding information
+  info            Show repository binding information  
   list            List all repository bindings
 
 Examples:
@@ -69,6 +70,9 @@ cmd_repo() {
             ;;
         "prepare")
             cmd_repo_prepare "$hype_name" "$@"
+            ;;
+        "status")
+            cmd_repo_status "$hype_name" "$@"
             ;;
         "list")
             cmd_repo_list
@@ -357,6 +361,46 @@ cmd_repo_update() {
     fi
 }
 
+# Show repository status and binding information
+cmd_repo_status() {
+    local hype_name="$1"
+    
+    if [[ -z "$hype_name" ]]; then
+        error "Hype name is required"
+        show_repo_help
+        exit 1
+    fi
+    
+    # Check if binding exists
+    if has_repo_binding "$hype_name"; then
+        local cache_dir
+        cache_dir=$(get_repo_cache_dir "$hype_name")
+        
+        info "Repository status for '$hype_name':"
+        
+        if is_valid_cache "$cache_dir"; then
+            # Show repository status
+            local status
+            if status=$(get_repo_status "$cache_dir"); then
+                echo "Repository status:"
+                while IFS= read -r line; do
+                    echo "  $line"
+                done <<< "$status"
+            else
+                warn "Unable to get repository status"
+            fi
+        else
+            warn "Repository cache is missing or invalid"
+            info "Run 'hype $hype_name repo update' to update the cache"
+        fi
+        
+        exit 0
+    else
+        info "No repository binding found for '$hype_name'"
+        exit 1
+    fi
+}
+
 # Show repository binding information
 cmd_repo_info() {
     local hype_name="$1"
@@ -454,6 +498,7 @@ Commands:
                         Check repository binding matches specification
   prepare <url> [--branch <branch>] [--path <path>]
                         Ensure repository binding matches specification
+  status                Show repository status and binding information
   info                  Show binding information (default)
   list                  List all repository bindings
   help, -h, --help      Show this help message
@@ -477,6 +522,9 @@ Examples:
 
   # Ensure repository binding (prepare)
   hype myapp repo prepare user/repo --branch develop --path deploy
+
+  # Show repository status
+  hype myapp repo status
 
   # Show binding information
   hype myapp repo
