@@ -1,1 +1,1 @@
-see prompts/v0.7.0/test.md for smoke testing.
+see prompts/v0.8.0/test.md for smoke testing.
