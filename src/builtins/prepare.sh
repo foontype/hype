@@ -14,7 +14,7 @@ BUILTIN_COMMANDS+=("prepare")
 # Help functions
 help_prepare() {
     cat <<EOF
-Usage: hype <hype-name> prepare <url> --branch <branch> --path <path> --trait <trait>
+Usage: hype <hype-name> prepare <url> --branch <branch> --path <path> [--trait <trait>]
 
 Complete setup workflow in one command
 
@@ -28,10 +28,11 @@ This command performs a complete setup by executing the following steps:
 Options:
   --branch <branch>     Repository branch (default: main)
   --path <path>         Path within repository (default: .)
-  --trait <trait>       Trait type (required)
+  --trait <trait>       Trait type (optional, uses current trait if not specified)
 
 Examples:
   hype my-nginx prepare user/repo --trait production
+  hype my-nginx prepare user/repo                        (uses current trait)
   hype my-nginx prepare https://github.com/user/repo.git --branch develop --path deploy --trait staging
 EOF
 }
@@ -90,10 +91,21 @@ cmd_prepare() {
         return 1
     fi
     
+    # Check if trait is specified or current trait exists
+    local trait_specified=true
     if [[ -z "$trait" ]]; then
-        error "Trait is required"
-        help_prepare
-        return 1
+        trait_specified=false
+        debug "No trait specified, checking current trait..."
+        if ! cmd_trait "$hype_name" "check" >/dev/null 2>&1; then
+            error "No trait specified and no current trait is set"
+            error "Please either:"
+            error "  1. Set a trait first: hype $hype_name trait set <trait-type>"
+            error "  2. Specify a trait: hype $hype_name prepare <url> --trait <trait-type>"
+            return 1
+        fi
+        # Get current trait for workflow use
+        trait=$(cmd_trait "$hype_name" "check" 2>/dev/null)
+        info "Using current trait: $trait"
     fi
     
     # Set defaults
@@ -107,14 +119,19 @@ cmd_prepare() {
     info "Trait: $trait"
     echo ""
     
-    # Step 1: trait prepare
-    info "Step 1/6: Preparing trait..."
-    if ! cmd_trait "$hype_name" "prepare" "$trait"; then
-        error "Failed to prepare trait: $trait"
-        return 1
+    # Step 1: trait prepare (only if trait was explicitly specified)
+    if [[ "$trait_specified" == "true" ]]; then
+        info "Step 1/6: Preparing trait..."
+        if ! cmd_trait "$hype_name" "prepare" "$trait"; then
+            error "Failed to prepare trait: $trait"
+            return 1
+        fi
+        info "✓ Trait preparation completed"
+        echo ""
+    else
+        info "Step 1/6: Using current trait (skipping trait preparation)"
+        echo ""
     fi
-    info "✓ Trait preparation completed"
-    echo ""
     
     # Step 2: repo prepare
     info "Step 2/6: Preparing repository..."
