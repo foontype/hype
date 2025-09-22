@@ -146,17 +146,12 @@ cmd_prepare() {
     info "Trait: $trait"
     echo ""
     
-    # Step 1: trait prepare (only if trait was explicitly specified)
+    # Step 1: trait validation already completed above
     if [[ "$trait_specified" == "true" ]]; then
-        info "Step 1/6: Preparing trait..."
-        if ! cmd_trait "$hype_name" "prepare" "$trait"; then
-            error "Failed to prepare trait: $trait"
-            return 1
-        fi
-        info "✓ Trait preparation completed"
+        info "Step 1/6: Using specified trait: $trait"
         echo ""
     else
-        info "Step 1/6: No trait specified, skipping trait preparation"
+        info "Step 1/6: No trait specified, proceeding without trait"
         echo ""
     fi
     
