@@ -1,0 +1,4 @@
+
+dependsOn:
+  - hype: my-depend
+    prepare: foontype/hype --path prompts/nginx-example
