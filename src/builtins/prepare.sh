@@ -91,21 +91,48 @@ cmd_prepare() {
         return 1
     fi
     
-    # Check if trait is specified or current trait exists
+    # Check trait configuration
     local trait_specified=true
     if [[ -z "$trait" ]]; then
         trait_specified=false
-        debug "No trait specified, checking current trait..."
-        if ! cmd_trait "$hype_name" "check" >/dev/null 2>&1; then
-            error "No trait specified and no current trait is set"
+    fi
+
+    # Get current trait
+    local current_trait=""
+    if cmd_trait "$hype_name" "check" >/dev/null 2>&1; then
+        current_trait=$(cmd_trait "$hype_name" "check" 2>/dev/null)
+    fi
+
+    # Validate trait configuration based on requirements
+    if [[ "$trait_specified" == "true" ]]; then
+        # Case: trait specified
+        if [[ -z "$current_trait" ]]; then
+            # trait指定あり、カレントtraitなし → エラー
+            error "Trait '$trait' specified but no current trait is set"
+            error "Please set the trait first: hype $hype_name trait set $trait"
+            return 1
+        elif [[ "$current_trait" != "$trait" ]]; then
+            # trait指定あり、カレントtraitと不一致 → エラー
+            error "Trait mismatch: specified trait '$trait' differs from current trait '$current_trait'"
             error "Please either:"
-            error "  1. Set a trait first: hype $hype_name trait set <trait-type>"
-            error "  2. Specify a trait: hype $hype_name prepare <url> --trait <trait-type>"
+            error "  1. Use current trait: hype $hype_name prepare <url> --trait $current_trait"
+            error "  2. Change current trait: hype $hype_name trait set $trait"
             return 1
         fi
-        # Get current trait for workflow use
-        trait=$(cmd_trait "$hype_name" "check" 2>/dev/null)
-        info "Using current trait: $trait"
+        # trait指定あり、カレントtraitと一致 → OK
+        debug "Using specified trait: $trait (matches current trait)"
+    else
+        # Case: trait not specified
+        if [[ -n "$current_trait" ]]; then
+            # trait指定なし、カレントtraitあり → エラー
+            error "Current trait '$current_trait' is set but no trait specified"
+            error "Please either:"
+            error "  1. Specify the current trait: hype $hype_name prepare <url> --trait $current_trait"
+            error "  2. Clear current trait: hype $hype_name trait clear"
+            return 1
+        fi
+        # trait指定なし、カレントtraitなし → OK
+        debug "No trait specified and no current trait set, proceeding without trait"
     fi
     
     # Set defaults
@@ -129,7 +156,7 @@ cmd_prepare() {
         info "✓ Trait preparation completed"
         echo ""
     else
-        info "Step 1/6: Using current trait (skipping trait preparation)"
+        info "Step 1/6: No trait specified, skipping trait preparation"
         echo ""
     fi
     
