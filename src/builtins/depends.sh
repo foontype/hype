@@ -88,14 +88,14 @@ depends_up() {
                 fi
                 
                 info "Processing dependency $count: $depend_hype"
-                debug "Running: hype $depend_hype prepare $depend_prepare"
+                debug "Running: cmd_prepare $depend_hype $depend_prepare"
                 
-                if ! hype "$depend_hype" prepare "$depend_prepare"; then
+                if ! eval "cmd_prepare $depend_hype $depend_prepare"; then
                     error "Failed to prepare dependency: $depend_hype"
                     return 1
                 fi
                 
-                success "Dependency $count completed: $depend_hype"
+                info "Dependency $count completed: $depend_hype"
             fi
             
             # Start new entry
@@ -126,20 +126,20 @@ depends_up() {
         fi
         
         info "Processing dependency $count: $depend_hype"
-        debug "Running: hype $depend_hype prepare $depend_prepare"
+        debug "Running: cmd_prepare $depend_hype $depend_prepare"
         
-        if ! hype "$depend_hype" prepare "$depend_prepare"; then
+        if ! eval "cmd_prepare $depend_hype $depend_prepare"; then
             error "Failed to prepare dependency: $depend_hype"
             return 1
         fi
         
-        success "Dependency $count completed: $depend_hype"
+        info "Dependency $count completed: $depend_hype"
     fi
     
     if [[ $count -eq 0 ]]; then
         debug "No valid dependencies found for $hype_name"
     else
-        success "All $count dependencies started for $hype_name"
+        info "All $count dependencies started for $hype_name"
     fi
 }
 
@@ -212,10 +212,10 @@ depends_down() {
             return 1
         fi
         
-        success "Dependency $dep_num stopped: $depend_hype"
+        info "Dependency $dep_num stopped: $depend_hype"
     done
     
-    success "All $count dependencies stopped for $hype_name"
+    info "All $count dependencies stopped for $hype_name"
 }
 
 depends_list() {
@@ -295,9 +295,9 @@ The dependencies are configured in the hype section of hypefile.yaml:
 
   dependsOn:
     - hype: dependency-name
-      prepare: repo/path --option value
+      prepare: "repo/path --option value"
     - hype: another-dependency
-      prepare: local/repo --path example
+      prepare: "local/repo --path example"
 
 Examples:
   hype myapp depends up       Start all dependencies for myapp
