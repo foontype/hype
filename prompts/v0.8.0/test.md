@@ -18,6 +18,12 @@ task build を実行して build/hype をビルドします
 
 > which task
 
+念のため、一時ファイルを削除。
+
+> rm -rf /tmp/tmp.* /tmp/*.yaml
+  * 一時ファイルを削除
+
+
 ### プロジェクト開発機能 テスト手順
 
 > cd prompts/nginx-example
@@ -242,6 +248,12 @@ kubectl が利用できない環境では以下をテスト:
 
 > kubectl delete configmap hype-repos --ignore-not-found=true
   * テスト用ConfigMapを削除
+
+> rm -rf /tmp/tmp.* /tmp/*.yaml
+  * 一時ファイルを削除
+
+
+
 
 
 

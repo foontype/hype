@@ -108,3 +108,12 @@ get_releases_list() {
     
     yq eval '.expectedReleases[]' "$HYPE_SECTION_FILE" 2>/dev/null || true
 }
+
+# Get depends list from hype section
+get_depends_list() {
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        return
+    fi
+    
+    yq eval '.dependsOn[] | @yaml' "$HYPE_SECTION_FILE" 2>/dev/null | sed '/^---$/d' || true
+}
