@@ -88,9 +88,9 @@ depends_up() {
                 fi
                 
                 info "Processing dependency $count: $depend_hype"
-                debug "Running: $depend_prepare"
+                debug "Running: cmd_prepare $depend_hype $depend_prepare"
                 
-                if ! eval "$depend_prepare"; then
+                if ! eval "cmd_prepare $depend_hype $depend_prepare"; then
                     error "Failed to prepare dependency: $depend_hype"
                     return 1
                 fi
@@ -126,9 +126,9 @@ depends_up() {
         fi
         
         info "Processing dependency $count: $depend_hype"
-        debug "Running: $depend_prepare"
+        debug "Running: cmd_prepare $depend_hype $depend_prepare"
         
-        if ! eval "$depend_prepare"; then
+        if ! eval "cmd_prepare $depend_hype $depend_prepare"; then
             error "Failed to prepare dependency: $depend_hype"
             return 1
         fi
@@ -295,9 +295,9 @@ The dependencies are configured in the hype section of hypefile.yaml:
 
   dependsOn:
     - hype: dependency-name
-      prepare: "hype dependency-name prepare repo/path --option value"
+      prepare: "repo/path --option value"
     - hype: another-dependency
-      prepare: "command to prepare dependency"
+      prepare: "local/repo --path example"
 
 Examples:
   hype myapp depends up       Start all dependencies for myapp
