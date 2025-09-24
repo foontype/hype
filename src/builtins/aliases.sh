@@ -18,18 +18,20 @@ help_up() {
     cat <<EOF
 Usage: hype <hype-name> up
 
-Build and deploy (task build + helmfile apply)
+Start dependencies, build and deploy (dependencies + task build + helmfile apply)
 
-This command first runs the build task (if available) and then
-applies the helmfile configuration to deploy your application.
+This command performs a complete deployment workflow:
+1. Start all dependencies (if configured in dependsOn)
+2. Run the build task (if available)
+3. Apply the helmfile configuration to deploy your application
 
 Examples:
-  hype my-nginx up                   Build and deploy my-nginx
+  hype my-nginx up                   Deploy my-nginx with all dependencies
 EOF
 }
 
 help_up_brief() {
-    echo "Build and deploy (task build + helmfile apply)"
+    echo "Start dependencies, build and deploy (dependencies + task build + helmfile apply)"
 }
 
 help_down() {
@@ -56,8 +58,11 @@ Usage: hype <hype-name> restart
 
 Restart deployment (down + up)
 
-This command performs a complete restart by first destroying
-the current deployment and then rebuilding and redeploying.
+This command performs a restart workflow:
+1. Destroy the deployment (helmfile destroy)
+2. Start all dependencies (if configured in dependsOn)
+3. Run the build task (if available)
+4. Deploy the application (helmfile apply)
 
 Examples:
   hype my-nginx restart              Restart my-nginx deployment
@@ -132,13 +137,190 @@ run_helmfile_destroy() {
     cmd_helmfile "$hype_name" "destroy"
 }
 
-# Up command: build (if available) + helmfile apply
+# Stop dependencies in reverse order
+stop_dependencies() {
+    local hype_name="$1"
+    
+    local depends_list
+    if ! depends_list=$(get_depends_list); then
+        debug "No dependencies found for $hype_name"
+        return 0
+    fi
+    
+    if [[ -z "$depends_list" ]]; then
+        debug "No dependencies configured for $hype_name"
+        return 0
+    fi
+    
+    info "Stopping dependencies for $hype_name"
+    
+    local depend_array=()
+    local current_entry=""
+    
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^hype:.*$ ]]; then
+            # Process previous entry if exists
+            if [[ -n "$current_entry" ]]; then
+                local depend_hype
+                depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+                
+                if [[ -n "$depend_hype" && "$depend_hype" != "null" ]]; then
+                    depend_array+=("$depend_hype")
+                fi
+            fi
+            
+            # Start new entry
+            current_entry="$line"
+        else
+            # Continue building current entry
+            current_entry="$current_entry"$'\n'"$line"
+        fi
+    done <<< "$depends_list"
+    
+    # Process last entry
+    if [[ -n "$current_entry" ]]; then
+        local depend_hype
+        depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+        
+        if [[ -n "$depend_hype" && "$depend_hype" != "null" ]]; then
+            depend_array+=("$depend_hype")
+        fi
+    fi
+    
+    local count=${#depend_array[@]}
+    if [[ $count -eq 0 ]]; then
+        debug "No valid dependencies found for $hype_name"
+        return 0
+    fi
+    
+    for ((i = count - 1; i >= 0; i--)); do
+        local depend_hype="${depend_array[i]}"
+        local dep_num=$((count - i))
+        
+        info "Stopping dependency $dep_num: $depend_hype"
+        debug "Running: hype $depend_hype helmfile destroy"
+        
+        if ! hype "$depend_hype" helmfile destroy; then
+            error "Failed to destroy dependency: $depend_hype"
+            return 1
+        fi
+        
+        info "Dependency $dep_num stopped: $depend_hype"
+    done
+    
+    info "All $count dependencies stopped for $hype_name"
+}
+
+# Process dependencies if they exist
+run_dependencies() {
+    local hype_name="$1"
+    
+    local depends_list
+    if ! depends_list=$(get_depends_list); then
+        debug "No dependencies found for $hype_name"
+        return 0
+    fi
+    
+    if [[ -z "$depends_list" ]]; then
+        debug "No dependencies configured for $hype_name"
+        return 0
+    fi
+    
+    info "Starting dependencies for $hype_name"
+    
+    local count=0
+    local current_entry=""
+    
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^hype:.*$ ]]; then
+            # Process previous entry if exists
+            if [[ -n "$current_entry" ]]; then
+                count=$((count + 1))
+                local depend_hype
+                local depend_prepare
+                
+                depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+                depend_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
+                
+                if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
+                    error "Dependency $count: missing 'hype' field"
+                    return 1
+                fi
+                
+                if [[ -z "$depend_prepare" || "$depend_prepare" == "null" ]]; then
+                    error "Dependency $count: missing 'prepare' field"
+                    return 1
+                fi
+                
+                info "Processing dependency $count: $depend_hype"
+                debug "Running: cmd_prepare $depend_hype $depend_prepare"
+                
+                if ! eval "cmd_prepare $depend_hype $depend_prepare"; then
+                    error "Failed to prepare dependency: $depend_hype"
+                    return 1
+                fi
+                
+                info "Dependency $count completed: $depend_hype"
+            fi
+            
+            # Start new entry
+            current_entry="$line"
+        else
+            # Continue building current entry
+            current_entry="$current_entry"$'\n'"$line"
+        fi
+    done <<< "$depends_list"
+    
+    # Process last entry
+    if [[ -n "$current_entry" ]]; then
+        count=$((count + 1))
+        local depend_hype
+        local depend_prepare
+        
+        depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+        depend_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
+        
+        if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
+            error "Dependency $count: missing 'hype' field"
+            return 1
+        fi
+        
+        if [[ -z "$depend_prepare" || "$depend_prepare" == "null" ]]; then
+            error "Dependency $count: missing 'prepare' field"
+            return 1
+        fi
+        
+        info "Processing dependency $count: $depend_hype"
+        debug "Running: cmd_prepare $depend_hype $depend_prepare"
+        
+        if ! eval "cmd_prepare $depend_hype $depend_prepare"; then
+            error "Failed to prepare dependency: $depend_hype"
+            return 1
+        fi
+        
+        info "Dependency $count completed: $depend_hype"
+    fi
+    
+    if [[ $count -eq 0 ]]; then
+        debug "No valid dependencies found for $hype_name"
+    else
+        info "All $count dependencies started for $hype_name"
+    fi
+}
+
+# Up command: dependencies + build (if available) + helmfile apply
 cmd_up() {
     local hype_name="$1"
     
     debug "Running up command for: $hype_name"
     
     parse_hypefile "$hype_name"
+    
+    # Run dependencies first
+    if ! run_dependencies "$hype_name"; then
+        error "Dependencies failed"
+        return 1
+    fi
     
     # Run build task if available
     if has_build_task "$hype_name"; then
@@ -194,6 +376,12 @@ cmd_restart() {
     fi
     
     info "Down phase completed, starting up phase"
+    
+    # Run dependencies first
+    if ! run_dependencies "$hype_name"; then
+        error "Dependencies failed during restart"
+        return 1
+    fi
     
     # Run build task if available
     if has_build_task "$hype_name"; then
