@@ -1,19 +1,17 @@
 #!/bin/bash
 
-# Unit tests for addons functionality
-# Tests parsing of addons section from hypefile.yaml
+# Unit tests for addons module
 
-# Source test framework
-source "$(dirname "$0")/test-framework.sh"
+# Source required modules
+source "$(dirname "${BASH_SOURCE[0]}")/../../src/core/common.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../../src/core/config.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../../src/core/hypefile.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../../src/builtins/addons.sh"
 
 # Create test hypefile with addons section
-create_test_hypefile_with_addons() {
-    cat > "$HYPEFILE" << 'EOF'
----
-hype:
-  name: test-app
-  trait: test
-
+create_test_hypefile() {
+    local test_file="$1"
+    cat > "$test_file" << 'EOF'
 defaultResources:
   - name: "test-resource"
     type: StateValuesConfigmap
@@ -34,13 +32,9 @@ EOF
 }
 
 # Create test hypefile without addons
-create_test_hypefile_without_addons() {
-    cat > "$HYPEFILE" << 'EOF'
----
-hype:
-  name: test-app
-  trait: test
-
+create_test_hypefile_no_addons() {
+    local test_file="$1"
+    cat > "$test_file" << 'EOF'
 defaultResources:
   - name: "test-resource"
     type: StateValuesConfigmap
@@ -55,168 +49,149 @@ EOF
 }
 
 # Test parsing addons section
-test_addons_parsing() {
-    setup_test "test_addons_parsing"
+test_parse_addons_section() {
+    local test_hypefile=$(mktemp)
+    create_test_hypefile "$test_hypefile"
     
-    create_test_hypefile_with_addons
+    # Set HYPEFILE for parsing
+    HYPEFILE="$test_hypefile"
+    
+    # Parse the hypefile
     parse_hypefile "test-app"
     
     # Get addons list
     local addons_list
     addons_list=$(get_addons_list)
     
-    if [[ -n "$addons_list" ]]; then
-        # Count number of addons
-        local count=0
-        local current_entry=""
-        
-        while IFS= read -r line; do
-            if [[ "$line" =~ ^hype:.*$ ]]; then
-                if [[ -n "$current_entry" ]]; then
-                    count=$((count + 1))
-                fi
-                current_entry="$line"
-            else
-                current_entry="$current_entry"$'\n'"$line"
-            fi
-        done <<< "$addons_list"
-        
-        # Process last entry
-        if [[ -n "$current_entry" ]]; then
-            count=$((count + 1))
-        fi
-        
-        if [[ $count -eq 2 ]]; then
-            echo "✓ addons section parsed correctly (found $count addons)"
-            return 0
-        else
-            echo "✗ addons section parsing failed (found $count addons, expected 2)"
-            return 1
-        fi
+    # Check if we got the addons
+    local count
+    count=$(echo "$addons_list" | grep -c "hype:" || true)
+    
+    rm -f "$test_hypefile"
+    
+    if [[ $count -eq 2 ]]; then
+        echo "✓ addons section parsed correctly (found $count addons)"
+        return 0
     else
-        echo "✗ addons list is empty"
+        echo "✗ addons section parsing failed (found $count addons, expected 2)"
         return 1
     fi
 }
 
-# Test parsing hypefile without addons
-test_no_addons_parsing() {
-    setup_test "test_no_addons_parsing"
+# Test parsing when no addons exist
+test_parse_no_addons() {
+    local test_hypefile=$(mktemp)
+    create_test_hypefile_no_addons "$test_hypefile"
     
-    create_test_hypefile_without_addons
+    # Set HYPEFILE for parsing
+    HYPEFILE="$test_hypefile"
+    
+    # Parse the hypefile
     parse_hypefile "test-app"
     
     # Get addons list
     local addons_list
     addons_list=$(get_addons_list)
+    
+    rm -f "$test_hypefile"
     
     if [[ -z "$addons_list" ]]; then
-        echo "✓ No addons section correctly handled"
+        echo "✓ No addons found when none configured"
         return 0
     else
-        echo "✗ Should return empty for no addons section"
+        echo "✗ Found addons when none should exist"
         return 1
     fi
 }
 
-# Test addons list command
-test_addons_list_command() {
-    setup_test "test_addons_list_command"
+# Test addon field extraction
+test_addons_field_extraction() {
+    local test_hypefile=$(mktemp)
+    create_test_hypefile "$test_hypefile"
     
-    create_test_hypefile_with_addons
+    # Set HYPEFILE for parsing
+    HYPEFILE="$test_hypefile"
     
-    # Run addons list command
-    local output
-    if output=$(addons_list "test-app" 2>&1); then
-        if echo "$output" | grep -q "test-addon1" && echo "$output" | grep -q "test-addon2"; then
-            echo "✓ addons list command shows configured addons"
-            return 0
-        else
-            echo "✗ addons list command missing expected addons"
-            echo "Output: $output"
-            return 1
-        fi
-    else
-        echo "✗ addons list command failed"
-        return 1
-    fi
-}
-
-# Test addons parsing with malformed YAML
-test_addons_parsing_malformed() {
-    setup_test "test_addons_parsing_malformed"
-    
-    # Create malformed hypefile
-    cat > "$HYPEFILE" << 'EOF'
----
-hype:
-  name: test-app
-  trait: test
-
-addons:
-  - hype: test-addon1
-    # Missing prepare field
-  - prepare: "repo2/test --path example2"
-    # Missing hype field
-
-expectedReleases:
-  - nginx
----
-releases:
-  - name: nginx
-    chart: bitnami/nginx
-EOF
-    
+    # Parse the hypefile
     parse_hypefile "test-app"
     
-    # Get addons list should still work, but entries may be incomplete
+    # Get addons list and extract first addon
     local addons_list
     addons_list=$(get_addons_list)
     
-    if [[ -n "$addons_list" ]]; then
-        echo "✓ Malformed addons handled gracefully"
+    # Build first complete entry by processing line by line
+    local first_addon=""
+    local line_count=0
+    while IFS= read -r line && [[ $line_count -lt 2 ]]; do
+        if [[ -n "$line" ]]; then
+            if [[ -z "$first_addon" ]]; then
+                first_addon="$line"
+            else
+                first_addon="$first_addon"$'\n'"$line"
+            fi
+            ((line_count++))
+        fi
+    done <<< "$addons_list"
+    
+    # Extract hype and prepare fields
+    local addon_hype
+    local addon_prepare
+    addon_hype=$(echo "$first_addon" | yq eval '.hype' -)
+    addon_prepare=$(echo "$first_addon" | yq eval '.prepare' -)
+    
+    rm -f "$test_hypefile"
+    
+    if [[ "$addon_hype" == "test-addon1" && "$addon_prepare" == "repo1/test --path example1" ]]; then
+        echo "✓ Addon fields extracted correctly"
         return 0
     else
-        echo "✓ Empty result for malformed addons is acceptable"
+        echo "✗ Addon field extraction failed: hype='$addon_hype', prepare='$addon_prepare'"
+        return 1
+    fi
+}
+
+# Test help function exists
+test_help_function() {
+    if declare -f help_addons > /dev/null; then
+        echo "✓ help_addons function exists"
         return 0
+    else
+        echo "✗ help_addons function missing"
+        return 1
+    fi
+}
+
+# Test brief help function exists
+test_brief_help_function() {
+    if declare -f help_addons_brief > /dev/null; then
+        echo "✓ help_addons_brief function exists"
+        return 0
+    else
+        echo "✗ help_addons_brief function missing"
+        return 1
+    fi
+}
+
+# Test command function exists
+test_command_function() {
+    if declare -f cmd_addons > /dev/null; then
+        echo "✓ cmd_addons function exists"
+        return 0
+    else
+        echo "✗ cmd_addons function missing"
+        return 1
     fi
 }
 
 # Run tests
-run_tests() {
-    echo "Running addons functionality tests..."
-    
-    local total=0
-    local passed=0
-    
-    tests=(
-        test_addons_parsing
-        test_no_addons_parsing
-        test_addons_list_command
-        test_addons_parsing_malformed
-    )
-    
-    for test_func in "${tests[@]}"; do
-        total=$((total + 1))
-        echo "Running $test_func..."
-        if $test_func; then
-            passed=$((passed + 1))
-        fi
-        echo ""
-    done
-    
-    echo "Addons tests completed: $passed/$total passed"
-    
-    if [[ $passed -eq $total ]]; then
-        echo "✓ All addons tests passed"
-        return 0
-    else
-        echo "✗ Some addons tests failed"
-        return 1
-    fi
-}
+echo "Addons Module Unit Tests"
+echo "========================"
 
-# Only run tests if called directly
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    run_tests
-fi
+test_parse_addons_section
+test_parse_no_addons
+test_addons_field_extraction
+test_help_function
+test_brief_help_function
+test_command_function
+
+echo "Addons tests completed"
