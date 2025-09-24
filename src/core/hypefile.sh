@@ -117,3 +117,12 @@ get_depends_list() {
     
     yq eval '.dependsOn[] | @yaml' "$HYPE_SECTION_FILE" 2>/dev/null | sed '/^---$/d' || true
 }
+
+# Get addons list from hype section
+get_addons_list() {
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        return
+    fi
+    
+    yq eval '.addons[] | @yaml' "$HYPE_SECTION_FILE" 2>/dev/null | sed '/^---$/d' || true
+}
