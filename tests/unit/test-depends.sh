@@ -8,7 +8,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../../src/core/config.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/../../src/core/hypefile.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/../../src/builtins/depends.sh"
 
-# Create test hypefile with dependsOn section
+# Create test hypefile with depends section
 create_test_hypefile() {
     local test_file="$1"
     cat > "$test_file" << 'EOF'
@@ -16,7 +16,7 @@ defaultResources:
   - name: "test-resource"
     type: StateValuesConfigmap
 
-dependsOn:
+depends:
   - hype: test-dep1
     prepare: "repo1/test --path example1"
   - hype: test-dep2
@@ -48,7 +48,7 @@ releases:
 EOF
 }
 
-# Test parsing dependsOn section
+# Test parsing depends section
 test_parse_depends_section() {
     local test_hypefile=$(mktemp)
     create_test_hypefile "$test_hypefile"
@@ -70,10 +70,10 @@ test_parse_depends_section() {
     rm -f "$test_hypefile"
     
     if [[ $count -eq 2 ]]; then
-        echo "✓ dependsOn section parsed correctly (found $count dependencies)"
+        echo "✓ depends section parsed correctly (found $count dependencies)"
         return 0
     else
-        echo "✗ dependsOn section parsing failed (found $count dependencies, expected 2)"
+        echo "✗ depends section parsing failed (found $count dependencies, expected 2)"
         return 1
     fi
 }

@@ -115,7 +115,7 @@ get_depends_list() {
         return
     fi
     
-    yq eval '.dependsOn[] | @yaml' "$HYPE_SECTION_FILE" 2>/dev/null | sed '/^---$/d' || true
+    yq eval '.depends[] | @yaml' "$HYPE_SECTION_FILE" 2>/dev/null | sed '/^---$/d' || true
 }
 
 # Get addons list from hype section

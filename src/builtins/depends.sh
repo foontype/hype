@@ -293,7 +293,7 @@ Commands:
 
 The dependencies are configured in the hype section of hypefile.yaml:
 
-  dependsOn:
+  depends:
     - hype: dependency-name
       prepare: "repo/path --option value"
     - hype: another-dependency
