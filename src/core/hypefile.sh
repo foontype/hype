@@ -43,14 +43,16 @@ parse_hypefile() {
     sed -i "s/{{ \.Hype\.Name }}/$hype_name/g" "$HYPE_SECTION_FILE"
     sed -i "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g" "$HYPE_SECTION_FILE"
     
-    # Replace {{ .Hype.Trait }} with actual trait value (hype section only)
+    # Replace {{ .Hype.Trait }} with actual trait value (hype and helmfile sections)
     local trait_value
     if trait_value=$(get_hype_trait "$hype_name" 2>/dev/null); then
         debug "Found trait for template replacement: $trait_value"
         sed -i "s/{{ \.Hype\.Trait }}/$trait_value/g" "$HYPE_SECTION_FILE"
+        sed -i "s/{{ \.Hype\.Trait }}/$trait_value/g" "$HELMFILE_SECTION_FILE"
     else
         debug "No trait found, removing trait template variables"
         sed -i "s/{{ \.Hype\.Trait }}//g" "$HYPE_SECTION_FILE"
+        sed -i "s/{{ \.Hype\.Trait }}//g" "$HELMFILE_SECTION_FILE"
     fi
     
     # Note: TASKFILE_SECTION_FILE is not processed here - it keeps its original template variables
