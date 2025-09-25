@@ -21,7 +21,7 @@ Usage: hype <hype-name> up
 Start dependencies, build and deploy (dependencies + task build + helmfile apply)
 
 This command performs a complete deployment workflow:
-1. Start all dependencies (if configured in dependsOn)
+1. Start all dependencies (if configured in depends)
 2. Run the build task (if available)
 3. Apply the helmfile configuration to deploy your application
 
@@ -60,7 +60,7 @@ Restart deployment (down + up)
 
 This command performs a restart workflow:
 1. Destroy the deployment (helmfile destroy)
-2. Start all dependencies (if configured in dependsOn)
+2. Start all dependencies (if configured in depends)
 3. Run the build task (if available)
 4. Deploy the application (helmfile apply)
 
