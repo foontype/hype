@@ -137,6 +137,11 @@ run_build_task() {
 run_helmfile_apply() {
     local hype_name="$1"
     
+    if ! has_helmfile_section; then
+        info "No helmfile section found, skipping helmfile apply for hype: $hype_name"
+        return 0
+    fi
+    
     info "Running helmfile apply for hype: $hype_name"
     cmd_helmfile "$hype_name" "apply"
 }
@@ -144,6 +149,11 @@ run_helmfile_apply() {
 # Run helmfile destroy
 run_helmfile_destroy() {
     local hype_name="$1"
+    
+    if ! has_helmfile_section; then
+        info "No helmfile section found, skipping helmfile destroy for hype: $hype_name"
+        return 0
+    fi
     
     info "Running helmfile destroy for hype: $hype_name"
     cmd_helmfile "$hype_name" "destroy"
