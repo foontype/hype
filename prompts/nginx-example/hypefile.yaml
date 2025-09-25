@@ -36,19 +36,17 @@ defaultResources:
 
   - type: DefaultStateValues
     values:
-      
       strValue: "This is apple."
       numberValue: 54321
       boolValue: false
       extraValue: "extra value"
 
-
 expectedReleases:
-  - nginx
+  - "{{ .Hype.Name }}-nginx"
 
 ---
 releases:
-  - name: nginx
+  - name: "{{ .StateValues.Hype.Name }}-nginx"
     namespace: default
     chart: bitnami/nginx
     version: "13.2.23"
