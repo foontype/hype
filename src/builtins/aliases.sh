@@ -73,6 +73,18 @@ help_restart_brief() {
     echo "Restart deployment (down + up)"
 }
 
+# Check if addons are configured
+has_addons() {
+    local hype_name="$1"
+    local addons_list
+    
+    if ! addons_list=$(get_addons_list 2>/dev/null); then
+        return 1
+    fi
+    
+    [[ -n "$addons_list" ]]
+}
+
 # Check if build task exists in taskfile
 has_build_task() {
     local hype_name="$1"
@@ -340,6 +352,17 @@ cmd_up() {
         return 1
     fi
     
+    # Run addons up automatically after successful deployment
+    if has_addons "$hype_name"; then
+        info "Running addons up for hype: $hype_name"
+        if ! addons_up "$hype_name"; then
+            warn "Main deployment succeeded but addons setup failed"
+            return 1
+        fi
+    else
+        debug "No addons configured for $hype_name"
+    fi
+    
     info "Up command completed successfully for hype: $hype_name"
 }
 
@@ -350,6 +373,16 @@ cmd_down() {
     debug "Running down command for: $hype_name"
     
     parse_hypefile "$hype_name"
+    
+    # Run addons down first if they exist
+    if has_addons "$hype_name"; then
+        info "Running addons down for hype: $hype_name"
+        if ! addons_down "$hype_name"; then
+            warn "Addons teardown failed, continuing with main deployment teardown"
+        fi
+    else
+        debug "No addons configured for $hype_name"
+    fi
     
     # Run helmfile destroy
     if ! run_helmfile_destroy "$hype_name"; then
@@ -370,6 +403,17 @@ cmd_restart() {
     
     # Run down first
     info "Starting restart: running down phase"
+    
+    # Run addons down first if they exist
+    if has_addons "$hype_name"; then
+        info "Running addons down for hype: $hype_name"
+        if ! addons_down "$hype_name"; then
+            warn "Addons teardown failed during restart, continuing"
+        fi
+    else
+        debug "No addons configured for $hype_name"
+    fi
+    
     if ! run_helmfile_destroy "$hype_name"; then
         error "Down phase failed during restart"
         return 1
@@ -399,6 +443,17 @@ cmd_restart() {
     if ! run_helmfile_apply "$hype_name"; then
         error "Up phase failed during restart"
         return 1
+    fi
+    
+    # Run addons up automatically after successful deployment
+    if has_addons "$hype_name"; then
+        info "Running addons up for hype: $hype_name"
+        if ! addons_up "$hype_name"; then
+            warn "Main deployment succeeded but addons setup failed during restart"
+            return 1
+        fi
+    else
+        debug "No addons configured for $hype_name"
     fi
     
     info "Restart command completed successfully for hype: $hype_name"
