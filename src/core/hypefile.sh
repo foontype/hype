@@ -126,3 +126,22 @@ get_addons_list() {
     
     yq eval '.addons[] | @yaml' "$HYPE_SECTION_FILE" 2>/dev/null | sed '/^---$/d' || true
 }
+
+# Check if helmfile section exists and is not empty
+has_helmfile_section() {
+    if [[ ! -f "$HELMFILE_SECTION_FILE" ]]; then
+        return 1
+    fi
+    
+    # Check if file exists and is not empty
+    if [[ ! -s "$HELMFILE_SECTION_FILE" ]]; then
+        return 1
+    fi
+    
+    # Check if file contains only whitespace or comments
+    if ! grep -q '[^[:space:]]' "$HELMFILE_SECTION_FILE" 2>/dev/null; then
+        return 1
+    fi
+    
+    return 0
+}
