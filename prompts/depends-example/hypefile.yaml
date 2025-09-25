@@ -2,3 +2,7 @@
 dependsOn:
   - hype: my-depend
     prepare: foontype/hype --path prompts/nginx-example
+
+addons:
+  - hype: my-addon
+    prepare: foontype/hype --path prompts/nginx-example
