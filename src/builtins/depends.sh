@@ -73,32 +73,37 @@ depends_up() {
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
             if [[ -n "$current_entry" ]]; then
-                count=$((count + 1))
-                local depend_hype
-                local depend_prepare
-                
-                depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
-                depend_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
-                
-                if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
-                    error "Dependency $count: missing 'hype' field"
-                    return 1
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    count=$((count + 1))
+                    local depend_hype
+                    local depend_prepare
+
+                    depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+                    depend_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
+
+                    if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
+                        error "Dependency $count: missing 'hype' field"
+                        return 1
+                    fi
+
+                    if [[ -z "$depend_prepare" || "$depend_prepare" == "null" ]]; then
+                        error "Dependency $count: missing 'prepare' field"
+                        return 1
+                    fi
+
+                    info "Processing dependency $count: $depend_hype"
+                    debug "Running: cmd_prepare $depend_hype $depend_prepare"
+
+                    if ! eval "cmd_prepare $depend_hype $depend_prepare"; then
+                        error "Failed to prepare dependency: $depend_hype"
+                        return 1
+                    fi
+
+                    info "Dependency $count completed: $depend_hype"
+                else
+                    debug "Skipping dependency due to trait mismatch"
                 fi
-                
-                if [[ -z "$depend_prepare" || "$depend_prepare" == "null" ]]; then
-                    error "Dependency $count: missing 'prepare' field"
-                    return 1
-                fi
-                
-                info "Processing dependency $count: $depend_hype"
-                debug "Running: cmd_prepare $depend_hype $depend_prepare"
-                
-                if ! eval "cmd_prepare $depend_hype $depend_prepare"; then
-                    error "Failed to prepare dependency: $depend_hype"
-                    return 1
-                fi
-                
-                info "Dependency $count completed: $depend_hype"
             fi
             
             # Start new entry
@@ -111,32 +116,37 @@ depends_up() {
     
     # Process last entry
     if [[ -n "$current_entry" ]]; then
-        count=$((count + 1))
-        local depend_hype
-        local depend_prepare
-        
-        depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
-        depend_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
-        
-        if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
-            error "Dependency $count: missing 'hype' field"
-            return 1
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            count=$((count + 1))
+            local depend_hype
+            local depend_prepare
+
+            depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+            depend_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
+
+            if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
+                error "Dependency $count: missing 'hype' field"
+                return 1
+            fi
+
+            if [[ -z "$depend_prepare" || "$depend_prepare" == "null" ]]; then
+                error "Dependency $count: missing 'prepare' field"
+                return 1
+            fi
+
+            info "Processing dependency $count: $depend_hype"
+            debug "Running: cmd_prepare $depend_hype $depend_prepare"
+
+            if ! eval "cmd_prepare $depend_hype $depend_prepare"; then
+                error "Failed to prepare dependency: $depend_hype"
+                return 1
+            fi
+
+            info "Dependency $count completed: $depend_hype"
+        else
+            debug "Skipping last dependency due to trait mismatch"
         fi
-        
-        if [[ -z "$depend_prepare" || "$depend_prepare" == "null" ]]; then
-            error "Dependency $count: missing 'prepare' field"
-            return 1
-        fi
-        
-        info "Processing dependency $count: $depend_hype"
-        debug "Running: cmd_prepare $depend_hype $depend_prepare"
-        
-        if ! eval "cmd_prepare $depend_hype $depend_prepare"; then
-            error "Failed to prepare dependency: $depend_hype"
-            return 1
-        fi
-        
-        info "Dependency $count completed: $depend_hype"
     fi
     
     if [[ $count -eq 0 ]]; then
@@ -171,11 +181,16 @@ depends_down() {
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
             if [[ -n "$current_entry" ]]; then
-                local depend_hype
-                depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
-                
-                if [[ -n "$depend_hype" && "$depend_hype" != "null" ]]; then
-                    depend_array+=("$depend_hype")
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    local depend_hype
+                    depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+                    if [[ -n "$depend_hype" && "$depend_hype" != "null" ]]; then
+                        depend_array+=("$depend_hype")
+                    fi
+                else
+                    debug "Skipping dependency in down due to trait mismatch"
                 fi
             fi
             
@@ -189,11 +204,16 @@ depends_down() {
     
     # Process last entry
     if [[ -n "$current_entry" ]]; then
-        local depend_hype
-        depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
-        
-        if [[ -n "$depend_hype" && "$depend_hype" != "null" ]]; then
-            depend_array+=("$depend_hype")
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            local depend_hype
+            depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+            if [[ -n "$depend_hype" && "$depend_hype" != "null" ]]; then
+                depend_array+=("$depend_hype")
+            fi
+        else
+            debug "Skipping last dependency in down due to trait mismatch"
         fi
     fi
     
@@ -308,20 +328,25 @@ depends_check() {
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
             if [[ -n "$current_entry" ]]; then
-                count=$((count + 1))
-                local depend_hype
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    count=$((count + 1))
+                    local depend_hype
 
-                depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+                    depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
 
-                if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
-                    error "Dependency $count: missing 'hype' field"
-                    return 1
-                fi
+                    if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
+                        error "Dependency $count: missing 'hype' field"
+                        return 1
+                    fi
 
-                debug "Checking releases for dependency: $depend_hype"
+                    debug "Checking releases for dependency: $depend_hype"
 
-                if ! env HYPEFILE="$HYPEFILE" "$0" "$depend_hype" releases check; then
-                    failed_dependencies+=("$depend_hype")
+                    if ! env HYPEFILE="$HYPEFILE" "$0" "$depend_hype" releases check; then
+                        failed_dependencies+=("$depend_hype")
+                    fi
+                else
+                    debug "Skipping dependency check due to trait mismatch"
                 fi
             fi
 
@@ -335,20 +360,25 @@ depends_check() {
 
     # Process last entry
     if [[ -n "$current_entry" ]]; then
-        count=$((count + 1))
-        local depend_hype
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            count=$((count + 1))
+            local depend_hype
 
-        depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+            depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
 
-        if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
-            error "Dependency $count: missing 'hype' field"
-            return 1
-        fi
+            if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
+                error "Dependency $count: missing 'hype' field"
+                return 1
+            fi
 
-        debug "Checking releases for dependency: $depend_hype"
+            debug "Checking releases for dependency: $depend_hype"
 
-        if ! env HYPEFILE="$HYPEFILE" "$0" "$depend_hype" releases check; then
-            failed_dependencies+=("$depend_hype")
+            if ! env HYPEFILE="$HYPEFILE" "$0" "$depend_hype" releases check; then
+                failed_dependencies+=("$depend_hype")
+            fi
+        else
+            debug "Skipping last dependency check due to trait mismatch"
         fi
     fi
 
@@ -384,6 +414,7 @@ The dependencies are configured in the hype section of hypefile.yaml:
   depends:
     - hype: dependency-name
       prepare: "repo/path --option value"
+      matchTraits: [trait1, trait2]  # Optional: only process if current trait matches
     - hype: another-dependency
       prepare: "local/repo --path example"
 

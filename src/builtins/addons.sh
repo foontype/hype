@@ -73,32 +73,37 @@ addons_up() {
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
             if [[ -n "$current_entry" ]]; then
-                count=$((count + 1))
-                local addon_hype
-                local addon_prepare
-                
-                addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
-                addon_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
-                
-                if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
-                    error "Addon $count: missing 'hype' field"
-                    return 1
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    count=$((count + 1))
+                    local addon_hype
+                    local addon_prepare
+
+                    addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+                    addon_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
+
+                    if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                        error "Addon $count: missing 'hype' field"
+                        return 1
+                    fi
+
+                    if [[ -z "$addon_prepare" || "$addon_prepare" == "null" ]]; then
+                        error "Addon $count: missing 'prepare' field"
+                        return 1
+                    fi
+
+                    info "Processing addon $count: $addon_hype"
+                    debug "Running: cmd_prepare $addon_hype $addon_prepare"
+
+                    if ! eval "cmd_prepare $addon_hype $addon_prepare"; then
+                        error "Failed to prepare addon: $addon_hype"
+                        return 1
+                    fi
+
+                    info "Addon $count completed: $addon_hype"
+                else
+                    debug "Skipping addon due to trait mismatch"
                 fi
-                
-                if [[ -z "$addon_prepare" || "$addon_prepare" == "null" ]]; then
-                    error "Addon $count: missing 'prepare' field"
-                    return 1
-                fi
-                
-                info "Processing addon $count: $addon_hype"
-                debug "Running: cmd_prepare $addon_hype $addon_prepare"
-                
-                if ! eval "cmd_prepare $addon_hype $addon_prepare"; then
-                    error "Failed to prepare addon: $addon_hype"
-                    return 1
-                fi
-                
-                info "Addon $count completed: $addon_hype"
             fi
             
             # Start new entry
@@ -111,32 +116,37 @@ addons_up() {
     
     # Process last entry
     if [[ -n "$current_entry" ]]; then
-        count=$((count + 1))
-        local addon_hype
-        local addon_prepare
-        
-        addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
-        addon_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
-        
-        if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
-            error "Addon $count: missing 'hype' field"
-            return 1
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            count=$((count + 1))
+            local addon_hype
+            local addon_prepare
+
+            addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+            addon_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
+
+            if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                error "Addon $count: missing 'hype' field"
+                return 1
+            fi
+
+            if [[ -z "$addon_prepare" || "$addon_prepare" == "null" ]]; then
+                error "Addon $count: missing 'prepare' field"
+                return 1
+            fi
+
+            info "Processing addon $count: $addon_hype"
+            debug "Running: cmd_prepare $addon_hype $addon_prepare"
+
+            if ! eval "cmd_prepare $addon_hype $addon_prepare"; then
+                error "Failed to prepare addon: $addon_hype"
+                return 1
+            fi
+
+            info "Addon $count completed: $addon_hype"
+        else
+            debug "Skipping last addon due to trait mismatch"
         fi
-        
-        if [[ -z "$addon_prepare" || "$addon_prepare" == "null" ]]; then
-            error "Addon $count: missing 'prepare' field"
-            return 1
-        fi
-        
-        info "Processing addon $count: $addon_hype"
-        debug "Running: cmd_prepare $addon_hype $addon_prepare"
-        
-        if ! eval "cmd_prepare $addon_hype $addon_prepare"; then
-            error "Failed to prepare addon: $addon_hype"
-            return 1
-        fi
-        
-        info "Addon $count completed: $addon_hype"
     fi
     
     if [[ $count -eq 0 ]]; then
@@ -171,11 +181,16 @@ addons_down() {
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
             if [[ -n "$current_entry" ]]; then
-                local addon_hype
-                addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
-                
-                if [[ -n "$addon_hype" && "$addon_hype" != "null" ]]; then
-                    addon_array+=("$addon_hype")
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    local addon_hype
+                    addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+                    if [[ -n "$addon_hype" && "$addon_hype" != "null" ]]; then
+                        addon_array+=("$addon_hype")
+                    fi
+                else
+                    debug "Skipping addon in down due to trait mismatch"
                 fi
             fi
             
@@ -189,11 +204,16 @@ addons_down() {
     
     # Process last entry
     if [[ -n "$current_entry" ]]; then
-        local addon_hype
-        addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
-        
-        if [[ -n "$addon_hype" && "$addon_hype" != "null" ]]; then
-            addon_array+=("$addon_hype")
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            local addon_hype
+            addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+            if [[ -n "$addon_hype" && "$addon_hype" != "null" ]]; then
+                addon_array+=("$addon_hype")
+            fi
+        else
+            debug "Skipping last addon in down due to trait mismatch"
         fi
     fi
     
@@ -308,20 +328,25 @@ addons_check() {
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
             if [[ -n "$current_entry" ]]; then
-                count=$((count + 1))
-                local addon_hype
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    count=$((count + 1))
+                    local addon_hype
 
-                addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+                    addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
 
-                if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
-                    error "Addon $count: missing 'hype' field"
-                    return 1
-                fi
+                    if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                        error "Addon $count: missing 'hype' field"
+                        return 1
+                    fi
 
-                debug "Checking releases for addon: $addon_hype"
+                    debug "Checking releases for addon: $addon_hype"
 
-                if ! env HYPEFILE="$HYPEFILE" "$0" "$addon_hype" releases check; then
-                    failed_addons+=("$addon_hype")
+                    if ! env HYPEFILE="$HYPEFILE" "$0" "$addon_hype" releases check; then
+                        failed_addons+=("$addon_hype")
+                    fi
+                else
+                    debug "Skipping addon check due to trait mismatch"
                 fi
             fi
 
@@ -335,20 +360,25 @@ addons_check() {
 
     # Process last entry
     if [[ -n "$current_entry" ]]; then
-        count=$((count + 1))
-        local addon_hype
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            count=$((count + 1))
+            local addon_hype
 
-        addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+            addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
 
-        if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
-            error "Addon $count: missing 'hype' field"
-            return 1
-        fi
+            if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                error "Addon $count: missing 'hype' field"
+                return 1
+            fi
 
-        debug "Checking releases for addon: $addon_hype"
+            debug "Checking releases for addon: $addon_hype"
 
-        if ! env HYPEFILE="$HYPEFILE" "$0" "$addon_hype" releases check; then
-            failed_addons+=("$addon_hype")
+            if ! env HYPEFILE="$HYPEFILE" "$0" "$addon_hype" releases check; then
+                failed_addons+=("$addon_hype")
+            fi
+        else
+            debug "Skipping last addon check due to trait mismatch"
         fi
     fi
 
@@ -384,6 +414,7 @@ The addons are configured in the hype section of hypefile.yaml:
   addons:
     - hype: addon-name
       prepare: "repo/path --option value"
+      matchTraits: [trait1, trait2]  # Optional: only process if current trait matches
     - hype: another-addon
       prepare: "local/repo --path example"
 
