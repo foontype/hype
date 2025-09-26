@@ -142,6 +142,9 @@ cmd_prepare() {
     # Save current environment to restore later
     local saved_hypefile="${HYPEFILE:-}"
     local saved_hype_dir="${HYPE_DIR:-}"
+    local saved_hype_section_file="${HYPE_SECTION_FILE:-}"
+    local saved_helmfile_section_file="${HELMFILE_SECTION_FILE:-}"
+    local saved_taskfile_section_file="${TASKFILE_SECTION_FILE:-}"
     local saved_working_dir
     saved_working_dir="$(pwd)"
 
@@ -178,6 +181,30 @@ cmd_prepare() {
         else
             unset HYPE_DIR
             debug "Cleared HYPE_DIR (was not set originally)"
+        fi
+
+        if [[ -n "$saved_hype_section_file" ]]; then
+            HYPE_SECTION_FILE="$saved_hype_section_file"
+            debug "Restored HYPE_SECTION_FILE to: $HYPE_SECTION_FILE"
+        else
+            HYPE_SECTION_FILE=""
+            debug "Cleared HYPE_SECTION_FILE (was not set originally)"
+        fi
+
+        if [[ -n "$saved_helmfile_section_file" ]]; then
+            HELMFILE_SECTION_FILE="$saved_helmfile_section_file"
+            debug "Restored HELMFILE_SECTION_FILE to: $HELMFILE_SECTION_FILE"
+        else
+            HELMFILE_SECTION_FILE=""
+            debug "Cleared HELMFILE_SECTION_FILE (was not set originally)"
+        fi
+
+        if [[ -n "$saved_taskfile_section_file" ]]; then
+            TASKFILE_SECTION_FILE="$saved_taskfile_section_file"
+            debug "Restored TASKFILE_SECTION_FILE to: $TASKFILE_SECTION_FILE"
+        else
+            TASKFILE_SECTION_FILE=""
+            debug "Cleared TASKFILE_SECTION_FILE (was not set originally)"
         fi
 
         if ! cd "$saved_working_dir"; then
