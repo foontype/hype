@@ -138,7 +138,13 @@ cmd_prepare() {
     # Set defaults
     branch="${branch:-main}"
     path="${path:-.}"
-    
+
+    # Save current environment to restore later
+    local saved_hypefile="${HYPEFILE:-}"
+    local saved_hype_dir="${HYPE_DIR:-}"
+    local saved_working_dir
+    saved_working_dir="$(pwd)"
+
     info "Starting complete setup workflow for hype: $hype_name"
     info "Repository: $repo_url"
     info "Branch: $branch"
@@ -155,10 +161,37 @@ cmd_prepare() {
         echo ""
     fi
     
+    # Define cleanup function for error handling
+    restore_environment() {
+        debug "Restoring environment due to error or completion"
+        if [[ -n "$saved_hypefile" ]]; then
+            export HYPEFILE="$saved_hypefile"
+            debug "Restored HYPEFILE to: $HYPEFILE"
+        else
+            unset HYPEFILE
+            debug "Cleared HYPEFILE (was not set originally)"
+        fi
+
+        if [[ -n "$saved_hype_dir" ]]; then
+            export HYPE_DIR="$saved_hype_dir"
+            debug "Restored HYPE_DIR to: $HYPE_DIR"
+        else
+            unset HYPE_DIR
+            debug "Cleared HYPE_DIR (was not set originally)"
+        fi
+
+        if ! cd "$saved_working_dir"; then
+            warn "Failed to restore working directory to: $saved_working_dir"
+        else
+            debug "Restored working directory to: $saved_working_dir"
+        fi
+    }
+
     # Step 2: repo prepare
     info "Step 2/6: Preparing repository..."
     if ! cmd_repo "$hype_name" "prepare" "$repo_url" --branch "$branch" --path "$path"; then
         error "Failed to prepare repository: $repo_url"
+        restore_environment
         return 1
     fi
     info "✓ Repository preparation completed"
@@ -167,13 +200,15 @@ cmd_prepare() {
     # Step 2.5: Setup repository working directory if bound
     if ! setup_repo_workdir_if_bound "$hype_name"; then
         error "Failed to setup repository working directory for '$hype_name'"
+        restore_environment
         return 1
     fi
-    
+
     # Step 2.5: Initialize hype environment
     info "Step 2.5/5: Initializing hype environment..."
     if ! cmd_init "$hype_name"; then
         error "Failed to initialize hype environment"
+        restore_environment
         return 1
     fi
     info "✓ Hype environment initialization completed"
@@ -183,24 +218,27 @@ cmd_prepare() {
     info "Step 3/6: Running build task..."
     if ! cmd_task "$hype_name" "build"; then
         error "Failed to run build task"
+        restore_environment
         return 1
     fi
     info "✓ Build task completed"
     echo ""
-    
+
     # Step 4: task push
     info "Step 4/6: Running push task..."
     if ! cmd_task "$hype_name" "push"; then
         error "Failed to run push task"
+        restore_environment
         return 1
     fi
     info "✓ Push task completed"
     echo ""
-    
+
     # Step 5: up
     info "Step 5/6: Deploying application..."
     if ! cmd_up "$hype_name"; then
         error "Failed to deploy application"
+        restore_environment
         return 1
     fi
     info "✓ Application deployment completed"
@@ -208,4 +246,7 @@ cmd_prepare() {
     
     info "🎉 Complete setup workflow finished successfully for hype: $hype_name"
     info "Your application should now be deployed and running."
+
+    # Restore original environment after successful completion
+    restore_environment
 }
