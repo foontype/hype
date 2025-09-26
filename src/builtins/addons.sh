@@ -69,7 +69,8 @@ addons_up() {
     
     local count=0
     local current_entry=""
-    
+    local line
+
     while IFS= read -r line; do
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
@@ -177,7 +178,8 @@ addons_down() {
     
     local addon_array=()
     local current_entry=""
-    
+    local line
+
     while IFS= read -r line; do
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
@@ -261,6 +263,7 @@ addons_list() {
     info "Addons for $hype_name:"
     local count=0
     local current_entry=""
+    local line
 
     while IFS= read -r line; do
         if [[ "$line" =~ ^hype:.*$ ]]; then
@@ -324,6 +327,7 @@ addons_check() {
     local failed_addons=()
     local count=0
     local current_entry=""
+    local line
 
     while IFS= read -r line; do
         if [[ "$line" =~ ^hype:.*$ ]]; then

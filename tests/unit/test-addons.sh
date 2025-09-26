@@ -122,6 +122,7 @@ test_addons_field_extraction() {
     # Build first complete entry by processing line by line
     local first_addon=""
     local line_count=0
+    local line
     while IFS= read -r line && [[ $line_count -lt 2 ]]; do
         if [[ -n "$line" ]]; then
             if [[ -z "$first_addon" ]]; then
