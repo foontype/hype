@@ -29,11 +29,14 @@ cmd_addons() {
         "list")
             addons_list "$hype_name"
             ;;
+        "check")
+            addons_check "$hype_name"
+            ;;
         "help"|"-h"|"--help")
             help_addons
             ;;
         "")
-            error "Missing subcommand. Use 'up', 'down', 'list', or 'help'"
+            error "Missing subcommand. Use 'up', 'down', 'list', 'check', or 'help'"
             help_addons
             return 1
             ;;
@@ -220,24 +223,24 @@ addons_down() {
 
 addons_list() {
     local hype_name="$1"
-    
+
     parse_hypefile "$hype_name"
-    
+
     local addons_list
     if ! addons_list=$(get_addons_list); then
         info "No addons found for $hype_name"
         return 0
     fi
-    
+
     if [[ -z "$addons_list" ]]; then
         info "No addons configured for $hype_name"
         return 0
     fi
-    
+
     info "Addons for $hype_name:"
     local count=0
     local current_entry=""
-    
+
     while IFS= read -r line; do
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
@@ -245,14 +248,14 @@ addons_list() {
                 count=$((count + 1))
                 local addon_hype
                 local addon_prepare
-                
+
                 addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
                 addon_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
-                
+
                 echo "  $count. $addon_hype"
                 echo "     prepare: $addon_prepare"
             fi
-            
+
             # Start new entry
             current_entry="$line"
         else
@@ -260,22 +263,106 @@ addons_list() {
             current_entry="$current_entry"$'\n'"$line"
         fi
     done <<< "$addons_list"
-    
+
     # Process last entry
     if [[ -n "$current_entry" ]]; then
         count=$((count + 1))
         local addon_hype
         local addon_prepare
-        
+
         addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
         addon_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
-        
+
         echo "  $count. $addon_hype"
         echo "     prepare: $addon_prepare"
     fi
-    
+
     if [[ $count -eq 0 ]]; then
         info "No valid addons found"
+    fi
+}
+
+addons_check() {
+    local hype_name="$1"
+
+    debug "Checking addon releases for $hype_name"
+
+    parse_hypefile "$hype_name"
+
+    local addons_list
+    if ! addons_list=$(get_addons_list); then
+        debug "No addons found for $hype_name"
+        return 0
+    fi
+
+    if [[ -z "$addons_list" ]]; then
+        debug "No addons configured for $hype_name"
+        return 0
+    fi
+
+    local failed_addons=()
+    local count=0
+    local current_entry=""
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^hype:.*$ ]]; then
+            # Process previous entry if exists
+            if [[ -n "$current_entry" ]]; then
+                count=$((count + 1))
+                local addon_hype
+
+                addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+                if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                    error "Addon $count: missing 'hype' field"
+                    return 1
+                fi
+
+                debug "Checking releases for addon: $addon_hype"
+
+                if ! env HYPEFILE="$HYPEFILE" "$0" "$addon_hype" releases check; then
+                    failed_addons+=("$addon_hype")
+                fi
+            fi
+
+            # Start new entry
+            current_entry="$line"
+        else
+            # Continue building current entry
+            current_entry="$current_entry"$'\n'"$line"
+        fi
+    done <<< "$addons_list"
+
+    # Process last entry
+    if [[ -n "$current_entry" ]]; then
+        count=$((count + 1))
+        local addon_hype
+
+        addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+        if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+            error "Addon $count: missing 'hype' field"
+            return 1
+        fi
+
+        debug "Checking releases for addon: $addon_hype"
+
+        if ! env HYPEFILE="$HYPEFILE" "$0" "$addon_hype" releases check; then
+            failed_addons+=("$addon_hype")
+        fi
+    fi
+
+    # Report results
+    if [[ ${#failed_addons[@]} -eq 0 ]]; then
+        if [[ $count -eq 0 ]]; then
+            info "No addons to check"
+        else
+            info "All $count addon releases are present"
+        fi
+        return 0
+    else
+        error "Addons with missing releases: ${failed_addons[*]}"
+        return 1
     fi
 }
 
@@ -289,6 +376,7 @@ Commands:
   up          Start all addons in order
   down        Stop all addons in reverse order
   list        List configured addons
+  check       Check if all addon releases exist
   help        Show this help message
 
 The addons are configured in the hype section of hypefile.yaml:
@@ -303,6 +391,7 @@ Examples:
   hype myapp addons up       Start all addons for myapp
   hype myapp addons down     Stop all addons for myapp
   hype myapp addons list     List addons for myapp
+  hype myapp addons check    Check if all addon releases exist
 EOF
 }
 
