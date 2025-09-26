@@ -17,13 +17,15 @@ help_init() {
     cat <<EOF
 Usage: hype <hype-name> init
 
-Create default resources defined in hypefile.yaml
+Create default resources defined in hypefile.yaml and initialize addons
 
 This command initializes ConfigMaps, Secrets, and other default resources
 specified in the defaultResources section of your hypefile.yaml.
+After completing self initialization, all configured addons will also
+be initialized in the order they are listed.
 
 Examples:
-  hype my-nginx init                   Create resources for my-nginx
+  hype my-nginx init                   Create resources for my-nginx and initialize addons
 EOF
 }
 
@@ -35,13 +37,14 @@ help_deinit() {
     cat <<EOF
 Usage: hype <hype-name> deinit
 
-Delete default resources defined in hypefile.yaml
+Delete default resources defined in hypefile.yaml and deinitialize addons
 
-This command removes ConfigMaps, Secrets, and other default resources
-that were created during initialization.
+This command first deinitializes all configured addons in reverse order,
+then removes ConfigMaps, Secrets, and other default resources that were
+created during initialization.
 
 Examples:
-  hype my-nginx deinit                 Delete resources for my-nginx
+  hype my-nginx deinit                 Deinitialize addons and delete resources for my-nginx
 EOF
 }
 
@@ -199,82 +202,270 @@ delete_resource() {
 }
 
 
+# Initialize addons for a hype name
+init_addons() {
+    local hype_name="$1"
+
+    debug "Initializing addons for: $hype_name"
+
+    local addons_list
+    if ! addons_list=$(get_addons_list "$hype_name"); then
+        debug "No addons found for $hype_name"
+        return 0
+    fi
+
+    if [[ -z "$addons_list" ]]; then
+        debug "No addons configured for $hype_name"
+        return 0
+    fi
+
+    local count=0
+    local current_entry=""
+    local line
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^hype:.*$ ]]; then
+            # Process previous entry if exists
+            if [[ -n "$current_entry" ]]; then
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    count=$((count + 1))
+                    local addon_hype
+
+                    addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+                    if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                        error "Addon $count: missing 'hype' field"
+                        return 1
+                    fi
+
+                    info "Initializing addon $count: $addon_hype"
+                    debug "Running: hype $addon_hype init"
+
+                    if ! hype "$addon_hype" init; then
+                        error "Failed to initialize addon: $addon_hype"
+                        return 1
+                    fi
+
+                    info "Addon $count initialized: $addon_hype"
+                else
+                    debug "Skipping addon due to trait mismatch"
+                fi
+            fi
+
+            # Start new entry
+            current_entry="$line"
+        else
+            # Continue building current entry
+            current_entry="$current_entry"$'\n'"$line"
+        fi
+    done <<< "$addons_list"
+
+    # Process last entry
+    if [[ -n "$current_entry" ]]; then
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            count=$((count + 1))
+            local addon_hype
+
+            addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+            if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                error "Addon $count: missing 'hype' field"
+                return 1
+            fi
+
+            info "Initializing addon $count: $addon_hype"
+            debug "Running: hype $addon_hype init"
+
+            if ! hype "$addon_hype" init; then
+                error "Failed to initialize addon: $addon_hype"
+                return 1
+            fi
+
+            info "Addon $count initialized: $addon_hype"
+        else
+            debug "Skipping last addon due to trait mismatch"
+        fi
+    fi
+
+    if [[ $count -eq 0 ]]; then
+        debug "No valid addons found for initialization"
+    else
+        info "All $count addons initialized for $hype_name"
+    fi
+}
+
 # Initialize default resources
 cmd_init() {
     local hype_name="$1"
-    
+
     info "Initializing resources for: $hype_name"
-    
+
     parse_hypefile "$hype_name"
-    
+
     if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
         info "No hypefile section found"
         return
     fi
-    
+
     # Get resource count first
     local resource_count
     resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
-    
+
     if [[ "$resource_count" -eq 0 ]]; then
         info "No default resources found"
-        return
+    else
+        # Process each default resource by index
+        for (( i=0; i<resource_count; i++ )); do
+            local name type values_yaml
+
+            name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
+            type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+            values_yaml=$(yq eval ".defaultResources[$i].values" "$HYPE_SECTION_FILE")
+
+            debug "Processing resource $i: name=$name, type=$type"
+
+            if [[ "$name" != "null" && "$type" != "null" && "$values_yaml" != "null" ]]; then
+                create_resource "$name" "$type" "$values_yaml"
+            fi
+        done
+
+        info "Default resources initialization completed for: $hype_name"
     fi
-    
-    # Process each default resource by index
-    for (( i=0; i<resource_count; i++ )); do
-        local name type values_yaml
-        
-        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
-        type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
-        values_yaml=$(yq eval ".defaultResources[$i].values" "$HYPE_SECTION_FILE")
-        
-        debug "Processing resource $i: name=$name, type=$type"
-        
-        if [[ "$name" != "null" && "$type" != "null" && "$values_yaml" != "null" ]]; then
-            create_resource "$name" "$type" "$values_yaml"
-        fi
-    done
-    
+
+    # After self initialization, initialize addons
+    init_addons "$hype_name"
+
     info "Initialization completed for: $hype_name"
+}
+
+# Deinitialize addons for a hype name (reverse order)
+deinit_addons() {
+    local hype_name="$1"
+
+    debug "Deinitializing addons for: $hype_name"
+
+    local addons_list
+    if ! addons_list=$(get_addons_list "$hype_name"); then
+        debug "No addons found for $hype_name"
+        return 0
+    fi
+
+    if [[ -z "$addons_list" ]]; then
+        debug "No addons configured for $hype_name"
+        return 0
+    fi
+
+    local addon_array=()
+    local current_entry=""
+    local line
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^hype:.*$ ]]; then
+            # Process previous entry if exists
+            if [[ -n "$current_entry" ]]; then
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    local addon_hype
+                    addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+                    if [[ -n "$addon_hype" && "$addon_hype" != "null" ]]; then
+                        addon_array+=("$addon_hype")
+                    fi
+                else
+                    debug "Skipping addon in deinit due to trait mismatch"
+                fi
+            fi
+
+            # Start new entry
+            current_entry="$line"
+        else
+            # Continue building current entry
+            current_entry="$current_entry"$'\n'"$line"
+        fi
+    done <<< "$addons_list"
+
+    # Process last entry
+    if [[ -n "$current_entry" ]]; then
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            local addon_hype
+            addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+            if [[ -n "$addon_hype" && "$addon_hype" != "null" ]]; then
+                addon_array+=("$addon_hype")
+            fi
+        else
+            debug "Skipping last addon in deinit due to trait mismatch"
+        fi
+    fi
+
+    local count=${#addon_array[@]}
+    if [[ $count -eq 0 ]]; then
+        debug "No valid addons found for deinitialization"
+        return 0
+    fi
+
+    # Process in reverse order
+    for ((i = count - 1; i >= 0; i--)); do
+        local addon_hype="${addon_array[i]}"
+        local addon_num=$((count - i))
+
+        info "Deinitializing addon $addon_num: $addon_hype"
+        debug "Running: hype $addon_hype deinit"
+
+        if ! hype "$addon_hype" deinit; then
+            error "Failed to deinitialize addon: $addon_hype"
+            return 1
+        fi
+
+        info "Addon $addon_num deinitialized: $addon_hype"
+    done
+
+    info "All $count addons deinitialized for $hype_name"
 }
 
 # Deinitialize default resources
 cmd_deinit() {
     local hype_name="$1"
-    
+
     info "Deinitializing resources for: $hype_name"
-    
+
     parse_hypefile "$hype_name"
-    
+
     if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
         info "No hypefile section found"
         return
     fi
-    
+
+    # First deinitialize addons (reverse order)
+    deinit_addons "$hype_name"
+
     # Get resource count first
     local resource_count
     resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
-    
+
     if [[ "$resource_count" -eq 0 ]]; then
         info "No default resources found"
-        return
+    else
+        # Process each default resource by index
+        for (( i=0; i<resource_count; i++ )); do
+            local name type
+
+            name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
+            type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+
+            debug "Processing resource $i for deletion: name=$name, type=$type"
+
+            if [[ "$name" != "null" && "$type" != "null" ]]; then
+                delete_resource "$name" "$type"
+            fi
+        done
+
+        info "Default resources deinitialization completed for: $hype_name"
     fi
-    
-    # Process each default resource by index
-    for (( i=0; i<resource_count; i++ )); do
-        local name type
-        
-        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
-        type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
-        
-        debug "Processing resource $i for deletion: name=$name, type=$type"
-        
-        if [[ "$name" != "null" && "$type" != "null" ]]; then
-            delete_resource "$name" "$type"
-        fi
-    done
-    
+
     info "Deinitialization completed for: $hype_name"
 }
 

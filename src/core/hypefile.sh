@@ -120,11 +120,24 @@ get_depends_list() {
 
 # Get addons list from hype section
 get_addons_list() {
+    local hype_name="${1:-}"
+
     if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
         return
     fi
-    
-    yq eval '.addons[] | @yaml' "$HYPE_SECTION_FILE" 2>/dev/null | sed '/^---$/d' || true
+
+    # First try to get from specific hype name section
+    if [[ -n "$hype_name" ]]; then
+        local result
+        result=$(yq eval ".hype.\"$hype_name\".addons[]? | @yaml" "$HYPE_SECTION_FILE" 2>/dev/null | sed '/^---$/d' || true)
+        if [[ -n "$result" ]]; then
+            echo "$result"
+            return
+        fi
+    fi
+
+    # Fallback to direct access (for backward compatibility)
+    yq eval '.addons[]? | @yaml' "$HYPE_SECTION_FILE" 2>/dev/null | sed '/^---$/d' || true
 }
 
 # Check if helmfile section exists and is not empty

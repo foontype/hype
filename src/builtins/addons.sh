@@ -56,7 +56,7 @@ addons_up() {
     parse_hypefile "$hype_name"
 
     local addons_list
-    if ! addons_list=$(get_addons_list); then
+    if ! addons_list=$(get_addons_list "$hype_name"); then
         debug "No addons found for $hype_name"
         return 0
     fi
@@ -166,7 +166,7 @@ addons_down() {
     parse_hypefile "$hype_name"
     
     local addons_list
-    if ! addons_list=$(get_addons_list); then
+    if ! addons_list=$(get_addons_list "$hype_name"); then
         debug "No addons found for $hype_name"
         return 0
     fi
@@ -250,7 +250,7 @@ addons_list() {
     parse_hypefile "$hype_name"
 
     local addons_list
-    if ! addons_list=$(get_addons_list); then
+    if ! addons_list=$(get_addons_list "$hype_name"); then
         info "No addons found for $hype_name"
         return 0
     fi
@@ -314,7 +314,7 @@ addons_check() {
     parse_hypefile "$hype_name"
 
     local addons_list
-    if ! addons_list=$(get_addons_list); then
+    if ! addons_list=$(get_addons_list "$hype_name"); then
         debug "No addons found for $hype_name"
         return 0
     fi
