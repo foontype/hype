@@ -122,6 +122,7 @@ test_depends_field_extraction() {
     # Build first complete entry by processing line by line
     local first_dep=""
     local line_count=0
+    local line
     while IFS= read -r line && [[ $line_count -lt 2 ]]; do
         if [[ -n "$line" ]]; then
             if [[ -z "$first_dep" ]]; then

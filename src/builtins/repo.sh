@@ -430,6 +430,7 @@ cmd_repo_info() {
             if status=$(get_repo_status "$cache_dir"); then
                 echo ""
                 echo "Repository status:"
+                local line
                 while IFS= read -r line; do
                     echo "  $line"
                 done <<< "$status"

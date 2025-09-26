@@ -178,7 +178,8 @@ stop_dependencies() {
     
     local depend_array=()
     local current_entry=""
-    
+    local line
+
     while IFS= read -r line; do
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
@@ -252,7 +253,8 @@ run_dependencies() {
     
     local count=0
     local current_entry=""
-    
+    local line
+
     while IFS= read -r line; do
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists

@@ -132,16 +132,54 @@ has_helmfile_section() {
     if [[ ! -f "$HELMFILE_SECTION_FILE" ]]; then
         return 1
     fi
-    
+
     # Check if file exists and is not empty
     if [[ ! -s "$HELMFILE_SECTION_FILE" ]]; then
         return 1
     fi
-    
+
     # Check if file contains only whitespace or comments
     if ! grep -q '[^[:space:]]' "$HELMFILE_SECTION_FILE" 2>/dev/null; then
         return 1
     fi
-    
+
     return 0
+}
+
+# Check if current trait matches any of the matchTraits
+should_process_entry_by_traits() {
+    local current_entry="$1"
+    local hype_name="$2"
+
+    debug "Checking trait match for entry"
+
+    # Extract matchTraits from the entry
+    local match_traits
+    match_traits=$(echo "$current_entry" | yq eval '.matchTraits[]?' - 2>/dev/null | tr '\n' ' ')
+
+    # If no matchTraits specified, always process
+    if [[ -z "$match_traits" ]]; then
+        debug "No matchTraits specified, processing entry"
+        return 0
+    fi
+
+    # Get current trait
+    local current_trait
+    if ! current_trait=$(get_hype_trait "$hype_name" 2>/dev/null); then
+        debug "No current trait found, skipping entry with matchTraits"
+        return 1
+    fi
+
+    debug "Current trait: $current_trait, MatchTraits: $match_traits"
+
+    # Check if current trait matches any of the matchTraits
+    for match_trait in $match_traits; do
+        if [[ "$current_trait" == "$match_trait" ]]; then
+            debug "Trait match found: $current_trait matches $match_trait"
+            return 0
+        fi
+    done
+
+    debug "No trait match found, skipping entry"
+    return 1
 }
