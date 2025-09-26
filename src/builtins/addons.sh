@@ -50,17 +50,18 @@ cmd_addons() {
 
 addons_up() {
     local hype_name="$1"
-    
+
     info "Starting addons for $hype_name"
-    
+
     parse_hypefile "$hype_name"
-    
+
     local addons_list
     if ! addons_list=$(get_addons_list); then
         debug "No addons found for $hype_name"
         return 0
     fi
-    
+
+
     if [[ -z "$addons_list" ]]; then
         debug "No addons configured for $hype_name"
         return 0

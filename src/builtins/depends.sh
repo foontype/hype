@@ -50,17 +50,18 @@ cmd_depends() {
 
 depends_up() {
     local hype_name="$1"
-    
+
     info "Starting dependencies for $hype_name"
-    
+
     parse_hypefile "$hype_name"
-    
+
     local depends_list
     if ! depends_list=$(get_depends_list); then
         debug "No dependencies found for $hype_name"
         return 0
     fi
-    
+
+
     if [[ -z "$depends_list" ]]; then
         debug "No dependencies configured for $hype_name"
         return 0
