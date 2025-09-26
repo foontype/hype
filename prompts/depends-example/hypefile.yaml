@@ -2,7 +2,7 @@
 depends:
   - hype: my-depend
     prepare: foontype/hype --path prompts/nginx-example
-  - hype: my-depend-wit-trait
+  - hype: my-depend-with-trait
     prepare: foontype/hype --path prompts/nginx-example
     matchTraits: [my-trait]
 
