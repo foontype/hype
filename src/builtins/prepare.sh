@@ -142,7 +142,8 @@ cmd_prepare() {
     # Save current environment to restore later
     local saved_hypefile="${HYPEFILE:-}"
     local saved_hype_dir="${HYPE_DIR:-}"
-    local saved_working_dir="$(pwd)"
+    local saved_working_dir
+    saved_working_dir="$(pwd)"
 
     info "Starting complete setup workflow for hype: $hype_name"
     info "Repository: $repo_url"
