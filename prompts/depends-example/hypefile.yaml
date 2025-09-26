@@ -12,3 +12,4 @@ addons:
   - hype: my-addon-with-trait
     prepare: foontype/hype --path prompts/nginx-example
     matchTraits: [my-trait]
+
