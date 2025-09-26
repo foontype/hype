@@ -29,11 +29,14 @@ cmd_depends() {
         "list")
             depends_list "$hype_name"
             ;;
+        "check")
+            depends_check "$hype_name"
+            ;;
         "help"|"-h"|"--help")
             help_depends
             ;;
         "")
-            error "Missing subcommand. Use 'up', 'down', 'list', or 'help'"
+            error "Missing subcommand. Use 'up', 'down', 'list', 'check', or 'help'"
             help_depends
             return 1
             ;;
@@ -220,24 +223,24 @@ depends_down() {
 
 depends_list() {
     local hype_name="$1"
-    
+
     parse_hypefile "$hype_name"
-    
+
     local depends_list
     if ! depends_list=$(get_depends_list); then
         info "No dependencies found for $hype_name"
         return 0
     fi
-    
+
     if [[ -z "$depends_list" ]]; then
         info "No dependencies configured for $hype_name"
         return 0
     fi
-    
+
     info "Dependencies for $hype_name:"
     local count=0
     local current_entry=""
-    
+
     while IFS= read -r line; do
         if [[ "$line" =~ ^hype:.*$ ]]; then
             # Process previous entry if exists
@@ -245,14 +248,14 @@ depends_list() {
                 count=$((count + 1))
                 local depend_hype
                 local depend_prepare
-                
+
                 depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
                 depend_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
-                
+
                 echo "  $count. $depend_hype"
                 echo "     prepare: $depend_prepare"
             fi
-            
+
             # Start new entry
             current_entry="$line"
         else
@@ -260,22 +263,106 @@ depends_list() {
             current_entry="$current_entry"$'\n'"$line"
         fi
     done <<< "$depends_list"
-    
+
     # Process last entry
     if [[ -n "$current_entry" ]]; then
         count=$((count + 1))
         local depend_hype
         local depend_prepare
-        
+
         depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
         depend_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
-        
+
         echo "  $count. $depend_hype"
         echo "     prepare: $depend_prepare"
     fi
-    
+
     if [[ $count -eq 0 ]]; then
         info "No valid dependencies found"
+    fi
+}
+
+depends_check() {
+    local hype_name="$1"
+
+    debug "Checking dependency releases for $hype_name"
+
+    parse_hypefile "$hype_name"
+
+    local depends_list
+    if ! depends_list=$(get_depends_list); then
+        debug "No dependencies found for $hype_name"
+        return 0
+    fi
+
+    if [[ -z "$depends_list" ]]; then
+        debug "No dependencies configured for $hype_name"
+        return 0
+    fi
+
+    local failed_dependencies=()
+    local count=0
+    local current_entry=""
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^hype:.*$ ]]; then
+            # Process previous entry if exists
+            if [[ -n "$current_entry" ]]; then
+                count=$((count + 1))
+                local depend_hype
+
+                depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+                if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
+                    error "Dependency $count: missing 'hype' field"
+                    return 1
+                fi
+
+                debug "Checking releases for dependency: $depend_hype"
+
+                if ! env HYPEFILE="$HYPEFILE" "$0" "$depend_hype" releases check; then
+                    failed_dependencies+=("$depend_hype")
+                fi
+            fi
+
+            # Start new entry
+            current_entry="$line"
+        else
+            # Continue building current entry
+            current_entry="$current_entry"$'\n'"$line"
+        fi
+    done <<< "$depends_list"
+
+    # Process last entry
+    if [[ -n "$current_entry" ]]; then
+        count=$((count + 1))
+        local depend_hype
+
+        depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+        if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
+            error "Dependency $count: missing 'hype' field"
+            return 1
+        fi
+
+        debug "Checking releases for dependency: $depend_hype"
+
+        if ! env HYPEFILE="$HYPEFILE" "$0" "$depend_hype" releases check; then
+            failed_dependencies+=("$depend_hype")
+        fi
+    fi
+
+    # Report results
+    if [[ ${#failed_dependencies[@]} -eq 0 ]]; then
+        if [[ $count -eq 0 ]]; then
+            info "No dependencies to check"
+        else
+            info "All $count dependency releases are present"
+        fi
+        return 0
+    else
+        error "Dependencies with missing releases: ${failed_dependencies[*]}"
+        return 1
     fi
 }
 
@@ -289,6 +376,7 @@ Commands:
   up          Start all dependencies in order
   down        Stop all dependencies in reverse order
   list        List configured dependencies
+  check       Check if all dependency releases exist
   help        Show this help message
 
 The dependencies are configured in the hype section of hypefile.yaml:
@@ -303,6 +391,7 @@ Examples:
   hype myapp depends up       Start all dependencies for myapp
   hype myapp depends down     Stop all dependencies for myapp
   hype myapp depends list     List dependencies for myapp
+  hype myapp depends check    Check if all dependency releases exist
 EOF
 }
 
