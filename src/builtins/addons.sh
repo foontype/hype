@@ -35,9 +35,6 @@ cmd_addons() {
         "list")
             addons_list "$hype_name"
             ;;
-        "check")
-            addons_check "$hype_name"
-            ;;
         "releases")
             shift
             addons_releases "$hype_name" "$@"
@@ -50,7 +47,7 @@ cmd_addons() {
             help_addons
             ;;
         "")
-            error "Missing subcommand. Use 'init', 'deinit', 'up', 'down', 'list', 'check', 'releases', 'resources', or 'help'"
+            error "Missing subcommand. Use 'init', 'deinit', 'up', 'down', 'list', 'releases', 'resources', or 'help'"
             help_addons
             return 1
             ;;
@@ -486,11 +483,6 @@ addons_list() {
     fi
 }
 
-addons_check() {
-    local hype_name="$1"
-    debug "Checking addon releases for $hype_name (legacy check command)"
-    addons_releases "$hype_name" "check"
-}
 
 addons_releases() {
     local hype_name="$1"
@@ -742,7 +734,6 @@ Commands:
   up          Start all addons with --nothing-if-expected --build --push
   down        Stop all addons in reverse order
   list        List configured addons
-  check       Check if all addon releases exist (legacy command)
   releases    Manage addon releases (check)
   resources   Manage addon resources (check)
   help        Show this help message
@@ -760,7 +751,6 @@ Examples:
   hype myapp addons up                Start all addons for myapp
   hype myapp addons down              Stop all addons for myapp
   hype myapp addons list              List addons for myapp
-  hype myapp addons check             Check if all addon releases exist
   hype myapp addons releases check    Check if all addon releases exist
   hype myapp addons resources check   Check if all addon resources are ready
 EOF

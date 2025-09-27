@@ -35,9 +35,6 @@ cmd_depends() {
         "list")
             depends_list "$hype_name"
             ;;
-        "check")
-            depends_check "$hype_name"
-            ;;
         "releases")
             shift
             depends_releases "$hype_name" "$@"
@@ -50,7 +47,7 @@ cmd_depends() {
             help_depends
             ;;
         "")
-            error "Missing subcommand. Use 'init', 'deinit', 'up', 'down', 'list', 'check', 'releases', 'resources', or 'help'"
+            error "Missing subcommand. Use 'init', 'deinit', 'up', 'down', 'list', 'releases', 'resources', or 'help'"
             help_depends
             return 1
             ;;
@@ -486,11 +483,6 @@ depends_list() {
     fi
 }
 
-depends_check() {
-    local hype_name="$1"
-    debug "Checking dependency releases for $hype_name (legacy check command)"
-    depends_releases "$hype_name" "check"
-}
 
 depends_releases() {
     local hype_name="$1"
@@ -742,7 +734,6 @@ Commands:
   up          Start all dependencies with --nothing-if-expected --build --push
   down        Stop all dependencies in reverse order
   list        List configured dependencies
-  check       Check if all dependency releases exist (legacy command)
   releases    Manage dependency releases (check)
   resources   Manage dependency resources (check)
   help        Show this help message
@@ -760,7 +751,6 @@ Examples:
   hype myapp depends up                Start all dependencies for myapp
   hype myapp depends down              Stop all dependencies for myapp
   hype myapp depends list              List dependencies for myapp
-  hype myapp depends check             Check if all dependency releases exist
   hype myapp depends releases check    Check if all dependency releases exist
   hype myapp depends resources check   Check if all dependency resources are ready
 EOF
