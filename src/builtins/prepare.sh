@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # HYPE CLI Prepare Plugin
-# Handles complete setup workflow in one command
+# Handles repository preparation workflow
 
 # Builtin metadata (required)
 BUILTIN_NAME="prepare"
 BUILTIN_VERSION="1.0.0"
-BUILTIN_DESCRIPTION="Complete setup workflow builtin"
+BUILTIN_DESCRIPTION="Repository preparation builtin"
 
 # Register commands in global BUILTIN_COMMANDS array
 BUILTIN_COMMANDS+=("prepare")
@@ -16,14 +16,11 @@ help_prepare() {
     cat <<EOF
 Usage: hype <hype-name> prepare <url> --branch <branch> --path <path> [--trait <trait>]
 
-Complete setup workflow in one command
+Repository preparation workflow
 
-This command performs a complete setup by executing the following steps:
-1. hype <hype-name> trait prepare <trait>
+This command performs repository setup by executing the following steps:
+1. Validate trait configuration (if specified)
 2. hype <hype-name> repo prepare <url> --branch <branch> --path <path>
-3. hype <hype-name> task build
-4. hype <hype-name> task push
-5. hype <hype-name> up
 
 Options:
   --branch <branch>     Repository branch (default: main)
@@ -38,7 +35,7 @@ EOF
 }
 
 help_prepare_brief() {
-    echo "Complete setup workflow in one command"
+    echo "Repository preparation workflow"
 }
 
 # Main command function
@@ -148,19 +145,19 @@ cmd_prepare() {
     local saved_working_dir
     saved_working_dir="$(pwd)"
 
-    info "Starting complete setup workflow for hype: $hype_name"
+    info "Starting repository preparation workflow for hype: $hype_name"
     info "Repository: $repo_url"
     info "Branch: $branch"
     info "Path: $path"
     info "Trait: $trait"
     echo ""
-    
+
     # Step 1: trait validation already completed above
     if [[ "$trait_specified" == "true" ]]; then
-        info "Step 1/6: Using specified trait: $trait"
+        info "Step 1/2: Using specified trait: $trait"
         echo ""
     else
-        info "Step 1/6: No trait specified, proceeding without trait"
+        info "Step 1/2: No trait specified, proceeding without trait"
         echo ""
     fi
     
@@ -215,7 +212,7 @@ cmd_prepare() {
     }
 
     # Step 2: repo prepare
-    info "Step 2/6: Preparing repository..."
+    info "Step 2/2: Preparing repository..."
     if ! cmd_repo "$hype_name" "prepare" "$repo_url" --branch "$branch" --path "$path"; then
         error "Failed to prepare repository: $repo_url"
         restore_environment
@@ -231,48 +228,8 @@ cmd_prepare() {
         return 1
     fi
 
-    # Step 2.5: Initialize hype environment
-    info "Step 2.5/5: Initializing hype environment..."
-    if ! cmd_init "$hype_name"; then
-        error "Failed to initialize hype environment"
-        restore_environment
-        return 1
-    fi
-    info "✓ Hype environment initialization completed"
-    echo ""
-    
-    # Step 3: task build
-    info "Step 3/6: Running build task..."
-    if ! cmd_task "$hype_name" "build"; then
-        error "Failed to run build task"
-        restore_environment
-        return 1
-    fi
-    info "✓ Build task completed"
-    echo ""
-
-    # Step 4: task push
-    info "Step 4/6: Running push task..."
-    if ! cmd_task "$hype_name" "push"; then
-        error "Failed to run push task"
-        restore_environment
-        return 1
-    fi
-    info "✓ Push task completed"
-    echo ""
-
-    # Step 5: up
-    info "Step 5/6: Deploying application..."
-    if ! cmd_up "$hype_name"; then
-        error "Failed to deploy application"
-        restore_environment
-        return 1
-    fi
-    info "✓ Application deployment completed"
-    echo ""
-    
-    info "🎉 Complete setup workflow finished successfully for hype: $hype_name"
-    info "Your application should now be deployed and running."
+    info "🎉 Repository preparation completed successfully for hype: $hype_name"
+    info "Repository is ready for initialization and further configuration."
 
     # Restore original environment after successful completion
     restore_environment
