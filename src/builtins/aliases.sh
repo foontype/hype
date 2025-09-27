@@ -9,11 +9,90 @@ BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Deployment lifecycle aliases"
 
 # Register commands in global BUILTIN_COMMANDS array
+BUILTIN_COMMANDS+=("init")
+BUILTIN_COMMANDS+=("deinit")
 BUILTIN_COMMANDS+=("up")
 BUILTIN_COMMANDS+=("down")
 BUILTIN_COMMANDS+=("restart")
+BUILTIN_COMMANDS+=("releases")
+BUILTIN_COMMANDS+=("resources")
 
 # Help functions for each command
+help_init() {
+    cat <<EOF
+Usage: hype <hype-name> init
+
+Initialize resources with dependencies and addons
+
+This command performs a complete initialization workflow:
+1. Run depends init (if configured)
+2. Initialize default resources
+3. Run addons init (if configured)
+
+Examples:
+  hype my-nginx init                 Initialize my-nginx with all dependencies
+EOF
+}
+
+help_init_brief() {
+    echo "Initialize resources with dependencies and addons"
+}
+
+help_deinit() {
+    cat <<EOF
+Usage: hype <hype-name> deinit
+
+Deinitialize resources with addons cleanup
+
+This command performs a complete deinitialization workflow:
+1. Run addons deinit (if configured)
+2. Deinitialize default resources
+
+Examples:
+  hype my-nginx deinit               Deinitialize my-nginx with addons cleanup
+EOF
+}
+
+help_deinit_brief() {
+    echo "Deinitialize resources with addons cleanup"
+}
+
+help_releases() {
+    cat <<EOF
+Usage: hype <hype-name> releases <subcommand>
+
+Manage releases with dependencies and addons support
+
+Subcommands:
+  check                             Check if all expected releases exist
+
+Examples:
+  hype my-nginx releases check      Check releases for my-nginx and addons
+EOF
+}
+
+help_releases_brief() {
+    echo "Manage releases with dependencies and addons support"
+}
+
+help_resources() {
+    cat <<EOF
+Usage: hype <hype-name> resources <subcommand>
+
+Manage resources with dependencies and addons support
+
+Subcommands:
+  check                             Check if all default resources exist
+
+Examples:
+  hype my-nginx resources check     Check resources for my-nginx and addons
+EOF
+}
+
+help_resources_brief() {
+    echo "Manage resources with dependencies and addons support"
+}
+
 help_up() {
     cat <<EOF
 Usage: hype <hype-name> up [--nothing-if-expected] [--build] [--push]
@@ -524,4 +603,308 @@ cmd_restart() {
     fi
     
     info "Restart command completed successfully for hype: $hype_name"
+}
+
+# Init command: depends init + init + addons init
+cmd_init() {
+    local hype_name="$1"
+
+    debug "Running init command for: $hype_name"
+
+    parse_hypefile "$hype_name"
+
+    # Run depends init first if configured
+    local depends_list
+    if depends_list=$(get_depends_list 2>/dev/null) && [[ -n "$depends_list" ]]; then
+        info "Running depends init for hype: $hype_name"
+        if ! depends_init "$hype_name"; then
+            error "Dependencies initialization failed"
+            return 1
+        fi
+    else
+        debug "No dependencies configured for $hype_name"
+    fi
+
+    # Run main init (copied from init.sh builtin)
+    info "Initializing default resources for: $hype_name"
+
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        debug "No hypefile section found"
+    else
+        # Get resource count first
+        local resource_count
+        resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
+
+        if [[ "$resource_count" -eq 0 ]]; then
+            debug "No default resources found"
+        else
+            # Process each default resource by index
+            for (( i=0; i<resource_count; i++ )); do
+                local name type values_yaml
+
+                name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
+                type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+                values_yaml=$(yq eval ".defaultResources[$i].values" "$HYPE_SECTION_FILE")
+
+                debug "Processing resource $i: name=$name, type=$type"
+
+                if [[ "$name" != "null" && "$type" != "null" && "$values_yaml" != "null" ]]; then
+                    # Create resource logic from init.sh
+                    create_resource "$name" "$type" "$values_yaml"
+                fi
+            done
+        fi
+    fi
+
+    # Run addons init after if configured
+    if has_addons "$hype_name"; then
+        info "Running addons init for hype: $hype_name"
+        if ! addons_init "$hype_name"; then
+            error "Addons initialization failed"
+            return 1
+        fi
+    else
+        debug "No addons configured for $hype_name"
+    fi
+
+    info "Init command completed successfully for hype: $hype_name"
+}
+
+# Deinit command: addons deinit + deinit
+cmd_deinit() {
+    local hype_name="$1"
+
+    debug "Running deinit command for: $hype_name"
+
+    parse_hypefile "$hype_name"
+
+    # Run addons deinit first if they exist
+    if has_addons "$hype_name"; then
+        info "Running addons deinit for hype: $hype_name"
+        if ! addons_deinit "$hype_name"; then
+            warn "Addons deinitialization failed, continuing with main deinitialization"
+        fi
+    else
+        debug "No addons configured for $hype_name"
+    fi
+
+    # Run main deinit (copied from init.sh builtin)
+    info "Deinitializing default resources for: $hype_name"
+
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        debug "No hypefile section found"
+    else
+        # Get resource count first
+        local resource_count
+        resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
+
+        if [[ "$resource_count" -eq 0 ]]; then
+            debug "No default resources found"
+        else
+            # Process each default resource by index
+            for (( i=0; i<resource_count; i++ )); do
+                local name type
+
+                name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
+                type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+
+                debug "Processing resource $i for deletion: name=$name, type=$type"
+
+                if [[ "$name" != "null" && "$type" != "null" ]]; then
+                    # Delete resource logic from init.sh
+                    delete_resource "$name" "$type"
+                fi
+            done
+        fi
+    fi
+
+    info "Deinit command completed successfully for hype: $hype_name"
+}
+
+# Check expectedReleases from helmfile.yaml
+check_expected_releases() {
+    local hype_name="$1"
+
+    debug "Checking expected releases for hype: $hype_name"
+
+    if [[ ! -f "$HELMFILE_SECTION_FILE" || ! -s "$HELMFILE_SECTION_FILE" ]]; then
+        debug "No helmfile section found for $hype_name"
+        return 0
+    fi
+
+    # Get expectedReleases from helmfile section
+    local expected_releases
+    expected_releases=$(yq eval '.expectedReleases[]' "$HELMFILE_SECTION_FILE" 2>/dev/null)
+
+    if [[ -z "$expected_releases" ]]; then
+        debug "No expectedReleases found in helmfile for $hype_name"
+        return 0
+    fi
+
+    local missing_releases=()
+    while IFS= read -r release; do
+        if [[ -n "$release" ]]; then
+            if ! helm list --filter="^${release}$" --short 2>/dev/null | grep -q "^${release}$"; then
+                missing_releases+=("$release")
+            fi
+        fi
+    done <<< "$expected_releases"
+
+    if [[ ${#missing_releases[@]} -gt 0 ]]; then
+        error "Missing expected releases: ${missing_releases[*]}"
+        return 1
+    fi
+
+    info "All expected releases are deployed for hype: $hype_name"
+    return 0
+}
+
+# Check defaultResources from hypefile.yaml
+check_default_resources() {
+    local hype_name="$1"
+
+    debug "Checking default resources for hype: $hype_name"
+
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        debug "No hypefile section found for $hype_name"
+        return 0
+    fi
+
+    # Get resource count first
+    local resource_count
+    resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
+
+    if [[ "$resource_count" -eq 0 ]]; then
+        debug "No default resources found for $hype_name"
+        return 0
+    fi
+
+    local missing_resources=()
+    # Process each default resource by index
+    for (( i=0; i<resource_count; i++ )); do
+        local name type
+
+        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
+        type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+
+        if [[ "$name" != "null" && "$type" != "null" ]]; then
+            case "$type" in
+                "DefaultStateValues")
+                    # Skip check for DefaultStateValues (local processing only)
+                    ;;
+                "StateValuesConfigmap"|"Configmap")
+                    if ! kubectl get configmap "$name" >/dev/null 2>&1; then
+                        missing_resources+=("ConfigMap:$name")
+                    fi
+                    ;;
+                "Secrets")
+                    if ! kubectl get secret "$name" >/dev/null 2>&1; then
+                        missing_resources+=("Secret:$name")
+                    fi
+                    ;;
+            esac
+        fi
+    done
+
+    if [[ ${#missing_resources[@]} -gt 0 ]]; then
+        error "Missing default resources: ${missing_resources[*]}"
+        return 1
+    fi
+
+    info "All default resources exist for hype: $hype_name"
+    return 0
+}
+
+# Releases command: manage releases with addons support
+cmd_releases() {
+    local hype_name="$1"
+    shift
+    local subcommand="${1:-}"
+
+    case "$subcommand" in
+        "check")
+            debug "Running releases check command for: $hype_name"
+
+            parse_hypefile "$hype_name"
+
+            local main_status=0
+            local addons_status=0
+
+            # Check main hype releases
+            if ! check_expected_releases "$hype_name"; then
+                main_status=1
+            fi
+
+            # Check addons releases if configured
+            if has_addons "$hype_name"; then
+                info "Running addons releases check for hype: $hype_name"
+                if ! addons_releases "$hype_name" "check"; then
+                    addons_status=1
+                fi
+            else
+                debug "No addons configured for $hype_name"
+            fi
+
+            # Return success only if both main and addons succeed
+            if [[ $main_status -eq 0 && $addons_status -eq 0 ]]; then
+                info "Releases check completed successfully for hype: $hype_name"
+                return 0
+            else
+                error "Releases check failed for hype: $hype_name"
+                return 1
+            fi
+            ;;
+        *)
+            error "Unknown releases subcommand: $subcommand"
+            help_releases
+            return 1
+            ;;
+    esac
+}
+
+# Resources command: manage resources with addons support
+cmd_resources() {
+    local hype_name="$1"
+    shift
+    local subcommand="${1:-}"
+
+    case "$subcommand" in
+        "check")
+            debug "Running resources check command for: $hype_name"
+
+            parse_hypefile "$hype_name"
+
+            local main_status=0
+            local addons_status=0
+
+            # Check main hype resources
+            if ! check_default_resources "$hype_name"; then
+                main_status=1
+            fi
+
+            # Check addons resources if configured
+            if has_addons "$hype_name"; then
+                info "Running addons resources check for hype: $hype_name"
+                if ! addons_resources "$hype_name" "check"; then
+                    addons_status=1
+                fi
+            else
+                debug "No addons configured for $hype_name"
+            fi
+
+            # Return success only if both main and addons succeed
+            if [[ $main_status -eq 0 && $addons_status -eq 0 ]]; then
+                info "Resources check completed successfully for hype: $hype_name"
+                return 0
+            else
+                error "Resources check failed for hype: $hype_name"
+                return 1
+            fi
+            ;;
+        *)
+            error "Unknown resources subcommand: $subcommand"
+            help_resources
+            return 1
+            ;;
+    esac
 }

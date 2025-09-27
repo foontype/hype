@@ -8,7 +8,7 @@
 BUILTIN_NAME="releases"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Releases builtin for HYPE CLI"
-BUILTIN_COMMANDS+=("releases")
+# Note: releases command is now registered in aliases.sh
 
 # Builtin initialization function (optional)
 builtin_releases_init() {
@@ -97,7 +97,7 @@ cmd_releases() {
 }
 
 # Help function for this builtin
-help_releases() {
+help_releases_builtin() {
     cat << EOF
 Usage: hype <hype-name> releases <subcommand> [options...]
 

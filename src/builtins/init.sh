@@ -8,9 +8,8 @@ BUILTIN_NAME="init"
 BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Resource initialization and management builtin"
 
-# Register commands in global BUILTIN_COMMANDS array
-BUILTIN_COMMANDS+=("init")
-BUILTIN_COMMANDS+=("deinit")
+# Note: init and deinit commands are now registered in aliases.sh
+# This builtin provides helper functions for resource management
 
 # Help functions for each command
 help_init() {

@@ -9,7 +9,7 @@ BUILTIN_VERSION="1.0.0"
 BUILTIN_DESCRIPTION="Manage and check status of HYPE resources"
 
 # Register commands in global BUILTIN_COMMANDS array
-BUILTIN_COMMANDS+=("resources")
+# Note: resources command is now registered in aliases.sh
 
 # Check resource status
 check_resource_status() {
@@ -122,7 +122,7 @@ cmd_resources() {
 }
 
 # Help function
-help_resources() {
+help_resources_builtin() {
     cat << EOF
 Usage: hype <hype-name> resources <subcommand> [options...]
 
