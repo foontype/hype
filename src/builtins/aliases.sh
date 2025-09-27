@@ -408,7 +408,7 @@ cmd_up() {
     fi
 
     # Run dependencies first
-    if ! run_dependencies "$hype_name"; then
+    if ! depends_up "$hype_name"; then
         error "Dependencies failed"
         return 1
     fi
@@ -489,7 +489,7 @@ cmd_restart() {
     info "Down phase completed, starting up phase"
     
     # Run dependencies first
-    if ! run_dependencies "$hype_name"; then
+    if ! depends_up "$hype_name"; then
         error "Dependencies failed during restart"
         return 1
     fi
