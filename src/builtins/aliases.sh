@@ -385,16 +385,6 @@ cmd_up() {
         fi
     fi
 
-    # Run push task if forced
-    if [[ "$force_push" == "true" ]]; then
-        debug "Force push requested, running push task"
-        if ! cmd_task "$hype_name" "push"; then
-            error "Push task failed"
-            return 1
-        fi
-        info "Push task completed successfully"
-    fi
-
     # Run build task if forced or if available and not explicitly overridden
     if [[ "$force_build" == "true" ]] || { [[ "$force_build" == "false" ]] && has_build_task "$hype_name"; }; then
         debug "Running build task (forced: $force_build, available: $(has_build_task "$hype_name" && echo "true" || echo "false"))"
@@ -405,6 +395,16 @@ cmd_up() {
         info "Build task completed successfully"
     else
         debug "Build task skipped (forced: $force_build, available: $(has_build_task "$hype_name" && echo "true" || echo "false"))"
+    fi
+
+    # Run push task if forced
+    if [[ "$force_push" == "true" ]]; then
+        debug "Force push requested, running push task"
+        if ! cmd_task "$hype_name" "push"; then
+            error "Push task failed"
+            return 1
+        fi
+        info "Push task completed successfully"
     fi
 
     # Run dependencies first
