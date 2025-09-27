@@ -35,14 +35,19 @@ cmd_depends() {
         "list")
             depends_list "$hype_name"
             ;;
-        "check")
-            depends_check "$hype_name"
+        "releases")
+            shift
+            depends_releases "$hype_name" "$@"
+            ;;
+        "resources")
+            shift
+            depends_resources "$hype_name" "$@"
             ;;
         "help"|"-h"|"--help")
             help_depends
             ;;
         "")
-            error "Missing subcommand. Use 'init', 'deinit', 'up', 'down', 'list', 'check', or 'help'"
+            error "Missing subcommand. Use 'init', 'deinit', 'up', 'down', 'list', 'releases', 'resources', or 'help'"
             help_depends
             return 1
             ;;
@@ -478,7 +483,56 @@ depends_list() {
     fi
 }
 
-depends_check() {
+
+depends_releases() {
+    local hype_name="$1"
+    local subcommand="${2:-}"
+
+    case "$subcommand" in
+        "check")
+            depends_releases_check "$hype_name"
+            ;;
+        "help"|"-h"|"--help")
+            help_depends_releases
+            ;;
+        "")
+            error "Missing releases subcommand. Use 'check' or 'help'"
+            help_depends_releases
+            return 1
+            ;;
+        *)
+            error "Unknown depends releases subcommand: $subcommand"
+            help_depends_releases
+            return 1
+            ;;
+    esac
+}
+
+depends_resources() {
+    local hype_name="$1"
+    local subcommand="${2:-}"
+
+    case "$subcommand" in
+        "check")
+            depends_resources_check "$hype_name"
+            ;;
+        "help"|"-h"|"--help")
+            help_depends_resources
+            ;;
+        "")
+            error "Missing resources subcommand. Use 'check' or 'help'"
+            help_depends_resources
+            return 1
+            ;;
+        *)
+            error "Unknown depends resources subcommand: $subcommand"
+            help_depends_resources
+            return 1
+            ;;
+    esac
+}
+
+depends_releases_check() {
     local hype_name="$1"
 
     debug "Checking dependency releases for $hype_name"
@@ -573,6 +627,101 @@ depends_check() {
     fi
 }
 
+depends_resources_check() {
+    local hype_name="$1"
+
+    debug "Checking dependency resources for $hype_name"
+
+    parse_hypefile "$hype_name"
+
+    local depends_list
+    if ! depends_list=$(get_depends_list); then
+        debug "No dependencies found for $hype_name"
+        return 0
+    fi
+
+    if [[ -z "$depends_list" ]]; then
+        debug "No dependencies configured for $hype_name"
+        return 0
+    fi
+
+    local failed_dependencies=()
+    local count=0
+    local current_entry=""
+    local line
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^hype:.*$ ]]; then
+            # Process previous entry if exists
+            if [[ -n "$current_entry" ]]; then
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    count=$((count + 1))
+                    local depend_hype
+
+                    depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+                    if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
+                        error "Dependency $count: missing 'hype' field"
+                        return 1
+                    fi
+
+                    debug "Checking resources for dependency: $depend_hype"
+
+                    if ! env HYPEFILE="$HYPEFILE" "$0" "$depend_hype" resources check; then
+                        failed_dependencies+=("$depend_hype")
+                    fi
+                else
+                    debug "Skipping dependency check due to trait mismatch"
+                fi
+            fi
+
+            # Start new entry
+            current_entry="$line"
+        else
+            # Continue building current entry
+            current_entry="$current_entry"$'\n'"$line"
+        fi
+    done <<< "$depends_list"
+
+    # Process last entry
+    if [[ -n "$current_entry" ]]; then
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            count=$((count + 1))
+            local depend_hype
+
+            depend_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+            if [[ -z "$depend_hype" || "$depend_hype" == "null" ]]; then
+                error "Dependency $count: missing 'hype' field"
+                return 1
+            fi
+
+            debug "Checking resources for dependency: $depend_hype"
+
+            if ! env HYPEFILE="$HYPEFILE" "$0" "$depend_hype" resources check; then
+                failed_dependencies+=("$depend_hype")
+            fi
+        else
+            debug "Skipping last dependency check due to trait mismatch"
+        fi
+    fi
+
+    # Report results
+    if [[ ${#failed_dependencies[@]} -eq 0 ]]; then
+        if [[ $count -eq 0 ]]; then
+            info "No dependencies to check"
+        else
+            info "All $count dependency resources are ready"
+        fi
+        return 0
+    else
+        error "Dependencies with failed resource checks: ${failed_dependencies[*]}"
+        return 1
+    fi
+}
+
 help_depends() {
     cat << EOF
 Usage: hype <hype-name> depends <command>
@@ -585,7 +734,8 @@ Commands:
   up          Start all dependencies with --nothing-if-expected --build --push
   down        Stop all dependencies in reverse order
   list        List configured dependencies
-  check       Check if all dependency releases exist
+  releases    Manage dependency releases (check)
+  resources   Manage dependency resources (check)
   help        Show this help message
 
 The dependencies are configured in the hype section of hypefile.yaml:
@@ -596,12 +746,43 @@ The dependencies are configured in the hype section of hypefile.yaml:
     - hype: another-dependency
 
 Examples:
-  hype myapp depends init     Initialize all dependencies for myapp
-  hype myapp depends deinit   Deinitialize all dependencies for myapp
-  hype myapp depends up       Start all dependencies for myapp
-  hype myapp depends down     Stop all dependencies for myapp
-  hype myapp depends list     List dependencies for myapp
-  hype myapp depends check    Check if all dependency releases exist
+  hype myapp depends init              Initialize all dependencies for myapp
+  hype myapp depends deinit            Deinitialize all dependencies for myapp
+  hype myapp depends up                Start all dependencies for myapp
+  hype myapp depends down              Stop all dependencies for myapp
+  hype myapp depends list              List dependencies for myapp
+  hype myapp depends releases check    Check if all dependency releases exist
+  hype myapp depends resources check   Check if all dependency resources are ready
+EOF
+}
+
+help_depends_releases() {
+    cat << EOF
+Usage: hype <hype-name> depends releases <command>
+
+Manage dependency releases
+
+Commands:
+  check       Check if all dependency releases exist
+  help        Show this help message
+
+Examples:
+  hype myapp depends releases check    Check if all dependency releases exist
+EOF
+}
+
+help_depends_resources() {
+    cat << EOF
+Usage: hype <hype-name> depends resources <command>
+
+Manage dependency resources
+
+Commands:
+  check       Check if all dependency resources are ready
+  help        Show this help message
+
+Examples:
+  hype myapp depends resources check   Check if all dependency resources are ready
 EOF
 }
 
