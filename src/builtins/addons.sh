@@ -38,11 +38,19 @@ cmd_addons() {
         "check")
             addons_check "$hype_name"
             ;;
+        "releases")
+            shift
+            addons_releases "$hype_name" "$@"
+            ;;
+        "resources")
+            shift
+            addons_resources "$hype_name" "$@"
+            ;;
         "help"|"-h"|"--help")
             help_addons
             ;;
         "")
-            error "Missing subcommand. Use 'init', 'deinit', 'up', 'down', 'list', 'check', or 'help'"
+            error "Missing subcommand. Use 'init', 'deinit', 'up', 'down', 'list', 'check', 'releases', 'resources', or 'help'"
             help_addons
             return 1
             ;;
@@ -480,6 +488,60 @@ addons_list() {
 
 addons_check() {
     local hype_name="$1"
+    debug "Checking addon releases for $hype_name (legacy check command)"
+    addons_releases "$hype_name" "check"
+}
+
+addons_releases() {
+    local hype_name="$1"
+    local subcommand="${2:-}"
+
+    case "$subcommand" in
+        "check")
+            addons_releases_check "$hype_name"
+            ;;
+        "help"|"-h"|"--help")
+            help_addons_releases
+            ;;
+        "")
+            error "Missing releases subcommand. Use 'check' or 'help'"
+            help_addons_releases
+            return 1
+            ;;
+        *)
+            error "Unknown addons releases subcommand: $subcommand"
+            help_addons_releases
+            return 1
+            ;;
+    esac
+}
+
+addons_resources() {
+    local hype_name="$1"
+    local subcommand="${2:-}"
+
+    case "$subcommand" in
+        "check")
+            addons_resources_check "$hype_name"
+            ;;
+        "help"|"-h"|"--help")
+            help_addons_resources
+            ;;
+        "")
+            error "Missing resources subcommand. Use 'check' or 'help'"
+            help_addons_resources
+            return 1
+            ;;
+        *)
+            error "Unknown addons resources subcommand: $subcommand"
+            help_addons_resources
+            return 1
+            ;;
+    esac
+}
+
+addons_releases_check() {
+    local hype_name="$1"
 
     debug "Checking addon releases for $hype_name"
 
@@ -573,6 +635,101 @@ addons_check() {
     fi
 }
 
+addons_resources_check() {
+    local hype_name="$1"
+
+    debug "Checking addon resources for $hype_name"
+
+    parse_hypefile "$hype_name"
+
+    local addons_list
+    if ! addons_list=$(get_addons_list); then
+        debug "No addons found for $hype_name"
+        return 0
+    fi
+
+    if [[ -z "$addons_list" ]]; then
+        debug "No addons configured for $hype_name"
+        return 0
+    fi
+
+    local failed_addons=()
+    local count=0
+    local current_entry=""
+    local line
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^hype:.*$ ]]; then
+            # Process previous entry if exists
+            if [[ -n "$current_entry" ]]; then
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    count=$((count + 1))
+                    local addon_hype
+
+                    addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+                    if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                        error "Addon $count: missing 'hype' field"
+                        return 1
+                    fi
+
+                    debug "Checking resources for addon: $addon_hype"
+
+                    if ! env HYPEFILE="$HYPEFILE" "$0" "$addon_hype" resources check; then
+                        failed_addons+=("$addon_hype")
+                    fi
+                else
+                    debug "Skipping addon check due to trait mismatch"
+                fi
+            fi
+
+            # Start new entry
+            current_entry="$line"
+        else
+            # Continue building current entry
+            current_entry="$current_entry"$'\n'"$line"
+        fi
+    done <<< "$addons_list"
+
+    # Process last entry
+    if [[ -n "$current_entry" ]]; then
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            count=$((count + 1))
+            local addon_hype
+
+            addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+            if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                error "Addon $count: missing 'hype' field"
+                return 1
+            fi
+
+            debug "Checking resources for addon: $addon_hype"
+
+            if ! env HYPEFILE="$HYPEFILE" "$0" "$addon_hype" resources check; then
+                failed_addons+=("$addon_hype")
+            fi
+        else
+            debug "Skipping last addon check due to trait mismatch"
+        fi
+    fi
+
+    # Report results
+    if [[ ${#failed_addons[@]} -eq 0 ]]; then
+        if [[ $count -eq 0 ]]; then
+            info "No addons to check"
+        else
+            info "All $count addon resources are ready"
+        fi
+        return 0
+    else
+        error "Addons with failed resource checks: ${failed_addons[*]}"
+        return 1
+    fi
+}
+
 help_addons() {
     cat << EOF
 Usage: hype <hype-name> addons <command>
@@ -585,7 +742,9 @@ Commands:
   up          Start all addons with --nothing-if-expected --build --push
   down        Stop all addons in reverse order
   list        List configured addons
-  check       Check if all addon releases exist
+  check       Check if all addon releases exist (legacy command)
+  releases    Manage addon releases (check)
+  resources   Manage addon resources (check)
   help        Show this help message
 
 The addons are configured in the hype section of hypefile.yaml:
@@ -596,12 +755,44 @@ The addons are configured in the hype section of hypefile.yaml:
     - hype: another-addon
 
 Examples:
-  hype myapp addons init     Initialize all addons for myapp
-  hype myapp addons deinit   Deinitialize all addons for myapp
-  hype myapp addons up       Start all addons for myapp
-  hype myapp addons down     Stop all addons for myapp
-  hype myapp addons list     List addons for myapp
-  hype myapp addons check    Check if all addon releases exist
+  hype myapp addons init              Initialize all addons for myapp
+  hype myapp addons deinit            Deinitialize all addons for myapp
+  hype myapp addons up                Start all addons for myapp
+  hype myapp addons down              Stop all addons for myapp
+  hype myapp addons list              List addons for myapp
+  hype myapp addons check             Check if all addon releases exist
+  hype myapp addons releases check    Check if all addon releases exist
+  hype myapp addons resources check   Check if all addon resources are ready
+EOF
+}
+
+help_addons_releases() {
+    cat << EOF
+Usage: hype <hype-name> addons releases <command>
+
+Manage addon releases
+
+Commands:
+  check       Check if all addon releases exist
+  help        Show this help message
+
+Examples:
+  hype myapp addons releases check    Check if all addon releases exist
+EOF
+}
+
+help_addons_resources() {
+    cat << EOF
+Usage: hype <hype-name> addons resources <command>
+
+Manage addon resources
+
+Commands:
+  check       Check if all addon resources are ready
+  help        Show this help message
+
+Examples:
+  hype myapp addons resources check   Check if all addon resources are ready
 EOF
 }
 
