@@ -16,7 +16,7 @@ BUILTIN_COMMANDS+=("restart")
 # Help functions for each command
 help_up() {
     cat <<EOF
-Usage: hype <hype-name> up
+Usage: hype <hype-name> up [--nothing-if-expected] [--build] [--push]
 
 Start dependencies, build and deploy (dependencies + task build + helmfile apply)
 
@@ -25,8 +25,15 @@ This command performs a complete deployment workflow:
 2. Run the build task (if available)
 3. Apply the helmfile configuration to deploy your application
 
+Options:
+  --nothing-if-expected   Check releases first, skip deployment if already deployed
+  --build                 Force run build task before deployment
+  --push                  Force run push task before deployment
+
 Examples:
-  hype my-nginx up                   Deploy my-nginx with all dependencies
+  hype my-nginx up                           Deploy my-nginx with all dependencies
+  hype my-nginx up --nothing-if-expected     Only deploy if not already deployed
+  hype my-nginx up --build --push            Force build and push before deploy
 EOF
 }
 
@@ -335,35 +342,83 @@ run_dependencies() {
 # Up command: dependencies + build (if available) + helmfile apply
 cmd_up() {
     local hype_name="$1"
-    
-    debug "Running up command for: $hype_name"
-    
+    shift
+
+    # Parse options
+    local nothing_if_expected=false
+    local force_build=false
+    local force_push=false
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --nothing-if-expected)
+                nothing_if_expected=true
+                shift
+                ;;
+            --build)
+                force_build=true
+                shift
+                ;;
+            --push)
+                force_push=true
+                shift
+                ;;
+            *)
+                error "Unknown option: $1"
+                return 1
+                ;;
+        esac
+    done
+
+    debug "Running up command for: $hype_name (nothing-if-expected: $nothing_if_expected, force-build: $force_build, force-push: $force_push)"
+
     parse_hypefile "$hype_name"
-    
-    # Run dependencies first
-    if ! run_dependencies "$hype_name"; then
-        error "Dependencies failed"
-        return 1
+
+    # Check if deployment is expected (if --nothing-if-expected is specified)
+    if [[ "$nothing_if_expected" == "true" ]]; then
+        debug "Checking if deployment is expected using releases check"
+        if cmd_releases_check "$hype_name"; then
+            info "Deployment already exists and matches expected state, skipping up command"
+            return 0
+        else
+            debug "Deployment not in expected state, proceeding with up command"
+        fi
     fi
-    
-    # Run build task if available
-    if has_build_task "$hype_name"; then
-        debug "Build task found, running build"
+
+    # Run build task if forced or if available and not explicitly overridden
+    if [[ "$force_build" == "true" ]] || { [[ "$force_build" == "false" ]] && has_build_task "$hype_name"; }; then
+        debug "Running build task (forced: $force_build, available: $(has_build_task "$hype_name" && echo "true" || echo "false"))"
         if ! run_build_task "$hype_name"; then
             error "Build task failed"
             return 1
         fi
         info "Build task completed successfully"
     else
-        debug "No build task found, skipping build step"
+        debug "Build task skipped (forced: $force_build, available: $(has_build_task "$hype_name" && echo "true" || echo "false"))"
     fi
-    
+
+    # Run push task if forced
+    if [[ "$force_push" == "true" ]]; then
+        debug "Force push requested, running push task"
+        if ! cmd_task "$hype_name" "push"; then
+            error "Push task failed"
+            return 1
+        fi
+        info "Push task completed successfully"
+    fi
+
+    # Run dependencies first
+    if ! depends_up "$hype_name"; then
+        error "Dependencies failed"
+        return 1
+    fi
+
     # Run helmfile apply
     if ! run_helmfile_apply "$hype_name"; then
         error "Helmfile apply failed"
         return 1
     fi
-    
+
     # Run addons up automatically after successful deployment
     if has_addons "$hype_name"; then
         info "Running addons up for hype: $hype_name"
@@ -374,7 +429,7 @@ cmd_up() {
     else
         debug "No addons configured for $hype_name"
     fi
-    
+
     info "Up command completed successfully for hype: $hype_name"
 }
 
@@ -434,7 +489,7 @@ cmd_restart() {
     info "Down phase completed, starting up phase"
     
     # Run dependencies first
-    if ! run_dependencies "$hype_name"; then
+    if ! depends_up "$hype_name"; then
         error "Dependencies failed during restart"
         return 1
     fi
