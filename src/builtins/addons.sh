@@ -20,6 +20,12 @@ cmd_addons() {
     local subcommand="${1:-}"
     
     case "$subcommand" in
+        "init")
+            addons_init "$hype_name"
+            ;;
+        "deinit")
+            addons_deinit "$hype_name"
+            ;;
         "up")
             addons_up "$hype_name"
             ;;
@@ -36,7 +42,7 @@ cmd_addons() {
             help_addons
             ;;
         "")
-            error "Missing subcommand. Use 'up', 'down', 'list', 'check', or 'help'"
+            error "Missing subcommand. Use 'init', 'deinit', 'up', 'down', 'list', 'check', or 'help'"
             help_addons
             return 1
             ;;
@@ -46,6 +52,187 @@ cmd_addons() {
             return 1
             ;;
     esac
+}
+
+addons_init() {
+    local hype_name="$1"
+
+    info "Initializing addons for $hype_name"
+
+    parse_hypefile "$hype_name"
+
+    local addons_list
+    if ! addons_list=$(get_addons_list); then
+        debug "No addons found for $hype_name"
+        return 0
+    fi
+
+    if [[ -z "$addons_list" ]]; then
+        debug "No addons configured for $hype_name"
+        return 0
+    fi
+
+    local count=0
+    local current_entry=""
+    local line
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^hype:.*$ ]]; then
+            # Process previous entry if exists
+            if [[ -n "$current_entry" ]]; then
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    count=$((count + 1))
+                    local addon_hype
+
+                    addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+                    if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                        error "Addon $count: missing 'hype' field"
+                        return 1
+                    fi
+
+                    info "Initializing addon $count: $addon_hype"
+                    debug "Running: hype $addon_hype init"
+
+                    if ! hype "$addon_hype" init; then
+                        error "Failed to initialize addon: $addon_hype"
+                        return 1
+                    fi
+
+                    info "Addon $count initialized: $addon_hype"
+                else
+                    debug "Skipping addon due to trait mismatch"
+                fi
+            fi
+
+            # Start new entry
+            current_entry="$line"
+        else
+            # Continue building current entry
+            current_entry="$current_entry"$'\n'"$line"
+        fi
+    done <<< "$addons_list"
+
+    # Process last entry
+    if [[ -n "$current_entry" ]]; then
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            count=$((count + 1))
+            local addon_hype
+
+            addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+            if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
+                error "Addon $count: missing 'hype' field"
+                return 1
+            fi
+
+            info "Initializing addon $count: $addon_hype"
+            debug "Running: hype $addon_hype init"
+
+            if ! hype "$addon_hype" init; then
+                error "Failed to initialize addon: $addon_hype"
+                return 1
+            fi
+
+            info "Addon $count initialized: $addon_hype"
+        else
+            debug "Skipping last addon due to trait mismatch"
+        fi
+    fi
+
+    if [[ $count -eq 0 ]]; then
+        debug "No valid addons found for $hype_name"
+    else
+        info "All $count addons initialized for $hype_name"
+    fi
+}
+
+addons_deinit() {
+    local hype_name="$1"
+
+    info "Deinitializing addons for $hype_name"
+
+    parse_hypefile "$hype_name"
+
+    local addons_list
+    if ! addons_list=$(get_addons_list); then
+        debug "No addons found for $hype_name"
+        return 0
+    fi
+
+    if [[ -z "$addons_list" ]]; then
+        debug "No addons configured for $hype_name"
+        return 0
+    fi
+
+    local addon_array=()
+    local current_entry=""
+    local line
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^hype:.*$ ]]; then
+            # Process previous entry if exists
+            if [[ -n "$current_entry" ]]; then
+                # Check if this entry should be processed based on traits
+                if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+                    local addon_hype
+                    addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+                    if [[ -n "$addon_hype" && "$addon_hype" != "null" ]]; then
+                        addon_array+=("$addon_hype")
+                    fi
+                else
+                    debug "Skipping addon in deinit due to trait mismatch"
+                fi
+            fi
+
+            # Start new entry
+            current_entry="$line"
+        else
+            # Continue building current entry
+            current_entry="$current_entry"$'\n'"$line"
+        fi
+    done <<< "$addons_list"
+
+    # Process last entry
+    if [[ -n "$current_entry" ]]; then
+        # Check if this entry should be processed based on traits
+        if should_process_entry_by_traits "$current_entry" "$hype_name"; then
+            local addon_hype
+            addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
+
+            if [[ -n "$addon_hype" && "$addon_hype" != "null" ]]; then
+                addon_array+=("$addon_hype")
+            fi
+        else
+            debug "Skipping last addon in deinit due to trait mismatch"
+        fi
+    fi
+
+    local count=${#addon_array[@]}
+    if [[ $count -eq 0 ]]; then
+        debug "No valid addons found for $hype_name"
+        return 0
+    fi
+
+    for ((i = count - 1; i >= 0; i--)); do
+        local addon_hype="${addon_array[i]}"
+        local addon_num=$((count - i))
+
+        info "Deinitializing addon $addon_num: $addon_hype"
+        debug "Running: hype $addon_hype deinit"
+
+        if ! hype "$addon_hype" deinit; then
+            error "Failed to deinitialize addon: $addon_hype"
+            return 1
+        fi
+
+        info "Addon $addon_num deinitialized: $addon_hype"
+    done
+
+    info "All $count addons deinitialized for $hype_name"
 }
 
 addons_up() {
@@ -61,12 +248,11 @@ addons_up() {
         return 0
     fi
 
-
     if [[ -z "$addons_list" ]]; then
         debug "No addons configured for $hype_name"
         return 0
     fi
-    
+
     local count=0
     local current_entry=""
     local line
@@ -79,26 +265,19 @@ addons_up() {
                 if should_process_entry_by_traits "$current_entry" "$hype_name"; then
                     count=$((count + 1))
                     local addon_hype
-                    local addon_prepare
 
                     addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
-                    addon_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
 
                     if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
                         error "Addon $count: missing 'hype' field"
                         return 1
                     fi
 
-                    if [[ -z "$addon_prepare" || "$addon_prepare" == "null" ]]; then
-                        error "Addon $count: missing 'prepare' field"
-                        return 1
-                    fi
-
                     info "Processing addon $count: $addon_hype"
-                    debug "Running: cmd_prepare $addon_hype $addon_prepare"
+                    debug "Running: hype $addon_hype up --nothing-if-expected --build --push"
 
-                    if ! eval "cmd_prepare $addon_hype $addon_prepare"; then
-                        error "Failed to prepare addon: $addon_hype"
+                    if ! hype "$addon_hype" up --nothing-if-expected --build --push; then
+                        error "Failed to start addon: $addon_hype"
                         return 1
                     fi
 
@@ -107,7 +286,7 @@ addons_up() {
                     debug "Skipping addon due to trait mismatch"
                 fi
             fi
-            
+
             # Start new entry
             current_entry="$line"
         else
@@ -115,33 +294,26 @@ addons_up() {
             current_entry="$current_entry"$'\n'"$line"
         fi
     done <<< "$addons_list"
-    
+
     # Process last entry
     if [[ -n "$current_entry" ]]; then
         # Check if this entry should be processed based on traits
         if should_process_entry_by_traits "$current_entry" "$hype_name"; then
             count=$((count + 1))
             local addon_hype
-            local addon_prepare
 
             addon_hype=$(echo "$current_entry" | yq eval '.hype' -)
-            addon_prepare=$(echo "$current_entry" | yq eval '.prepare' -)
 
             if [[ -z "$addon_hype" || "$addon_hype" == "null" ]]; then
                 error "Addon $count: missing 'hype' field"
                 return 1
             fi
 
-            if [[ -z "$addon_prepare" || "$addon_prepare" == "null" ]]; then
-                error "Addon $count: missing 'prepare' field"
-                return 1
-            fi
-
             info "Processing addon $count: $addon_hype"
-            debug "Running: cmd_prepare $addon_hype $addon_prepare"
+            debug "Running: hype $addon_hype up --nothing-if-expected --build --push"
 
-            if ! eval "cmd_prepare $addon_hype $addon_prepare"; then
-                error "Failed to prepare addon: $addon_hype"
+            if ! hype "$addon_hype" up --nothing-if-expected --build --push; then
+                error "Failed to start addon: $addon_hype"
                 return 1
             fi
 
@@ -150,7 +322,7 @@ addons_up() {
             debug "Skipping last addon due to trait mismatch"
         fi
     fi
-    
+
     if [[ $count -eq 0 ]]; then
         debug "No valid addons found for $hype_name"
     else
@@ -160,22 +332,22 @@ addons_up() {
 
 addons_down() {
     local hype_name="$1"
-    
+
     info "Stopping addons for $hype_name"
-    
+
     parse_hypefile "$hype_name"
-    
+
     local addons_list
     if ! addons_list=$(get_addons_list); then
         debug "No addons found for $hype_name"
         return 0
     fi
-    
+
     if [[ -z "$addons_list" ]]; then
         debug "No addons configured for $hype_name"
         return 0
     fi
-    
+
     local addon_array=()
     local current_entry=""
     local line
@@ -196,7 +368,7 @@ addons_down() {
                     debug "Skipping addon in down due to trait mismatch"
                 fi
             fi
-            
+
             # Start new entry
             current_entry="$line"
         else
@@ -204,7 +376,7 @@ addons_down() {
             current_entry="$current_entry"$'\n'"$line"
         fi
     done <<< "$addons_list"
-    
+
     # Process last entry
     if [[ -n "$current_entry" ]]; then
         # Check if this entry should be processed based on traits
@@ -219,28 +391,28 @@ addons_down() {
             debug "Skipping last addon in down due to trait mismatch"
         fi
     fi
-    
+
     local count=${#addon_array[@]}
     if [[ $count -eq 0 ]]; then
         debug "No valid addons found for $hype_name"
         return 0
     fi
-    
+
     for ((i = count - 1; i >= 0; i--)); do
         local addon_hype="${addon_array[i]}"
         local addon_num=$((count - i))
-        
+
         info "Stopping addon $addon_num: $addon_hype"
-        debug "Running: hype $addon_hype helmfile destroy"
-        
-        if ! hype "$addon_hype" helmfile destroy; then
-            error "Failed to destroy addon: $addon_hype"
+        debug "Running: hype $addon_hype down"
+
+        if ! hype "$addon_hype" down; then
+            error "Failed to stop addon: $addon_hype"
             return 1
         fi
-        
+
         info "Addon $addon_num stopped: $addon_hype"
     done
-    
+
     info "All $count addons stopped for $hype_name"
 }
 
@@ -408,7 +580,9 @@ Usage: hype <hype-name> addons <command>
 Manage addons for hype instances
 
 Commands:
-  up          Start all addons in order
+  init        Initialize all addons
+  deinit      Deinitialize all addons in reverse order
+  up          Start all addons with --nothing-if-expected --build --push
   down        Stop all addons in reverse order
   list        List configured addons
   check       Check if all addon releases exist
@@ -418,12 +592,12 @@ The addons are configured in the hype section of hypefile.yaml:
 
   addons:
     - hype: addon-name
-      prepare: "repo/path --option value"
       matchTraits: [trait1, trait2]  # Optional: only process if current trait matches
     - hype: another-addon
-      prepare: "local/repo --path example"
 
 Examples:
+  hype myapp addons init     Initialize all addons for myapp
+  hype myapp addons deinit   Deinitialize all addons for myapp
   hype myapp addons up       Start all addons for myapp
   hype myapp addons down     Stop all addons for myapp
   hype myapp addons list     List addons for myapp
