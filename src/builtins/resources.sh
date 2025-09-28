@@ -46,6 +46,74 @@ check_resource_status() {
     esac
 }
 
+# Check if addons are configured
+has_addons() {
+    local hype_name="$1"
+    local addons_list
+
+    if ! addons_list=$(get_addons_list 2>/dev/null); then
+        return 1
+    fi
+
+    [[ -n "$addons_list" ]]
+}
+
+# Check defaultResources from hypefile.yaml
+check_default_resources() {
+    local hype_name="$1"
+
+    debug "Checking default resources for hype: $hype_name"
+
+    if [[ ! -f "$HYPE_SECTION_FILE" ]]; then
+        debug "No hypefile section found for $hype_name"
+        return 0
+    fi
+
+    # Get resource count first
+    local resource_count
+    resource_count=$(yq eval '.defaultResources | length' "$HYPE_SECTION_FILE" 2>/dev/null || echo "0")
+
+    if [[ "$resource_count" -eq 0 ]]; then
+        debug "No default resources found for $hype_name"
+        return 0
+    fi
+
+    local missing_resources=()
+    # Process each default resource by index
+    for (( i=0; i<resource_count; i++ )); do
+        local name type
+
+        name=$(yq eval ".defaultResources[$i].name" "$HYPE_SECTION_FILE" | sed "s/{{ \.Hype\.Name }}/$hype_name/g" | sed "s|{{ \.Hype\.CurrentDirectory }}|$(pwd)|g")
+        type=$(yq eval ".defaultResources[$i].type" "$HYPE_SECTION_FILE")
+
+        if [[ "$name" != "null" && "$type" != "null" ]]; then
+            case "$type" in
+                "DefaultStateValues")
+                    # Skip check for DefaultStateValues (local processing only)
+                    ;;
+                "StateValuesConfigmap"|"Configmap")
+                    if ! kubectl get configmap "$name" >/dev/null 2>&1; then
+                        missing_resources+=("ConfigMap:$name")
+                    fi
+                    ;;
+                "Secrets")
+                    if ! kubectl get secret "$name" >/dev/null 2>&1; then
+                        missing_resources+=("Secret:$name")
+                    fi
+                    ;;
+            esac
+        fi
+    done
+
+    if [[ ${#missing_resources[@]} -gt 0 ]]; then
+        error "Missing default resources: ${missing_resources[*]}"
+        return 1
+    fi
+
+    info "All default resources exist for hype: $hype_name"
+    return 0
+}
+
 # Check command - display current resources and check if configuration exists
 cmd_resources_check() {
     local hype_name="$1"
@@ -94,28 +162,51 @@ cmd_resources_check() {
     return 0
 }
 
-# Main command function for resources
+# Main command function for resources (with dependencies and addons support)
 cmd_resources() {
     local hype_name="$1"
-    local subcommand="${2:-}"
-    
-    # Only shift if we have a subcommand
-    if [[ -n "$subcommand" ]]; then
-        shift 2
-    else
-        shift 1
-    fi
-    
+    shift
+    local subcommand="${1:-}"
+
     case "$subcommand" in
         "check")
-            cmd_resources_check "$hype_name" "$@"
+            debug "Running resources check command for: $hype_name"
+
+            parse_hypefile "$hype_name"
+
+            local main_status=0
+            local addons_status=0
+
+            # Check main hype resources
+            if ! check_default_resources "$hype_name"; then
+                main_status=1
+            fi
+
+            # Check addons resources if configured
+            if has_addons "$hype_name"; then
+                info "Running addons resources check for hype: $hype_name"
+                if ! addons_resources "$hype_name" "check"; then
+                    addons_status=1
+                fi
+            else
+                debug "No addons configured for $hype_name"
+            fi
+
+            # Return success only if both main and addons succeed
+            if [[ $main_status -eq 0 && $addons_status -eq 0 ]]; then
+                info "Resources check completed successfully for hype: $hype_name"
+                return 0
+            else
+                error "Resources check failed for hype: $hype_name"
+                return 1
+            fi
             ;;
         "help"|"-h"|"--help"|"")
-            help_resources
+            help_resources_builtin
             ;;
         *)
             error "Unknown resources subcommand: $subcommand"
-            help_resources
+            help_resources_builtin
             return 1
             ;;
     esac
