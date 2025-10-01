@@ -83,7 +83,10 @@ cmd_repo() {
         "info")
             cmd_repo_info "$hype_name" "$@"
             ;;
-        ""|"help"|"-h"|"--help")
+        "")
+            cmd_repo_check_current "$hype_name"
+            ;;
+        "help"|"-h"|"--help")
             show_repo_help
             ;;
         *)

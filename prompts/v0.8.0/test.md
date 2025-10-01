@@ -23,6 +23,7 @@ task build を実行して build/hype をビルドします
 > rm -rf /tmp/tmp.* /tmp/*.yaml
   * 一時ファイルを削除
 
+! ここまでのテストでエラーがあればユーザーに報告して、テストを続行するかユーザーに確認します。
 
 ### プロジェクト開発機能 テスト手順
 
@@ -113,6 +114,8 @@ task build を実行して build/hype をビルドします
 
 > cd prompts/nginx-example && ../../build/hype test trait
   * test-trait と表示されないこと
+
+! ここまでのテストでエラーがあればユーザーに報告して、テストを続行するかユーザーに確認します。
 
 ### リポジトリバインディング機能 テスト手順
 
@@ -214,6 +217,8 @@ kubectl が利用できない環境では以下をテスト:
 > ./build/hype myapp repo bind https://github.com/foontype/hype.git
   * 適切なエラーメッセージが表示されること
   * kubectl が必要であることが明示されること
+
+! ここまでのテストでエラーがあればユーザーに報告して、テストを続行するかユーザーに確認します。
 
 ### リポジトリ事前準備機能 テスト手順
 

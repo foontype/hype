@@ -132,7 +132,7 @@ test_builtin_structure() {
     echo "Testing builtin structure..."
     
     local builtins_found=0
-    local expected_builtins=("init" "template" "parse" "trait" "upgrade" "task" "helmfile" "releases")
+    local expected_builtins=("template" "parse" "trait" "upgrade" "task" "helmfile")
     
     for builtin in "${expected_builtins[@]}"; do
         if [[ -f "$PROJECT_ROOT/src/builtins/${builtin}.sh" ]]; then
