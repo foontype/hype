@@ -1,3 +1,105 @@
+"v0.8.0": |
+  ## What's New in HYPE CLI v0.8.0
+
+  ### Major New Features
+  - **Enhanced Lifecycle Commands**: Comprehensive integration of dependencies and addons into lifecycle management
+    - Enhanced `up` command with conditional options and proper build-before-push execution order
+    - Integrated depends up functionality into aliases commands for seamless dependency management
+    - Added init/deinit/up/down subcommands for depends and addons management
+    - Simplified prepare command to focus on repository preparation only
+
+  ### Dependency and Addon Management
+  - **New Depends Subcommand**: Added comprehensive dependency management with `hype depends` command suite
+    - Support for `depends init`, `depends deinit`, `depends up`, `depends down` subcommands
+    - Added `depends check` subcommand for dependency validation
+    - Integrated eval-based prepare commands for proper dependency setup
+    - Added releases and resources check subcommands for depends management
+  - **New Addons Subcommand**: Added addon functionality to HYPE CLI with `hype addons` command suite
+    - Full lifecycle management with init/deinit/up/down subcommands
+    - Added `addons check` subcommand for addon validation
+    - Enhanced helmfile section detection to skip helmfile commands when not configured
+    - Integrated addons lifecycle management into aliases commands
+
+  ### Configuration Enhancements
+  - **Renamed Configuration Keys**: Renamed `dependsOn` key to `depends` in hypefile configuration for better clarity
+  - **Enhanced Filtering**: Added `matchTraits` filtering for depends and addons builtins for more granular control
+  - **Expected Releases Structure**: Fixed expectedReleases check to read from hype section instead of helmfile section
+
+  ### Command Structure Improvements
+  - **Prepare Command Evolution**: Complete workflow improvements for the prepare subcommand
+    - Added init step to prepare subcommand workflow for better initialization
+    - Made `--trait` option optional in prepare command for flexibility
+    - Added repository preparation functionality with proper working directory setup
+  - **Enhanced Check Commands**: Comprehensive restructuring of check functionality
+    - Refactored check command to resources check subcommand
+    - Added trait check subcommand for trait validation
+    - Renamed repo validate command to repo check for consistency
+    - Refactored probe release to releases check command
+
+  ### Repository and Trait Management
+  - **Enhanced Repository Commands**: Improved repository binding and management functionality
+    - Added repo prepare subcommand for idempotent repository binding management
+    - Added exit codes to repo command for scriptable repository binding checks
+    - Fixed repo command to show binding status instead of help by default
+  - **Enhanced Trait Management**: Improved trait functionality and validation
+    - Added trait prepare subcommand for idempotent trait management
+    - Added exit codes to trait command for scriptable trait existence checking
+    - Enhanced trait default value support to fix template errors
+
+  ### Technical Improvements
+  - **Code Quality Enhancements**: Major codebase improvements for maintainability
+    - Improved variable scoping with explicit local declarations for read loops
+    - Fix cmd_ functions to use return instead of exit for better error handling
+    - Consolidate init.sh helper functions into aliases.sh for better organization
+    - Remove obsolete resources.sh and releases.sh builtins to reduce complexity
+  - **Testing Framework**: Enhanced testing capabilities and documentation
+    - Updated test.md with comprehensive testing procedures
+    - Added smoke testing documentation and validation procedures
+    - Enhanced CI workflow with better dependency management
+
+  ### Bug Fixes and Stability
+  - **Resource Management**: Fixed missing resource management functions
+    - Restored init.sh builtin with resource management functions
+    - Fixed execution order in up command: build before push
+    - Fixed global variable preservation in prepare builtin
+    - Fixed HYPEFILE variable persistence issue in prepare builtin
+  - **Dependency Resolution**: Improved dependency handling and conflict resolution
+    - Remove duplicate init.sh builtin to resolve function conflicts
+    - Remove legacy check commands for depends and addons to prevent conflicts
+    - Fixed helmfile installation in CI workflow
+
+  ### Development Experience
+  - **Enhanced Documentation**: Comprehensive documentation updates and examples
+    - Added prompts/depends-example for dependency management testing
+    - Updated trait subcommand structure documentation
+    - Enhanced example configurations and test procedures
+  - **Better Error Handling**: Improved error messages and validation throughout the system
+    - Enhanced ShellCheck warning fixes (SC2155 in prepare builtin)
+    - Better validation for resource types and configurations
+    - Improved debugging output and error reporting
+
+  ### Migration Notes
+  - Configuration files using `dependsOn` should be updated to use `depends` key
+  - Legacy check commands have been restructured into subcommands (check → resources check)
+  - The prepare command now focuses on repository preparation; use trait prepare for trait management
+
+  ### Technical Changes
+  - Version bump to 0.8.0
+  - Restructured command hierarchy for better organization and consistency
+  - Enhanced modular architecture with improved separation of concerns
+  - Better integration between lifecycle commands and dependency/addon management
+  - Improved test coverage and validation procedures
+
+  ### Dependencies
+  - Bash 4.0+
+  - Git (for repository operations)
+  - kubectl (for ConfigMap management)
+  - helmfile (for deployment operations)
+  - yq (mikefarah version)
+  - helm-diff plugin
+  - go-task (for build system)
+  - curl or wget (for upgrade functionality)
+
 "v0.7.2": |
   ## What's New in HYPE CLI v0.7.2
 
