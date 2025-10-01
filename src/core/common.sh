@@ -4,7 +4,7 @@
 # Logging, utility functions, and color constants
 
 # Version information
-HYPE_VERSION="0.7.2"
+HYPE_VERSION="0.8.0"
 
 # Initialize logging variable early to avoid unbound variable errors
 HYPE_LOG="${HYPE_LOG:-stdout}"
