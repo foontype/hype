@@ -880,12 +880,12 @@ check_expected_releases() {
         return 0
     fi
 
-    # Get expectedReleases from helmfile section
+    # Get expectedReleases from hype section
     local expected_releases
-    expected_releases=$(yq eval '.expectedReleases[]' "$HELMFILE_SECTION_FILE" 2>/dev/null)
+    expected_releases=$(yq eval '.expectedReleases[]' "$HYPE_SECTION_FILE" 2>/dev/null)
 
     if [[ -z "$expected_releases" ]]; then
-        debug "No expectedReleases found in helmfile for $hype_name"
+        debug "No expectedReleases found in hype section for $hype_name"
         return 0
     fi
 
