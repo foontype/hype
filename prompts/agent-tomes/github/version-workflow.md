@@ -1,7 +1,50 @@
 # Version Workflow Guide
 
 ## Overview
-This guide explains the version-based branch workflow for pull request creation.
+This guide explains the version-based branch workflow for pull request creation and work task management.
+
+## Work Task Management
+
+### Initial Branch Setup for New Work Tasks
+When receiving a new work request and currently on the main branch:
+
+1. **Check Current Branch**
+   ```bash
+   # Verify current branch
+   CURRENT_BRANCH=$(git branch --show-current)
+   if [ "$CURRENT_BRANCH" = "main" ]; then
+       # Switch to version branch for work
+       echo "Currently on main branch. Switching to version branch for work."
+   fi
+   ```
+
+2. **Version Verification and Branch Switching**
+   - Check for the existence of `prompts/version.md`
+   - If the file does not exist, inform the user and stop the operation
+   - Extract the current version number from the file content
+   - Switch to the appropriate version branch
+
+3. **Version Branch Creation (if needed)**
+   If the version branch doesn't exist:
+   ```bash
+   # Create version branch from main
+   BRANCH_NAME="version/v${VERSION}"
+   git checkout main
+   git checkout -b "${BRANCH_NAME}"
+   git push -u origin "${BRANCH_NAME}"
+   ```
+
+4. **Switch to Version Branch**
+   ```bash
+   # Switch to existing version branch
+   git checkout version/v${VERSION}
+   ```
+
+### Work Flow Summary
+- **New work tasks**: Always work on version branches, not main
+- **Version branch exists**: Switch directly to it
+- **Version branch missing**: Create from main, then switch
+- **Continue with task**: Proceed with the requested work on version branch
 
 ## Pull Request Creation with Version Branches
 
