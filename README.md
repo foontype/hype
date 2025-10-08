@@ -2,8 +2,6 @@
 
 A modular command-line tool written in Bash for Kubernetes AI deployments, providing streamlined management of default resources and configurations through a modular architecture.
 
-> This is an example change for demonstration purposes.
-
 ## Overview
 
 HYPE is a Bash-based CLI tool that simplifies the deployment and management of Kubernetes applications using Helmfile. It uses a modular architecture with separate core modules and builtins for different commands, following a build system approach where individual components are combined into a single executable. The tool introduces the concept of "hypefile.yaml" - a structured configuration file that separates default resources from Helmfile configurations.
@@ -21,7 +19,7 @@ HYPE is a Bash-based CLI tool that simplifies the deployment and management of K
 ## Project Structure
 
 - `src/core/` - Core modules (config, common, hypefile, dependencies)
-- `src/builtins/` - Builtin modules (init, template, parse, trait, upgrade, task, helmfile, repo, aliases)
+- `src/builtins/` - Builtin modules (addons, aliases, depends, helmfile, parse, prepare, repo, task, template, trait, upgrade)
 - `src/main.sh` - Main entry point and command routing
 - `build/` - Build artifacts (generated executable)
 - `tests/` - Test framework and unit tests
@@ -48,11 +46,11 @@ You can install a specific version using the `INSTALL_VERSION` environment varia
 
 ```bash
 # Install specific version
-curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | INSTALL_VERSION=v0.7.0 bash
+curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh | INSTALL_VERSION=v0.8.0 bash
 
 # Or download and run locally
 curl -sSL https://raw.githubusercontent.com/foontype/hype/main/install.sh -o install.sh
-INSTALL_VERSION=v0.7.0 ./install.sh
+INSTALL_VERSION=v0.8.0 ./install.sh
 ```
 
 ### Manual Install
@@ -202,7 +200,7 @@ defaultResources:
           password: "changeme123"
 
 ---
-expectedReleases:
+releases:
   - name: nginx
     namespace: default
     chart: bitnami/nginx
