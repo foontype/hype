@@ -28,59 +28,59 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y shellcheck
-        
+
         # Install go-task
         sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        
+
     - name: Build and test
       run: |
         # Build the project
         task build
-        
+
         # Run linting
         task lint
-        
+
         # Test commands
         ./build/hype --help
         ./build/hype --version
-        
+
     - name: Install yq
       run: |
         sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
         sudo chmod +x /usr/local/bin/yq
-        
+
     - name: Validate release notes
       run: |
-        # Extract version from tag 
+        # Extract version from tag
         VERSION=${GITHUB_REF#refs/tags/}
         echo "Validating release notes for version: $VERSION"
-        
+
         # Run validation script
         ./.github/scripts/validate-release-notes.sh "$VERSION"
-        
+
     - name: Get release notes
       id: get_release_notes
       run: |
         # Extract version from tag
         VERSION=${GITHUB_REF#refs/tags/}
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        
+
         # Get release notes from YAML (validation already passed)
         yq eval ".\"$VERSION\"" release-notes.yaml > release_notes.md
-        
+
         # Set release name
         echo "release_name=Release $VERSION" >> $GITHUB_OUTPUT
-        
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -92,7 +92,7 @@ jobs:
         body_path: ./release_notes.md
         draft: false
         prerelease: false
-        
+
     - name: Upload hype binary
       uses: actions/upload-release-asset@v1
       env:
@@ -137,7 +137,7 @@ jobs:
 
 "v0.9.0": |
   ## What's New in v0.9.0
-  
+
   ### Previous release notes here
   - Feature from previous version
   - Bug fixes from previous version
@@ -267,7 +267,7 @@ cp /path/to/source/release-notes.yaml .
     npm install    # for Node.js projects
     npm run build  # or your build command
     npm test       # or your test command
-    
+
     # Test your executable/application
     ./dist/your-app --version  # Replace with your app path
 ```

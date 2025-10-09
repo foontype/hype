@@ -8,6 +8,8 @@ This document provides detailed guidance for GitHub workflows in project.
 ## Creating Pull Requests
 **IMPORTANT: Never push directly to main branch. Always use feature branches.**
 
+**NOTE: Use GitHub MCP server tools for all GitHub operations. The `gh` command is not installed and not available.**
+
 1. Check existing PRs:
    ```
    mcp__github__list_pull_requests
@@ -45,4 +47,3 @@ Include:
 - Steps to reproduce (for bugs)
 - Expected vs actual behavior
 - Environment details if relevant
-
