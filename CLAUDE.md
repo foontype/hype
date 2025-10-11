@@ -106,7 +106,6 @@ task clean
 ## Important Implementation Notes
 - POSIX compatible, requires Bash 4.0+
 - Modular architecture with builtins and build system
-- Version defined in `src/core/config.sh`: `HYPE_VERSION="0.6.0"`
 - Error handling uses consistent exit codes
 - Modular design allows independent development of features
 - Built executable is single self-contained file
