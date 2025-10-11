@@ -14,9 +14,14 @@ HYPE is a modular command-line tool written in Bash for Kubernetes AI deployment
 - **Chat responses**: 日本語で応答してください (Respond in Japanese)
 - **Code comments and commit messages**: Must be written in English
 
+## Current Version Workflow
+
+When user rquests current version workflow, see Imports section of this document.
+
 ## Essential Commands
 
-### Testing
+### Unit Testing
+
 ```bash
 # Build and test the CLI
 task build
