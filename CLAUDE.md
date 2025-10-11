@@ -35,17 +35,6 @@ shellcheck src/builtins/*.sh
 shellcheck src/main.sh
 ```
 
-### Smoke Testing
-```bash
-# Run comprehensive smoke test following prompts/smoke-test.md
-# Note: This test should be run from the prompts/nginx-example directory
-# and requires kubectl and helmfile to be properly configured
-
-# Follow the complete test sequence in prompts/smoke-test.md for smoke testing
-# This covers trait management, parsing, initialization, templating,
-# and deployment/destruction workflows
-```
-
 ### Development Installation
 ```bash
 # Build and install locally
