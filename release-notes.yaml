@@ -70,7 +70,7 @@
 
   ### Development Experience
   - **Enhanced Documentation**: Comprehensive documentation updates and examples
-    - Added prompts/depends-example for dependency management testing
+    - Added prompts/projects/depends-example for dependency management testing
     - Updated trait subcommand structure documentation
     - Enhanced example configurations and test procedures
   - **Better Error Handling**: Improved error messages and validation throughout the system

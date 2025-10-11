@@ -20,7 +20,7 @@ task build を実行して build/hype をビルドします
 
 ### プロジェクト開発機能 テスト手順
 
-> cd prompts/nginx-example
+> cd prompts/projects/nginx-example
   * examples に移動します
 
 > cd prompts/nginx-example && ../../build/hype test releases check
