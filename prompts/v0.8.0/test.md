@@ -27,10 +27,10 @@ task build を実行して build/hype をビルドします
 
 ### プロジェクト開発機能 テスト手順
 
-> cd prompts/projects/nginx-example
+> cd prompts/nginx-example
   * examples に移動します
 
-> cd prompts/projects/nginx-example && ../../build/hype test releases check
+> cd prompts/nginx-example && ../../build/hype test releases check
   * $? が 1 であること
   * もし $? が 0 の場合（既存リソースが残っている場合）、以下を実行してリトライ:
     * `../../build/hype test down` でリソースをクリーンアップ

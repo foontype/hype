@@ -337,7 +337,7 @@ echo 'const Version = "1.0.0"' > version.go
 ### 1. Version Update
 
 ```bash
-# 1. Update version in your project code. to find current working version, see prompts/projects/current-version.md.
+# 1. Update version in your project code. to find current working version, see prompts/current-version.md.
 vim src/config.sh  # or your version file
 # Change: VERSION="1.0.0"
 
