@@ -1,4 +1,4 @@
-# Agent Tomes Copy Guide
+# Playbooks Copy Guide
 
 ## Overview
 指定リポジトリから agents の複製を依頼された場合の処理手順を説明します。
