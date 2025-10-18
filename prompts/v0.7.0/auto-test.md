@@ -38,7 +38,7 @@ HYPE v0.7.0 introduces repository binding functionality that allows hype configu
 
 #### Bind a Repository
 ```bash
-./build/hype myapp repo bind https://github.com/foontype/hype.git --branch main --path prompts/projects/nginx-example
+./build/hype myapp repo bind https://github.com/foontype/hype.git --branch main --path prompts/nginx-example
 ```
 
 Expected behavior:
