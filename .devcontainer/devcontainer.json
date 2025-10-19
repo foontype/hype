@@ -23,7 +23,7 @@
   "remoteUser": "vscode",
   "remoteEnv": {
     "PATH": "/workspaces/hype/src:${containerEnv:PATH}",
-    "GH_TOKEN": "${localEnv:GH_TOKEN}"
+    "GH_TOKEN": "${containerEnv:GH_TOKEN}"
   },
   "customizations": {
     "vscode": {
