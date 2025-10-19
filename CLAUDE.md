@@ -4,7 +4,7 @@ This document provides guidance to Claude Code (claude.ai/code) when working wit
 
 ## Imports
 
-* @.claude/playbooks/base-worker-index.md
+* @prompts/playbooks/claude-code-base-worker-index.md
 
 ## Project Overview
 
@@ -16,7 +16,7 @@ HYPE is a modular command-line tool written in Bash for Kubernetes AI deployment
 
 ## Current Version Workflow
 
-When user rquests current version workflow, see Imports section of this document.
+When user requests current version workflow, see Imports section of this document.
 
 ## Essential Commands
 
