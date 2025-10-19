@@ -4,7 +4,7 @@ This document provides guidance to Claude Code (claude.ai/code) when working wit
 
 ## Imports
 
-* @prompts/playbooks/claude-code-base-worker-index.md
+* @.claude/playbooks/base-worker-index.md
 
 ## Project Overview
 
