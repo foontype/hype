@@ -1,4 +1,4 @@
-# Pull Request Branch Switching Guide
+# Pull Requests Branch Switching Guide
 
 ## Overview
 This guide explains how to handle requests to switch to pull request branches for work tasks.

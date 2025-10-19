@@ -16,7 +16,7 @@ HYPE is a modular command-line tool written in Bash for Kubernetes AI deployment
 
 ## Current Version Workflow
 
-When user rquests current version workflow, see Imports section of this document.
+When user requests current version workflow, see Imports section of this document.
 
 ## Essential Commands
 

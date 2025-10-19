@@ -1,13 +1,17 @@
 # Base Worker Index
 
+## Prompts Management Workflow Index
+
+* @prompts/playbooks/prompts-management/playbooks-workflow.md
+* @prompts/playbooks/prompts-management/current-version-workflow.md
+
 ## GitHub Workflow Index
 
-* @prompts/playbooks/github/development-resource-workflow.md
+* @prompts/playbooks/github/pull-requests-and-issues-workflow.md
+* @prompts/playbooks/github/pull-requests-branch-switching.md
 * @prompts/playbooks/github/release-system.md
-* @prompts/playbooks/github/pull-request-branch-switching.md
-* @prompts/playbooks/github/copy-agents.md
-* @prompts/playbooks/github/current-version-workflow.md
 
-## Python Index
+## .claude Management Workflow Index
 
-* @prompts/playbooks/python/simple-hexagonal.md
+* @prompts/playbooks/dot-claude-management/commands-workflow.md
+* @prompts/playbooks/dot-claude-management/skills-workflow.md

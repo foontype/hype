@@ -15,9 +15,6 @@ Thumbs.db
 .cache/
 node_modules/
 
-# Claude Code generated directories
-.claude/
-
 # IDE files
 .vscode/settings.json
 .idea/
@@ -34,5 +31,5 @@ build/
 # Task runner cache
 .task/
 
-# Testing files
-hypefile.yaml
+# settings.local.json
+.claude/settings.local.json

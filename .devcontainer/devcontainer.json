@@ -13,13 +13,17 @@
       "userGid": "automatic"
     },
     "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
-    "ghcr.io/edouard-lopez/devcontainer-features/bats:0": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
   },
+  "mounts": [
+    "source=${localEnv:USERPROFILE}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached"
+  ],
   "postCreateCommand": "bash .devcontainer/post-create-command.sh",
   "remoteUser": "vscode",
   "remoteEnv": {
-    "PATH": "/workspaces/hype/src:${containerEnv:PATH}"
+    "PATH": "/workspaces/hype/src:${containerEnv:PATH}",
+    "GH_TOKEN": "${containerEnv:GH_TOKEN}"
   },
   "customizations": {
     "vscode": {
