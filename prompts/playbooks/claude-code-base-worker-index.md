@@ -10,3 +10,8 @@
 * @prompts/playbooks/github/development-resource-workflow.md
 * @prompts/playbooks/github/release-system.md
 * @prompts/playbooks/github/pull-request-branch-switching.md
+
+## .claude Management Workflow Index
+
+* @prompts/playbooks/dot-claude-management/copy-commands.md
+* @prompts/playbooks/dot-claude-management/copy-skills.md
