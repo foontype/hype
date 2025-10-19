@@ -1,20 +1,22 @@
-# .claude/skills Copy Guide
+# .claude/skills Workflow Guide
 
-## Overview
+## Copy .claude/skills
+
+### Overview
 指定リポジトリから skills の複製を依頼された場合の処理手順を説明します。
 
-## Process
+### Process
 指定リポジトリから skills の複製を依頼された場合は、以下の手順で実行してください：
 
 1. **指定リポジトリの .claude/skills をコピー**
 2. **現在のワーキングコピーの .claude/skills にディレクトリごと入れ替えで配置**
 
-## Implementation Steps
+### Implementation Steps
 1. 指定リポジトリから `.claude/skills` ディレクトリの内容を取得
 2. 現在の `.claude/skills` ディレクトリを削除
 3. 取得した内容を新しい `.claude/skills` ディレクトリとして配置
 
-## Important Notes
+### Important Notes
 - 完全な入れ替え操作です（既存の内容は上書きされます）
 - ディレクトリ構造ごとコピーしてください
 - 権限設定も適切に維持してください

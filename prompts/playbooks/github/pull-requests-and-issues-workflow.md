@@ -1,4 +1,4 @@
-# GitHub Workflow Guide
+# Pull Requests and Issues Workflow Guide
 
 This document provides detailed guidance for GitHub workflows in project.
 
